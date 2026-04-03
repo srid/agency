@@ -4,15 +4,21 @@ Near-autonomous workflow for coding agents, packaged as an [APM](https://github.
 
 ## What's included
 
-| Primitive | Name | Description |
-|-----------|------|-------------|
-| Prompt | `/execute` | Full autonomous pipeline: research → hickey → branch → implement → CI → ship |
-| Prompt | `/probe` | Talk-only mode — discuss ideas without touching files |
-| Skill | `hickey` | Structural simplicity evaluation (Rich Hickey's "Simple Made Easy") |
-| Skill | `code-police` | Three-pass quality gate: rule checklist, fact-check, elegance |
-| Skill | `github-pr` | Non-boring PR titles and descriptions |
-| Hook | `execute-stop-guard` | Prevents Claude from stopping mid-workflow |
-| Instruction | `apm-sources` | Redirects edits from generated `.claude/` to `.apm/` sources |
+### Commands
+
+- **`/do`** — Full autonomous pipeline: research → hickey → branch → implement → CI → ship. Hands-off from start to PR.
+- **`/talk`** — Conversation-only mode. Discuss ideas, explore approaches, read code — no file changes allowed.
+
+### Skills
+
+- **`hickey`** — Structural simplicity evaluation using Rich Hickey's "Simple Made Easy" framework. Catches accidental complexity that tests can't.
+- **`code-police`** — Three-pass quality gate: rule checklist, fact-check for logic errors, and elegance review with iterative refinement.
+- **`github-pr`** — Writes PR titles and descriptions that devs actually want to read. Paragraphs over bullet lists, substance over boilerplate.
+
+### Hooks & Instructions
+
+- **`execute-stop-guard`** — Prevents Claude from stopping mid-`/do` workflow. Reads `.execute-results.json` to know if a run is active.
+- **`apm-sources`** — Tells agents that `.claude/` is generated — edit `.apm/` sources instead.
 
 ## Usage
 

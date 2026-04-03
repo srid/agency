@@ -1,5 +1,5 @@
 ---
-description: Execute a task end-to-end — implement, PR, CI loop, ship
+description: Do a task end-to-end — implement, PR, CI loop, ship
 argument-hint: "<github-issue-url | prompt> [--review] [--from <step>]"
 ---
 
