@@ -1,0 +1,6 @@
+name: agency
+version: 1.0.0
+description: Near-autonomous workflow for coding agents — execute, probe, and quality gates
+author: srid
+license: MIT
+type: hybrid
