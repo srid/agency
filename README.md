@@ -22,6 +22,8 @@ Near-autonomous workflow for coding agents, packaged as an [APM](https://github.
 
 ## Usage
 
+> **WIP** — More detailed docs on setup, project configuration (workflow instructions for `/do`), and extending skills like `code-police` with project-specific rules are coming.
+
 Add to your project's `apm.yml`:
 
 ```yaml
