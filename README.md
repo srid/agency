@@ -26,6 +26,8 @@ Near-autonomous workflow for coding agents, packaged as an [APM](https://github.
 
 ```bash
 curl -sSL https://aka.ms/apm-unix | sh   # macOS/Linux
+# or, without a global install:
+uvx apm-cli install
 ```
 
 ### 2. Add agency to your project
