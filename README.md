@@ -38,6 +38,10 @@ Then:
 apm install
 ```
 
+## Examples
+
+- **[Kolu](https://github.com/juspay/kolu)** — Terminal multiplexer that uses agency for its autonomous development workflow. See its [`apm.yml`](https://github.com/juspay/kolu/blob/master/apm.yml) and [`agents/.apm/`](https://github.com/juspay/kolu/tree/master/agents/.apm) for how project-specific instructions layer on top of agency's generic workflow.
+
 ## Development
 
 ```bash
