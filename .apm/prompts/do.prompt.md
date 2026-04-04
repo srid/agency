@@ -121,7 +121,7 @@ Otherwise: implement the planned changes. Prefer simplicity. Do the boring obvio
 
 ### docs
 
-Read the project's instructions to find which documentation files to keep in sync (e.g., README.md, CLAUDE.md). Compare those files against changes in this PR.
+Read the project's instructions to find which documentation files to keep in sync (e.g., README.md). Compare those files against changes in this PR.
 
 If no documentation files are documented, skip this step with a note.
 
