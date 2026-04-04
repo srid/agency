@@ -39,7 +39,7 @@ dependencies:
 
 ### 2. Run APM
 
-With [Nix](https://nixos.org/) (no install needed):
+With [Nix](https://nixos.asia/en/install) (no install needed):
 
 ```bash
 nix run github:numtide/llm-agents.nix#apm -- install           # uses target from apm.yml
