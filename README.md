@@ -22,39 +22,23 @@ Near-autonomous workflow for coding agents, packaged as an [APM](https://github.
 
 ## Usage
 
-### 1. Add agency to your project
-
-Create an `apm.yml` at your repo root (or add to an existing one):
-
-```yaml
-name: my-project
-version: 1.0.0
-type: hybrid
-target: claude    # or: cursor, copilot, codex, all
-
-dependencies:
-  apm:
-    - srid/agency#master
-```
-
-### 2. Run APM
+### 1. Install
 
 With [Nix](https://nixos.asia/en/install) (no install needed):
 
 ```bash
-nix run github:numtide/llm-agents.nix#apm -- install           # uses target from apm.yml
-nix run github:numtide/llm-agents.nix#apm -- install -t claude  # or pass --target via CLI
+nix run github:numtide/llm-agents.nix#apm -- install srid/agency#master -t claude
 ```
 
 Or via [uvx](https://docs.astral.sh/uv/guides/tools/):
 
 ```bash
-uvx --from apm-cli apm install
+uvx --from apm-cli apm install srid/agency#master -t claude
 ```
 
-This generates `.claude/` with agency's commands, skills, and hooks. You now have `/do` and `/talk` available in Claude Code.
+This creates `apm.yml`, generates `.claude/` with agency's commands, skills, and hooks, and adds `apm_modules/` to `.gitignore`. You now have `/do` and `/talk` available in Claude Code.
 
-### 3. Tell `/do` about your project
+### 2. Tell `/do` about your project
 
 `/do` runs autonomously but needs to know your project's format, test, and CI commands. Without this, it skips those steps.
 
@@ -83,7 +67,7 @@ Run `apm install` again to regenerate `.claude/`.
 
 The `/do` steps that read these instructions: **fmt**, **test**, **ci**, and **docs**. Each step looks for its heading in your project instructions and runs whatever command you specified. If a step finds nothing documented, it skips with a note.
 
-### 4. Add project-specific quality rules (optional)
+### 3. Add project-specific quality rules (optional)
 
 `code-police` ships with generic rules. Layer on your own by creating `.apm/instructions/code-police-rules.instructions.md`:
 
