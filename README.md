@@ -22,15 +22,7 @@ Near-autonomous workflow for coding agents, packaged as an [APM](https://github.
 
 ## Usage
 
-### 1. Install APM
-
-```bash
-curl -sSL https://aka.ms/apm-unix | sh   # macOS/Linux
-```
-
-Or skip the global install and run APM via [uvx](https://docs.astral.sh/uv/guides/tools/): `uvx --from apm-cli apm <command>`.
-
-### 2. Add agency to your project
+### 1. Add agency to your project
 
 Create an `apm.yml` at your repo root (or add to an existing one):
 
@@ -45,11 +37,19 @@ dependencies:
     - srid/agency#master
 ```
 
-Then run:
+### 2. Run APM
+
+With [Nix](https://nixos.asia/en/install) (no install needed):
 
 ```bash
-apm install              # uses target from apm.yml
-apm install -t claude    # or pass --target via CLI
+nix run github:numtide/llm-agents.nix#apm -- install           # uses target from apm.yml
+nix run github:numtide/llm-agents.nix#apm -- install -t claude  # or pass --target via CLI
+```
+
+Or via [uvx](https://docs.astral.sh/uv/guides/tools/):
+
+```bash
+uvx --from apm-cli apm install
 ```
 
 This generates `.claude/` with agency's commands, skills, and hooks. You now have `/do` and `/talk` available in Claude Code.
