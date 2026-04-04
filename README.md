@@ -47,7 +47,9 @@ dependencies:
 Then run:
 
 ```bash
-apm install
+apm install --target claude
+# apm install --target cursor
+# apm install --target copilot
 ```
 
 This generates `.claude/` with agency's commands, skills, and hooks. You now have `/do` and `/talk` available in Claude Code.
