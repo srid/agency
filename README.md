@@ -26,9 +26,9 @@ Near-autonomous workflow for coding agents, packaged as an [APM](https://github.
 
 ```bash
 curl -sSL https://aka.ms/apm-unix | sh   # macOS/Linux
-# or, without a global install:
-uvx apm-cli install
 ```
+
+Or skip the global install and run APM via [uvx](https://docs.astral.sh/uv/guides/tools/): `uvx --from apm-cli apm <command>`.
 
 ### 2. Add agency to your project
 
