@@ -38,6 +38,7 @@ Create an `apm.yml` at your repo root (or add to an existing one):
 name: my-project
 version: 1.0.0
 type: hybrid
+target: claude    # or: cursor, copilot, codex, all
 
 dependencies:
   apm:
@@ -47,9 +48,7 @@ dependencies:
 Then run:
 
 ```bash
-apm install --target claude
-# apm install --target cursor
-# apm install --target copilot
+apm install
 ```
 
 This generates `.claude/` with agency's commands, skills, and hooks. You now have `/do` and `/talk` available in Claude Code.
