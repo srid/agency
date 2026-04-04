@@ -22,21 +22,96 @@ Near-autonomous workflow for coding agents, packaged as an [APM](https://github.
 
 ## Usage
 
-> **WIP** — More detailed docs on setup, project configuration (workflow instructions for `/do`), and extending skills like `code-police` with project-specific rules are coming. See [APM docs](https://microsoft.github.io/apm/) for general APM usage.
+### 1. Install APM
 
-Add to your project's `apm.yml`:
+```bash
+curl -sSL https://aka.ms/apm-unix | sh   # macOS/Linux
+```
+
+### 2. Add agency to your project
+
+Create an `apm.yml` at your repo root (or add to an existing one):
 
 ```yaml
+name: my-project
+version: 1.0.0
+type: hybrid
+
 dependencies:
   apm:
     - srid/agency
 ```
 
-Then:
+Then run:
 
 ```bash
 apm install
 ```
+
+This generates `.claude/` with agency's commands, skills, and hooks. You now have `/do` and `/talk` available in Claude Code.
+
+### 3. Tell `/do` about your project
+
+`/do` runs autonomously but needs to know your project's format, test, and CI commands. Without this, it skips those steps.
+
+Create `.apm/instructions/workflow.instructions.md`:
+
+```markdown
+---
+description: Workflow commands for the /do pipeline
+applyTo: "**"
+---
+
+## Format command
+`npm run lint:fix`
+
+## Test command
+`npm test` — run only tests relevant to changed code paths.
+
+## CI command
+`npm run ci` — verify by checking exit code 0.
+
+## Documentation
+Keep `README.md` in sync with user-facing changes.
+```
+
+Run `apm install` again to regenerate `.claude/`.
+
+The `/do` steps that read these instructions: **fmt**, **test**, **ci**, and **docs**. Each step looks for its heading in your project instructions and runs whatever command you specified. If a step finds nothing documented, it skips with a note.
+
+### 4. Add project-specific quality rules (optional)
+
+`code-police` ships with generic rules. Layer on your own by creating `.apm/instructions/code-police-rules.instructions.md`:
+
+```markdown
+---
+description: Project-specific code-police rules
+---
+
+## Code Police Rules
+
+### no-raw-sql
+Use the query builder for all database access. No raw SQL strings outside migrations.
+
+### always-use-server-functions
+Data fetching must go through server functions, never direct API calls from components.
+```
+
+These get checked alongside the built-in rules during the police pass.
+
+### Putting it together
+
+Your project's `.apm/` directory ends up looking something like:
+
+```
+.apm/
+  instructions/
+    workflow.instructions.md        # fmt, test, ci, docs commands
+    code-police-rules.instructions.md  # project-specific quality rules
+    architecture.instructions.md    # optional: architectural constraints
+```
+
+See [Kolu's `agents/.apm/`](https://github.com/juspay/kolu/tree/master/agents/.apm) for a real-world example with workflow config, architecture docs, and custom code-police rules layered on top of agency.
 
 ## Examples
 
