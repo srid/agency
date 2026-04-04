@@ -41,7 +41,7 @@ type: hybrid
 
 dependencies:
   apm:
-    - srid/agency
+    - srid/agency#master
 ```
 
 Then run:
