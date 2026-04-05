@@ -65,7 +65,7 @@ Scan the code for known complecting patterns. These are constructs that structur
 
 Not every use of these constructs is wrong. The question is whether the complecting is _essential_ (required by the problem) or _accidental_ (an artifact of the chosen approach).
 
-**Artifact consistency check for conditionals.** When conditionals within a single component switch behavior across modes (e.g., `isWorktree ? ... : ...`), don't just count branches — verify that each branch produces a **semantically consistent artifact**. A button that is the "safe" option in one mode and the "destructive" option in another mode, but shares the same visual styling, complects **position with meaning**. The styling should follow the semantic role, not the code position. Hickey: _"what matters are the artifacts not the authoring... the running of it, the performance of it, the ability to change it all is an attribute of the artifact, not the original construct."_
+**Artifact consistency check for conditionals.** When conditionals within a single component switch behavior across modes (e.g., `mode === "A" ? ... : ...`), don't just count branches — verify that each branch produces a **semantically consistent artifact**. A button that is the "safe" option in one mode and the "destructive" option in another, but shares the same visual styling, complects **position with meaning**. The styling should follow the semantic role, not the code position. Hickey: _"what matters are the artifacts not the authoring... the running of it, the performance of it, the ability to change it all is an attribute of the artifact, not the original construct."_
 
 ### Layer 4: Structural Entanglement Analysis
 
