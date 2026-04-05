@@ -11,7 +11,7 @@ Near-autonomous workflow for coding agents, packaged as an [APM](https://github.
 
 ### Skills
 
-- **`hickey`** — Structural simplicity evaluation using Rich Hickey's "Simple Made Easy" framework. Catches accidental complexity that tests can't.
+- **`hickey`** — Structural simplicity evaluation using [Rich Hickey's "Simple Made Easy"](https://www.infoq.com/presentations/Simple-Made-Easy/) framework. Catches accidental complexity that tests can't.
 - **`code-police`** — Three-pass quality gate: rule checklist, fact-check for logic errors, and elegance review with iterative refinement.
 - **`github-pr`** — Writes PR titles and descriptions that devs actually want to read. Paragraphs over bullet lists, substance over boilerplate.
 
