@@ -47,17 +47,17 @@ Scan for known complecting patterns:
 
 | Construct | What it complects | Simpler alternative |
 |---|---|---|
-| Mutable state | Value + time + identity | Values, managed refs |
-| Objects | State + identity + value + namespace | Functions + data + namespaces |
-| Methods | Function + state; function + namespace | Stateless functions, protocols |
-| Inheritance | Types with types | Polymorphism a la carte |
-| Switch/case on type | Who + what | Polymorphic dispatch |
-| Mutable variables | Value + time | Final/const bindings |
-| Imperative loops | What + how + when | Set functions, map/filter/reduce |
+| Mutable state | Value + time + identity | Immutable values, controlled state containers |
+| Objects | State + identity + value + namespace | Plain functions + data + namespaces |
+| Methods | Function + state; function + namespace | Free functions, interfaces |
+| Inheritance | Types with types | Composition, interfaces, traits |
+| Switch/case on type | Who + what | Dynamic dispatch, visitor pattern |
+| Mutable variables | Value + time | `const`/`final`/`let` bindings, immutable data |
+| Imperative loops | What + how + when | `map`/`filter`/`reduce`, declarative transforms |
 | Actors | What + who | Queues + stateless handlers |
-| ORM | Object identity + relational model + query | Data + declarative queries |
-| Conditionals scattered across code | One decision braided across many sites | Rules, declarative policies |
-| Callbacks/closures over mutable state | Control flow + state + time | Async iterables, queues, values |
+| ORM | Object identity + relational model + query | Plain data + declarative queries |
+| Conditionals scattered across code | One decision braided across many sites | Rules, declarative policies, lookup tables |
+| Callbacks/closures over mutable state | Control flow + state + time | Streams, queues, immutable values |
 
 When you find a catalog match, **do not dismiss it**. Design the concrete alternative first (Layer 6), then evaluate whether the current approach is actually justified. The proof burden is on the current code, not on you to prove it's wrong. Hickey: _"what matters are the artifacts not the authoring."_
 
