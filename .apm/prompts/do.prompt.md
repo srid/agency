@@ -117,9 +117,9 @@ If the task is a bug fix: write a failing test first (e2e or unit, whichever is 
 
 Otherwise: implement the planned changes. Prefer simplicity. Do the boring obvious thing.
 
-**E2E coverage**: When the change introduces multiple behavioral paths (e.g., a dialog that appears under different conditions), write e2e scenarios for **each distinct path**, not just one. Enumerate the paths from the code, then check that every path has a corresponding test. A single "happy path" test that covers one condition is insufficient when the feature has combinatorial triggers.
+**E2E coverage**: When the change introduces multiple user-facing paths (e.g., a dialog that appears under different conditions), write e2e scenarios for **each distinct path**. Enumerate the user-visible paths, then check that every one has a corresponding test.
 
-**Verify**: Code changes match the planned approach. All distinct behavioral paths have test coverage.
+**Verify**: Code changes match the planned approach. All distinct user-facing paths have test coverage.
 
 ---
 
