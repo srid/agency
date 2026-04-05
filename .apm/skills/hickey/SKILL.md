@@ -9,6 +9,8 @@ Evaluate code for **structural simplicity** using Rich Hickey's "Simple Made Eas
 
 The core premise: **tests tell you code works; they tell you nothing about whether it's simple.** Every bug that ever existed passed the type checker and passed all the tests. Complected code can be perfectly correct today. The damage shows up when you try to change it, reason about it, or extend it.
 
+Source: [Full transcript of the talk](https://github.com/matthiasn/talk-transcripts/blob/master/Hickey_Rich/SimpleMadeEasy.md)
+
 ## Key Definitions
 
 Before evaluating anything, internalize these distinctions:
@@ -32,6 +34,8 @@ Before looking at structure, name the independent concerns the code addresses. W
 If you can't cleanly name distinct concerns, that is itself a finding — the concerns may already be entangled beyond easy identification.
 
 ### Layer 2: Check for Concept Multiplication
+
+Hickey warns: _"Be particularly careful not to be fooled by code organization. There are tons of libraries that look — oh, look, there's different classes; there's separate classes. They call each other in these nice ways."_ Separate modules that serve the same concern look modular but aren't simple.
 
 Before analyzing internal structure, check whether the plan introduces new abstractions (components, modules, signals, types) that overlap with existing ones. For each new abstraction the plan proposes:
 
