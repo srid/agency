@@ -105,7 +105,9 @@ Detect the default branch: `git symbolic-ref refs/remotes/origin/HEAD`
 
 **MANDATORY**: Load the `github-pr` skill (via Skill tool) BEFORE writing the PR title/body.
 
-**Verify**: On a feature branch (not master/main), draft PR exists (`gh pr view` succeeds).
+5. **Post hickey results**: If the hickey step produced findings with suggestions, post the full hickey analysis as a PR comment using `gh pr comment`. Use a `## Hickey Analysis` header. Skip this if hickey found no issues.
+
+**Verify**: On a feature branch (not master/main), draft PR exists (`gh pr view` succeeds). If hickey had findings, a PR comment exists.
 
 ---
 
