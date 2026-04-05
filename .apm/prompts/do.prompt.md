@@ -235,6 +235,10 @@ gh pr comment --body "$(cat <<'COMMENT'
 ...
 | **Total** | | **4m 32s** | |
 
+### Optimization suggestions
+
+- <2–4 concrete suggestions based on timing data>
+
 Workflow completed at <timestamp>.
 COMMENT
 )"
