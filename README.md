@@ -17,7 +17,7 @@ Near-autonomous workflow for coding agents, packaged as an [APM](https://github.
 
 ### Hooks & Instructions
 
-- **`execute-stop-guard`** — Prevents Claude from stopping mid-`/do` workflow. Reads `.do-results.json` to know if a run is active.
+- **`do-stop-guard`** — Prevents Claude from stopping mid-`/do` workflow. Reads `.do-results.json` to know if a run is active.
 - **`apm-sources`** — Tells agents that `.claude/` is generated — edit `.apm/` sources instead.
 
 ## Usage
