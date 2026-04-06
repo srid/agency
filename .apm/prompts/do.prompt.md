@@ -232,7 +232,7 @@ Report the PR URL. Then post the final step status table as a **PR comment** usi
 
 ```
 gh pr comment --body "$(cat <<'COMMENT'
-## Execute Results
+## [`/do`](https://github.com/srid/agency) results
 
 | Step | Status | Duration | Verification |
 |------|--------|----------|-------------|
