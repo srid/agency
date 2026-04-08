@@ -1,21 +1,22 @@
 ---
 description: Do a task end-to-end — implement, PR, CI loop, ship
-argument-hint: "<issue-url | prompt> [--review] [--from <step>]"
+argument-hint: "<issue-url | prompt> [--review] [--no-git] [--from <step>]"
 ---
 
 # Do Workflow
 
-Take a task and do it top-to-bottom: research, implement, open a draft PR, pass CI, refine, and ship.
+Take a task and do it top-to-bottom: research, implement, open a draft PR, pass CI, refine, and ship. (Under `--no-git`, extend the working tree in place — no branch, commit, or PR.)
 
 **Fully autonomous.** Do NOT use `AskUserQuestion` at any point (unless `--review` is active during the planning pause). Make sensible default choices and keep moving.
 
 ## Arguments
 
-Parse the arguments string: `[--review] [--from <step-id>] <task description or issue-url>`
+Parse the arguments string: `[--review] [--no-git] [--from <step-id>] <task description or issue-url>`
 
 The workflow is **forge-aware**: it auto-detects whether the repo lives on GitHub or elsewhere during the **sync** step (see Forge Detection). Only GitHub has an active code path today — Bitbucket/other forges gracefully skip PR-related steps. Tracking: [srid/agency#10](https://github.com/srid/agency/issues/10).
 
 - `--review`: Pause after **hickey** for user plan approval via `EnterPlanMode`/`ExitPlanMode`, then continue autonomously
+- `--no-git`: Extend the working tree **in place** — do not create a branch, commit, push, or touch any PR. Research, implement, check, docs, police, fmt, and test all run; git-mutating steps (**branch**, **commit**, **update-pr**) are skipped. Use this when you have uncommitted local work and want the agent to build on it without taking over git state. Feedback from a Bitbucket user in [#26](https://github.com/srid/agency/issues/26).
 - `--from <step-id>`: Start from a specific step (see entry points below)
 
 ## Results Tracking
@@ -29,6 +30,7 @@ After each step's verification, write/update `.do-results.json`:
   "active": true,
   "status": "running",
   "forge": "github",
+  "noGit": false,
   "steps": [
     {
       "name": "sync",
@@ -42,7 +44,8 @@ After each step's verification, write/update `.do-results.json`:
 ```
 
 - `forge` is set during **sync** (see Forge Detection below). One of `github`, `bitbucket`, `unknown`.
-- Step `status` is one of `passed`, `failed`, or `skipped`. A `skipped` step must include a `reason` field explaining why (e.g., `"non-github forge: bitbucket"`, `"no check command configured"`).
+- `noGit` is `true` if the user passed `--no-git`. When set, git-mutating steps (**branch**, **commit**, **update-pr**) record status `skipped` with reason `"--no-git"`.
+- Step `status` is one of `passed`, `failed`, or `skipped`. A `skipped` step must include a `reason` field explaining why (e.g., `"non-github forge: bitbucket"`, `"--no-git"`, `"no check command configured"`).
 
 - Set `active` to `true` when the workflow starts (**sync**), and `false` when it ends (**done**). The stop hook uses this field to block premature exits.
 - Set `status` to `"completed"` when **done** is reached, or `"failed"` if halted. This field is informational only.
@@ -61,7 +64,15 @@ Print a progress line before each step:
 
 Run: `git fetch origin && git remote set-head origin --auto`
 
-If current branch is behind origin, fast-forward with `git pull --ff-only`.
+**If `--no-git` is NOT set**: if current branch is behind origin, fast-forward with `git pull --ff-only`.
+
+**If `--no-git` is set**: do **not** pull. Fetching the remote is harmless and useful context, but modifying the working tree could conflict with the user's uncommitted work. Leave the branch where it is.
+
+**Dirty-tree hint**: run `git status --porcelain`. If it is non-empty and `--no-git` was NOT passed, print a one-line hint to the terminal:
+
+> _Dirty tree detected. Continuing will create a fresh branch on top of these changes. If you wanted the agent to extend your WIP in place without touching git, re-run with `--no-git`._
+
+Do **not** pause or ask — just print and continue. The user's default-mode invocation is respected.
 
 **Forge detection**: Inspect `git remote get-url origin` and classify:
 
@@ -71,7 +82,7 @@ If current branch is behind origin, fast-forward with `git pull --ff-only`.
 
 Record the result in `.do-results.json` as the top-level `forge` field. Subsequent steps branch on this value. **Only `github` has an active code path today.** Both `bitbucket` and `unknown` cause forge-dependent steps (PR creation, PR comments, PR edits, CI status) to skip gracefully. Bitbucket support is planned — see [srid/agency#10](https://github.com/srid/agency/issues/10).
 
-**Verify**: git fetch ran without error and `forge` is recorded.
+**Verify**: git fetch ran without error, `forge` is recorded, and `noGit` is recorded.
 
 ---
 
@@ -109,6 +120,8 @@ Use `ExitPlanMode` to present the plan. Once approved, continue autonomously fro
 ---
 
 ### branch
+
+**If `--no-git`**: Skip this step entirely with status `skipped` and reason `"--no-git"`. Stay on the current branch — do not create, commit, or push anything. Move to **implement**.
 
 Detect the default branch: `git symbolic-ref refs/remotes/origin/HEAD`
 
@@ -189,6 +202,8 @@ If no format command is documented, skip this step with a note.
 
 ### commit
 
+**If `--no-git`**: Skip with status `skipped` and reason `"--no-git"`. Move to **test**. The working-tree changes stay uncommitted — that is the point.
+
 Create a NEW commit (never amend) with a conventional commit message. Push to the PR branch.
 
 **Verify**: `git log -1` shows a new commit on the feature branch, and it's pushed to remote.
@@ -223,12 +238,14 @@ CI commands are typically local (e.g. `nix flake check`, `just ci`, `make ci`) a
 **Flaky vs real**: A test is flaky only if it **passes on a subsequent retry**. Consistent failure = real bug. Before retrying, read the failing test code to judge if the failure pattern is inherently flaky (race conditions, timing, async waits).
 
 **If flaky** (max 3 retries): Retry just the failing step.
-**If real bug** (max 5 fixes): Fix → **fmt** → **commit** → retry CI.
+**If real bug** (max 5 fixes): Fix → **fmt** → **commit** → retry CI. Under `--no-git`, drop **commit** from the loop (Fix → **fmt** → retry CI).
 **If retries exhausted**: Set workflow status to `"failed"`, skip to **done**.
 
 ---
 
 ### update-pr
+
+**If `--no-git`**: Skip with status `skipped` and reason `"--no-git"`. There is no PR to update. Proceed to **done**.
 
 **If `forge != github`**: Skip with status `skipped` and reason `"non-<forge> forge: <forge>"`. (Bitbucket `bkt pr edit` wiring is tracked in #10.) Proceed to **done**.
 
@@ -242,7 +259,12 @@ CI commands are typically local (e.g. `nix flake check`, `just ci`, `make ci`) a
 
 Present a summary of all steps with their verification status. If any step has a non-success status, retry it (max 3 attempts from done). If still failing after retries, set `status: "failed"`.
 
-`"completed"` requires **all steps `passed`**, with one exception: a step with `status: "skipped"` whose `reason` begins with `"non-<forge> forge:"` (i.e., skipped because the detected forge isn't GitHub) counts toward completion. Any other skip reason (e.g., `"no check command configured"`) also does not block completion, since those are existing "skip with a note" cases recorded as `passed`. A `failed` step always blocks `"completed"`. No redefining "passed," no footnote caveats. Update `.do-results.json` accordingly.
+`"completed"` requires **all steps `passed`**, with two exceptions that count toward completion:
+
+1. A step `skipped` with `reason` beginning `"non-<forge> forge:"` (detected forge isn't GitHub).
+2. A step `skipped` with `reason` `"--no-git"` (user opted out of git operations).
+
+A `failed` step always blocks `"completed"`. No redefining "passed," no footnote caveats. Update `.do-results.json` accordingly.
 
 #### Timing summary
 
@@ -261,6 +283,8 @@ After the timing table, print 2–4 concrete suggestions for reducing time-to-co
 Be specific to this run's data, not generic advice.
 
 #### PR comment & wrap-up
+
+**If `--no-git`**: There is no branch or PR to report against. Print the timing table and optimization suggestions to the terminal only. List the files modified in the working tree (`git status --porcelain`) so the user can see what the agent touched. Remind the user that changes are uncommitted — the commit/push/PR steps are theirs to run.
 
 **If `forge != github`**: Report the branch name (and remote URL, if available via `git remote get-url origin`) instead of a PR URL. Print the timing table and optimization suggestions to the terminal only — do **not** attempt to post a PR comment. (Bitbucket `bkt pr comment` wiring is tracked in #10.)
 
@@ -302,11 +326,11 @@ COMMENT
 
 - **Never skip steps.** Run them in order from entry point to **done**.
 - **Every commit is NEW.** Never amend, rebase, or force-push.
-- **Feature branches only.** Never commit to master/main.
+- **Feature branches only.** Never commit to master/main. (Under `--no-git`, no commits happen at all, so this rule is moot — the agent leaves the user on whatever branch they started on.)
 - **Background for CI.** Run CI with `run_in_background: true`.
 - **No questions.** Don't use `AskUserQuestion` unless `--review` is active during the hickey pause.
 - **Never stop between steps.** After completing a step, immediately proceed to the next one.
-- **Complete the full workflow.** Implementing code is one step of many. The task is not done until a PR URL (on GitHub) or a pushed branch name (on non-GitHub forges) is reported.
+- **Complete the full workflow.** Implementing code is one step of many. The task is not done until a PR URL (GitHub), a pushed branch name (non-GitHub forges), or a working-tree summary (`--no-git`) is reported.
 - **Exhausted retries = halt.** If `ci` or `test` retries are exhausted, set status to `"failed"` and skip to **done**. Do not proceed to `update-pr` as if nothing happened.
 
 ARGUMENTS: $ARGUMENTS
