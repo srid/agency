@@ -1,6 +1,6 @@
 ---
 description: Do a task end-to-end — implement, PR, CI loop, ship
-argument-hint: "<github-issue-url | prompt> [--review] [--from <step>]"
+argument-hint: "<issue-url | prompt> [--review] [--from <step>]"
 ---
 
 # Do Workflow
@@ -11,7 +11,9 @@ Take a task and do it top-to-bottom: research, implement, open a draft PR, pass 
 
 ## Arguments
 
-Parse the arguments string: `[--review] [--from <step-id>] <task description or github-issue-url>`
+Parse the arguments string: `[--review] [--from <step-id>] <task description or issue-url>`
+
+The workflow is **forge-aware**: it auto-detects whether the repo lives on GitHub or elsewhere during the **sync** step (see Forge Detection). Only GitHub has an active code path today — Bitbucket/other forges gracefully skip PR-related steps. Tracking: [srid/agency#10](https://github.com/srid/agency/issues/10).
 
 - `--review`: Pause after **hickey** for user plan approval via `EnterPlanMode`/`ExitPlanMode`, then continue autonomously
 - `--from <step-id>`: Start from a specific step (see entry points below)
@@ -26,6 +28,7 @@ After each step's verification, write/update `.do-results.json`:
   "startedAt": "<ISO timestamp>",
   "active": true,
   "status": "running",
+  "forge": "github",
   "steps": [
     {
       "name": "sync",
@@ -37,6 +40,9 @@ After each step's verification, write/update `.do-results.json`:
   ]
 }
 ```
+
+- `forge` is set during **sync** (see Forge Detection below). One of `github`, `bitbucket`, `unknown`.
+- Step `status` is one of `passed`, `failed`, or `skipped`. A `skipped` step must include a `reason` field explaining why (e.g., `"non-github forge: bitbucket"`, `"no check command configured"`).
 
 - Set `active` to `true` when the workflow starts (**sync**), and `false` when it ends (**done**). The stop hook uses this field to block premature exits.
 - Set `status` to `"completed"` when **done** is reached, or `"failed"` if halted. This field is informational only.
@@ -57,7 +63,15 @@ Run: `git fetch origin && git remote set-head origin --auto`
 
 If current branch is behind origin, fast-forward with `git pull --ff-only`.
 
-**Verify**: git fetch ran without error.
+**Forge detection**: Inspect `git remote get-url origin` and classify:
+
+- URL contains `github.com` → `github`
+- URL contains `bitbucket.` (covers `bitbucket.org` and self-hosted Bitbucket Server, e.g. `bitbucket.juspay.net`) → `bitbucket`
+- Otherwise → `unknown`
+
+Record the result in `.do-results.json` as the top-level `forge` field. Subsequent steps branch on this value. **Only `github` has an active code path today.** Both `bitbucket` and `unknown` cause forge-dependent steps (PR creation, PR comments, PR edits, CI status) to skip gracefully. Bitbucket support is planned — see [srid/agency#10](https://github.com/srid/agency/issues/10).
+
+**Verify**: git fetch ran without error and `forge` is recorded.
 
 ---
 
@@ -65,7 +79,7 @@ If current branch is behind origin, fast-forward with `git pull --ff-only`.
 
 Research the task thoroughly before writing code.
 
-- If given a GitHub issue URL, fetch with `gh issue view`
+- If given a GitHub issue URL **and** `forge == github`, fetch with `gh issue view`. On non-GitHub forges, treat any issue-like URL as opaque context — use the prompt text as-is and do not attempt to fetch. (Bitbucket issue/Jira fetching is tracked in #10.)
 - Use Explore subagents, Grep, Glob, Read — whatever it takes to understand the problem
 - **Never assume** how something works. Read the code. Check the config.
 - If the prompt involves external tools/libraries, use WebSearch/WebFetch
@@ -100,14 +114,19 @@ Detect the default branch: `git symbolic-ref refs/remotes/origin/HEAD`
 
 1. Create a descriptive feature branch from `origin/<default>`
 2. Create an empty commit: `git commit --allow-empty -m "chore: open PR"`
-3. Push the branch
+3. Push the branch with `git push -u origin <branch>`
+
+**If `forge != github`**: Stop here. Record this step as `passed` with verification noting that the branch was created and pushed but PR creation was skipped due to the non-GitHub forge. Do **not** attempt PR creation or hickey PR comments. Move to **implement**. (Bitbucket PR creation via `bkt pr create` is tracked in #10.)
+
+**If `forge == github`**:
+
 4. Open a draft PR: `gh pr create --draft`
 
-**MANDATORY**: Load the `github-pr` skill (via Skill tool) BEFORE writing the PR title/body.
+**MANDATORY**: Load the `forge-pr` skill (via Skill tool) BEFORE writing the PR title/body.
 
 5. **Post hickey results**: If the hickey step produced findings with suggestions, post the full hickey analysis as a PR comment using `gh pr comment`. Use a `## Hickey Analysis` header. Skip this if hickey found no issues.
 
-**Verify**: On a feature branch (not master/main), draft PR exists (`gh pr view` succeeds). If hickey had findings, a PR comment exists.
+**Verify**: On a feature branch (not master/main). If `forge == github`: draft PR exists (`gh pr view` succeeds), and if hickey had findings, a PR comment exists. If `forge != github`: branch was pushed to origin.
 
 ---
 
@@ -195,7 +214,9 @@ Read the project's instructions to find the CI command and verification method. 
 
 **Never pipe CI to `tail`/`head`**, and **never append `2>&1`** — background mode captures both streams.
 
-**Verify**: Use the verification method described in the project's instructions (e.g., checking commit statuses, reading CI output). If no CI command is documented, skip with a note.
+CI commands are typically local (e.g. `nix flake check`, `just ci`, `make ci`) and are forge-independent — **run them regardless of forge**. Only the *verification method* may be forge-specific: if the project's instructions describe verification via `gh` commit-status checks and `forge != github`, fall back to exit code + command output for verification on non-GitHub forges, and note this in the step record. (Bitbucket `bkt pr checks` wiring is tracked in #10.)
+
+**Verify**: Use the verification method described in the project's instructions (e.g., checking commit statuses on GitHub, reading CI output elsewhere). If no CI command is documented, skip with a note.
 
 **On failure** — read logs or output to diagnose.
 
@@ -209,7 +230,9 @@ Read the project's instructions to find the CI command and verification method. 
 
 ### update-pr
 
-Re-check the PR title/body against current scope. If scope changed, update via `gh pr edit` per the `github-pr` skill.
+**If `forge != github`**: Skip with status `skipped` and reason `"non-<forge> forge: <forge>"`. (Bitbucket `bkt pr edit` wiring is tracked in #10.) Proceed to **done**.
+
+**If `forge == github`**: Re-check the PR title/body against current scope. If scope changed, update via `gh pr edit` per the `forge-pr` skill.
 
 **Verify**: PR title/body matches the delivered scope.
 
@@ -219,7 +242,7 @@ Re-check the PR title/body against current scope. If scope changed, update via `
 
 Present a summary of all steps with their verification status. If any step has a non-success status, retry it (max 3 attempts from done). If still failing after retries, set `status: "failed"`.
 
-`"completed"` requires **all steps passed**. No redefining "passed," no footnote caveats. Update `.do-results.json` accordingly.
+`"completed"` requires **all steps `passed`**, with one exception: a step with `status: "skipped"` whose `reason` begins with `"non-<forge> forge:"` (i.e., skipped because the detected forge isn't GitHub) counts toward completion. Any other skip reason (e.g., `"no check command configured"`) also does not block completion, since those are existing "skip with a note" cases recorded as `passed`. A `failed` step always blocks `"completed"`. No redefining "passed," no footnote caveats. Update `.do-results.json` accordingly.
 
 #### Timing summary
 
@@ -239,7 +262,9 @@ Be specific to this run's data, not generic advice.
 
 #### PR comment & wrap-up
 
-Report the PR URL. Then post the final step status table as a **PR comment** using `gh pr comment` with a markdown table including durations. Format:
+**If `forge != github`**: Report the branch name (and remote URL, if available via `git remote get-url origin`) instead of a PR URL. Print the timing table and optimization suggestions to the terminal only — do **not** attempt to post a PR comment. (Bitbucket `bkt pr comment` wiring is tracked in #10.)
+
+**If `forge == github`**: Report the PR URL. Then post the final step status table as a **PR comment** using `gh pr comment` with a markdown table including durations. Format:
 
 ```
 gh pr comment --body "$(cat <<'COMMENT'
@@ -281,7 +306,7 @@ COMMENT
 - **Background for CI.** Run CI with `run_in_background: true`.
 - **No questions.** Don't use `AskUserQuestion` unless `--review` is active during the hickey pause.
 - **Never stop between steps.** After completing a step, immediately proceed to the next one.
-- **Complete the full workflow.** Implementing code is one step of many. The task is not done until a PR URL is reported.
+- **Complete the full workflow.** Implementing code is one step of many. The task is not done until a PR URL (on GitHub) or a pushed branch name (on non-GitHub forges) is reported.
 - **Exhausted retries = halt.** If `ci` or `test` retries are exhausted, set status to `"failed"` and skip to **done**. Do not proceed to `update-pr` as if nothing happened.
 
 ARGUMENTS: $ARGUMENTS
