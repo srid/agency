@@ -42,7 +42,7 @@ For a more involved setup, see https://github.com/juspay/AI/pull/48
 
 ### 2. Tell `/do` about your project
 
-`/do` runs autonomously but needs to know your project's format, test, and CI commands. Without this, it skips those steps.
+`/do` runs autonomously but needs to know your project's check, format, test, and CI commands. Without this, it skips those steps.
 
 Create `.apm/instructions/workflow.instructions.md`:
 
@@ -51,6 +51,9 @@ Create `.apm/instructions/workflow.instructions.md`:
 description: Workflow commands for the /do pipeline
 applyTo: "**"
 ---
+
+## Check command
+`npm run typecheck` — fast static-correctness gate (e.g. `tsc --noEmit`, `cargo check`, `cabal build`, `mypy`).
 
 ## Format command
 `npm run lint:fix`
@@ -67,7 +70,7 @@ Keep `README.md` in sync with user-facing changes.
 
 Run `apm install` again to regenerate `.claude/`.
 
-The `/do` steps that read these instructions: **fmt**, **test**, **ci**, and **docs**. Each step looks for its heading in your project instructions and runs whatever command you specified. If a step finds nothing documented, it skips with a note.
+The `/do` steps that read these instructions: **check**, **fmt**, **test**, **ci**, and **docs**. Each step looks for its heading in your project instructions and runs whatever command you specified. If a step finds nothing documented, it skips with a note.
 
 ### 3. Add project-specific quality rules (optional)
 
