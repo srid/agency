@@ -58,6 +58,7 @@ Scan for known complecting patterns **and any additional complecting patterns fr
 | ORM | Object identity + relational model + query | Plain data + declarative queries |
 | Conditionals scattered across code | One decision braided across many sites | Rules, declarative policies, lookup tables |
 | Callbacks/closures over mutable state | Control flow + state + time | Streams, queues, immutable values |
+| Hand-rolled utility (tokenizer, parser, walker, normalizer, state machine, date/semver/URL helper, CLI arg parser) when a focused library solves the exact problem | *Scope decision* (how much to implement) with *implementation choice* (write it yourself) | Use the library. Hand-roll only when the library adds surface area you actively don't want, not when it would save you writing code you'd otherwise own. "Zero deps" is an easiness judgment dressed as a simplicity judgment — code you don't own is genuinely simpler than code you do own: it doesn't accumulate private test fixtures, it doesn't bitrot when requirements shift, and its edge cases are someone else's problem to fix. |
 
 When you find a catalog match, **do not dismiss it**. Design the concrete alternative first (Layer 6), then evaluate whether the current approach is actually justified. The proof burden is on the current code, not on you to prove it's wrong. Hickey: _"what matters are the artifacts not the authoring."_
 
