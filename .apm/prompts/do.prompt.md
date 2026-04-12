@@ -267,7 +267,9 @@ CI commands are typically local (e.g. `nix flake check`, `just ci`, `make ci`) a
 
 **If `forge == github`**: Re-check the PR title/body against current scope. If scope changed, update via `gh pr edit` per the `forge-pr` skill.
 
-**Verify**: PR title/body matches the delivered scope.
+**Surface deferred hickey findings**: If the hickey step produced any **"Defer `#issue`"** actions, append a `> **Deferred:** #123, #124` line to the PR body (via `gh pr edit`) so reviewers see the outstanding structural debt. These are easy to miss in a PR comment — the description is what reviewers actually read.
+
+**Verify**: PR title/body matches the delivered scope, and any deferred hickey issues are linked in the body.
 
 ---
 
