@@ -199,7 +199,7 @@ When `/code-police` asks about scope: **changes in the current branch/PR only**.
 
 **Cross-reference hickey actions**: After code-police completes, check every hickey finding marked **"Fix in this PR"**. For each one, verify the diff addresses it. An unaddressed "Fix in this PR" action is a police failure — fix it before proceeding, same as any other police violation. This closes the loop between hickey (which finds structural issues before implementation) and police (which verifies the implementation after).
 
-**For followup entry points**: Re-run hickey on the full cumulative diff (`origin/HEAD...HEAD`) — which now includes the implement step's changes — as part of police. The hickey-cumulative pre-step only scanned what was already committed before implement; the implement step added new code that hasn't been structurally reviewed. If new findings emerge that weren't in the pre-implement hickey-cumulative scan, they are police violations — fix them before proceeding.
+**For followup entry points**: Run hickey on the full cumulative diff (`origin/HEAD...HEAD`) as part of police. Followups skip the normal hickey step (jumping straight to implement), so this is the only structural review the cumulative PR changes get. It catches complexity that accumulates silently across multiple small followups — e.g., a component gaining 12 new props across 5 followups without any structural review catching the prop-drilling pattern. Any findings with **"Fix in this PR"** actions are police violations — fix them before proceeding.
 
 **Verify**: All 3 passes clean ("All clear") AND all hickey "Fix in this PR" actions addressed in the diff.
 **If violations found** (max 3 attempts): Fix the violations and re-invoke `/code-police`.
@@ -337,26 +337,10 @@ COMMENT
 | ID               | Starts at             | Use case                                |
 | ---------------- | --------------------- | --------------------------------------- |
 | `default`        | **sync**              | Full workflow from scratch              |
-| `followup`       | **hickey-cumulative** → **implement** | Additional changes on existing PR       |
+| `followup`       | **implement**         | Additional changes on existing PR       |
 | `post-implement` | **fmt**               | Skip research/impl, start at formatting |
 | `polish`         | **police**            | Just the quality gate                   |
 | `ci-only`        | **ci**                | Just run CI                             |
-
-### hickey-cumulative (followup-only pre-step)
-
-When `--from followup` is used, run a **lightweight hickey scan of the full PR diff** before proceeding to implement. This catches structural issues that accumulate across multiple followups on the same PR — each individual followup may be small and clean, but the cumulative effect can silently grow complexity (e.g., a component gaining 12 new props across 5 followups without any structural review catching the prop-drilling pattern — see juspay/kolu#483).
-
-**Procedure**:
-
-1. Detect the default branch: `git symbolic-ref refs/remotes/origin/HEAD`
-2. Generate the cumulative diff: `git diff origin/HEAD...HEAD`
-3. Invoke the `hickey` skill via the Skill tool, scoping it to the **cumulative diff** (not just the latest commit). Frame it as: "Review the cumulative changes in this PR for structural issues that may have emerged across multiple incremental changes."
-4. If hickey finds issues with **"Fix in this PR"** actions, note them — they become constraints on the upcoming implement step.
-5. If hickey finds no issues, proceed immediately.
-
-This is intentionally lighter than the full **hickey** step in the default entry point: it skips research/planning (the PR already has a direction) and focuses purely on whether the *accumulated* changes have drifted into accidental complexity. Think of it as a structural health check on the PR as a whole.
-
-**Verify**: Hickey scan completed on the cumulative diff. Any "Fix in this PR" actions are recorded for the implement step.
 
 ## Rules
 
