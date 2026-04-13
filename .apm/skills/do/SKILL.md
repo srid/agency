@@ -22,7 +22,7 @@ The workflow is **forge-aware**: it auto-detects whether the repo lives on GitHu
 
 ## Results Tracking
 
-After each step's verification, write/update `.do-results.json`:
+After each step's verification, record results via the `do-results` script. The script manages a JSON file with this schema:
 
 ```json
 {
@@ -50,7 +50,7 @@ After each step's verification, write/update `.do-results.json`:
 
 - `active` is a state enum, not a boolean. Set it to `"working"` when the workflow starts (**sync**), `"waiting"` when the agent is idle waiting for an external process (e.g., background CI), back to `"working"` when the external process returns, and `false` when the workflow ends (**done**). The stop hook uses this field: `"working"` blocks exits, `"waiting"` allows them (with a resume hint), `false` allows them.
 - Set `status` to `"completed"` when **done** is reached, or `"failed"` if halted. This field is informational only.
-- **Updating `.do-results.json`**: Use the `do-results` script (in this skill's directory) — never rewrite the entire file with the Write tool. This avoids the LLM regenerating the full (and growing) JSON on every step. Commands:
+- **Always use the `do-results` script** (in this skill's directory) — never write the JSON file directly. Commands:
   - **Initialize**: `do-results init <forge> <noGit>` — creates the skeleton with a timestamp
   - **Record a step**: `do-results step <name> <status> "<verification>" "<startedAt>" "<completedAt>" ["<reason>"]`
   - **Update top-level field**: `do-results set <field> <value>` (e.g., `set active waiting`, `set status completed`)
@@ -72,7 +72,7 @@ Rules:
 - **Flip to `in_progress` when a step starts, `completed` when it verifies.** One step `in_progress` at a time.
 - **Retries stay `in_progress`.** If `check`, `test`, or `ci` loop through their retry budget, do **not** bounce the task state back to `pending` or flicker it — leave it `in_progress` until the step finally verifies (or the retries exhaust and the workflow fails).
 - **`--from <step>` entry points**: still seed all 14 steps. Mark steps earlier than the entry point as `completed` immediately after seeding, so the checklist shows a consistent 14-item view regardless of entry point.
-- **Skipped steps** (e.g. `branch`/`commit`/`update-pr` under `--no-git`, or PR steps on non-GitHub forges) go straight to `completed`. The skip reason lives in `.do-results.json`; the task list just shows the step as done.
+- **Skipped steps** (e.g. `branch`/`commit`/`update-pr` under `--no-git`, or PR steps on non-GitHub forges) go straight to `completed`. The skip reason is recorded via `do-results step <name> skipped ... "<reason>"`; the task list just shows the step as done.
 - **Failure**: if retries exhaust and the workflow halts, leave the failing step `in_progress`, mark `done` `completed` after the failure summary is written, and run `do-results set status failed`.
 
 ## Steps
