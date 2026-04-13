@@ -5,7 +5,7 @@ argument-hint: "<issue-url | prompt> [--review] [--no-git] [--from <step>]"
 
 # Do Workflow
 
-Take a task and do it top-to-bottom: research, implement, open a draft PR, pass CI, refine, and ship. (Under `--no-git`, extend the working tree in place — no branch, commit, or PR.)
+Take a task and do it top-to-bottom: research, branch, implement, pass CI, open a PR, and ship. (Under `--no-git`, extend the working tree in place — no branch, commit, or PR.)
 
 **Fully autonomous.** Do NOT use `AskUserQuestion` at any point (unless `--review` is active during the planning pause). Make sensible default choices and keep moving.
 
@@ -138,20 +138,10 @@ Use `ExitPlanMode` to present the plan. Once approved, continue autonomously fro
 Detect the default branch: `git symbolic-ref refs/remotes/origin/HEAD`
 
 1. Create a descriptive feature branch from `origin/<default>`
-2. Create an empty commit: `git commit --allow-empty -m "chore: open PR"`
-3. Push the branch with `git push -u origin <branch>`
 
-**If `forge != github`**: Stop here. Record this step as `passed` with verification noting that the branch was created and pushed but PR creation was skipped due to the non-GitHub forge. Do **not** attempt PR creation or hickey PR comments. Move to **implement**. (Bitbucket PR creation via `bkt pr create` is tracked in #10.)
+That's it — just the local branch. No commit, no push, no PR. The branch is pushed later in **commit**, and the PR is created in **update-pr** after all changes are done.
 
-**If `forge == github`**:
-
-4. Open a draft PR: `gh pr create --draft`
-
-**MANDATORY**: Load the `forge-pr` skill (via Skill tool) BEFORE writing the PR title/body.
-
-5. **Post hickey results**: If the hickey step produced findings with suggestions, post the full hickey analysis as a PR comment using `gh pr comment`. Use a `## Hickey Analysis` header. Skip this if hickey found no issues.
-
-**Verify**: On a feature branch (not master/main). If `forge == github`: draft PR exists (`gh pr view` succeeds), and if hickey had findings, a PR comment exists. If `forge != github`: branch was pushed to origin.
+**Verify**: On a feature branch (not master/main).
 
 ---
 
@@ -220,7 +210,7 @@ If no format command is documented, skip this step with a note.
 
 **If `--no-git`**: Skip with status `skipped` and reason `"--no-git"`. Move to **test**. The working-tree changes stay uncommitted — that is the point.
 
-Create a NEW commit (never amend) with a conventional commit message. Push to the PR branch.
+Create a NEW commit (never amend) with a conventional commit message. Push to the feature branch with `git push -u origin <branch>` (sets upstream on first push).
 
 **Verify**: `git log -1` shows a new commit on the feature branch, and it's pushed to remote.
 
@@ -267,11 +257,25 @@ CI commands are typically local (e.g. `nix flake check`, `just ci`, `make ci`) a
 
 **If `forge != github`**: Skip with status `skipped` and reason `"non-<forge> forge: <forge>"`. (Bitbucket `bkt pr edit` wiring is tracked in #10.) Proceed to **done**.
 
-**If `forge == github`**: Re-check the PR title/body against current scope. If scope changed, update via `gh pr edit` per the `forge-pr` skill.
+**If `forge == github`**:
+
+Check whether a PR already exists for this branch (`gh pr view`).
+
+**If no PR exists** (first run, normal path):
+
+1. Create a draft PR: `gh pr create --draft`
+
+   **MANDATORY**: Load the `forge-pr` skill (via Skill tool) BEFORE writing the PR title/body.
+
+2. **Post hickey results**: If the hickey step produced findings with suggestions, post the full hickey analysis as a PR comment using `gh pr comment`. Use a `## Hickey Analysis` header. Skip this if hickey found no issues.
+
+**If PR already exists** (followup runs, `--from` entry points):
+
+Re-check the PR title/body against current scope. If scope changed, update via `gh pr edit` per the `forge-pr` skill.
 
 **Surface deferred hickey findings**: If the hickey step produced any **"Defer `#issue`"** actions, append a `> **Deferred:** #123, #124` line to the PR body (via `gh pr edit`) so reviewers see the outstanding structural debt. These are easy to miss in a PR comment — the description is what reviewers actually read.
 
-**Verify**: PR title/body matches the delivered scope, and any deferred hickey issues are linked in the body.
+**Verify**: Draft PR exists (`gh pr view` succeeds), PR title/body matches the delivered scope, hickey findings posted if any, and any deferred hickey issues are linked in the body.
 
 ---
 
