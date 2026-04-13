@@ -11,6 +11,13 @@
 
 set -euo pipefail
 
+# Resolve jq, falling back to nix if not on PATH
+if command -v jq &>/dev/null; then
+  JQ=jq
+else
+  JQ="nix run nixpkgs#jq --"
+fi
+
 FILE=".do-results.json"
 
 cmd="${1:?Usage: do-results <init|step|set|patch-last> ...}"
@@ -43,12 +50,12 @@ ENDJSON
     reason="${6:-}"
 
     if [ -n "$reason" ]; then
-      jq --arg n "$name" --arg s "$status" --arg v "$verif" \
+      $JQ --arg n "$name" --arg s "$status" --arg v "$verif" \
          --arg sa "$startedAt" --arg ca "$completedAt" --arg r "$reason" \
          '.steps += [{"name":$n,"status":$s,"verification":$v,"startedAt":$sa,"completedAt":$ca,"reason":$r}]' \
          "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
     else
-      jq --arg n "$name" --arg s "$status" --arg v "$verif" \
+      $JQ --arg n "$name" --arg s "$status" --arg v "$verif" \
          --arg sa "$startedAt" --arg ca "$completedAt" \
          '.steps += [{"name":$n,"status":$s,"verification":$v,"startedAt":$sa,"completedAt":$ca}]' \
          "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
@@ -60,16 +67,16 @@ ENDJSON
     value="${2:?value required}"
     # Handle booleans and strings
     if [ "$value" = "true" ] || [ "$value" = "false" ]; then
-      jq --arg f "$field" --argjson v "$value" '.[$f] = $v' "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
+      $JQ --arg f "$field" --argjson v "$value" '.[$f] = $v' "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
     else
-      jq --arg f "$field" --arg v "$value" '.[$f] = $v' "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
+      $JQ --arg f "$field" --arg v "$value" '.[$f] = $v' "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
     fi
     ;;
 
   patch-last)
     field="${1:?field required}"
     value="${2:?value required}"
-    jq --arg f "$field" --arg v "$value" '.steps[-1][$f] = $v' "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
+    $JQ --arg f "$field" --arg v "$value" '.steps[-1][$f] = $v' "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
     ;;
 
   *)
