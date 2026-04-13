@@ -65,7 +65,7 @@ Drive Claude Code's native todo UI via the `TaskCreate` tool so the user sees a 
 sync, research, hickey, branch, implement, check, docs, police, fmt, commit, test, ci, update-pr, done
 ```
 
-At each step boundary, update task state **alongside** the `.do-results.json` write — they are not redundant. The JSON file is machine state for the stop hook; the task list is the human-facing UI. Miss either and the workflow is inconsistent.
+At each step boundary, update task state **alongside** the `do-results` script call — they are not redundant. The JSON file is machine state for the stop hook; the task list is the human-facing UI. Miss either and the workflow is inconsistent.
 
 Rules:
 
@@ -73,7 +73,7 @@ Rules:
 - **Retries stay `in_progress`.** If `check`, `test`, or `ci` loop through their retry budget, do **not** bounce the task state back to `pending` or flicker it — leave it `in_progress` until the step finally verifies (or the retries exhaust and the workflow fails).
 - **`--from <step>` entry points**: still seed all 14 steps. Mark steps earlier than the entry point as `completed` immediately after seeding, so the checklist shows a consistent 14-item view regardless of entry point.
 - **Skipped steps** (e.g. `branch`/`commit`/`update-pr` under `--no-git`, or PR steps on non-GitHub forges) go straight to `completed`. The skip reason lives in `.do-results.json`; the task list just shows the step as done.
-- **Failure**: if retries exhaust and the workflow halts, leave the failing step `in_progress`, mark `done` `completed` after the failure summary is written, and set the JSON `status: "failed"`.
+- **Failure**: if retries exhaust and the workflow halts, leave the failing step `in_progress`, mark `done` `completed` after the failure summary is written, and run `do-results set status failed`.
 
 ## Steps
 
@@ -97,7 +97,7 @@ Do **not** pause or ask — just print and continue. The user's default-mode inv
 - URL contains `bitbucket.` (covers `bitbucket.org` and self-hosted Bitbucket Server, e.g. `bitbucket.juspay.net`) → `bitbucket`
 - Otherwise → `unknown`
 
-Record the result in `.do-results.json` as the top-level `forge` field. Subsequent steps branch on this value. **Only `github` has an active code path today.** Both `bitbucket` and `unknown` cause forge-dependent steps (PR creation, PR comments, PR edits, CI status) to skip gracefully. Bitbucket support is planned — see [srid/agency#10](https://github.com/srid/agency/issues/10).
+Record the result via `do-results set forge <value>`. Subsequent steps branch on this value. **Only `github` has an active code path today.** Both `bitbucket` and `unknown` cause forge-dependent steps (PR creation, PR comments, PR edits, CI status) to skip gracefully. Bitbucket support is planned — see [srid/agency#10](https://github.com/srid/agency/issues/10).
 
 **Verify**: git fetch ran without error, `forge` is recorded, and `noGit` is recorded.
 
@@ -240,7 +240,7 @@ Read the project's instructions to find the CI command and verification method. 
 
 **Never pipe CI to `tail`/`head`**, and **never append `2>&1`** — background mode captures both streams.
 
-**Active state**: Before waiting for background CI, set `active` to `"waiting"` in `.do-results.json`. When CI returns (success or failure), set it back to `"working"` before proceeding. This lets the stop hook allow graceful exits while the agent is idle.
+**Active state**: Before waiting for background CI, run `do-results set active waiting`. When CI returns (success or failure), run `do-results set active working` before proceeding. This lets the stop hook allow graceful exits while the agent is idle.
 
 CI commands are typically local (e.g. `nix flake check`, `just ci`, `make ci`) and are forge-independent — **run them regardless of forge**. Only the *verification method* may be forge-specific: if the project's instructions describe verification via `gh` commit-status checks and `forge != github`, fall back to exit code + command output for verification on non-GitHub forges, and note this in the step record. (Bitbucket `bkt pr checks` wiring is tracked in #10.)
 
@@ -293,7 +293,7 @@ Present a summary of all steps with their verification status. If any step has a
 1. A step `skipped` with `reason` beginning `"non-<forge> forge:"` (detected forge isn't GitHub).
 2. A step `skipped` with `reason` `"--no-git"` (user opted out of git operations).
 
-A `failed` step always blocks `"completed"`. No redefining "passed," no footnote caveats. Update `.do-results.json` accordingly.
+A `failed` step always blocks `"completed"`. No redefining "passed," no footnote caveats. Update via `do-results set status completed` or `do-results set status failed` accordingly.
 
 #### Timing summary
 
