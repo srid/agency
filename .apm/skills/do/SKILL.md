@@ -52,10 +52,10 @@ After each step's verification, record results via the `do-results` script. The 
 - Set `status` to `"completed"` when **done** is reached, or `"failed"` if halted. This field is informational only.
 - **Always use the `do-results` script** (in this skill's directory) — never write the JSON file directly. Commands:
   - **Initialize**: `do-results init <forge> <noGit>` — creates the skeleton with a timestamp
-  - **Record a step**: `do-results step <name> <status> "<verification>" "<startedAt>" "<completedAt>" ["<reason>"]`
+  - **Record a step**: `do-results step <name> <status> "<verification>" <startedAt> <completedAt> ["<reason>"]` — pass `now` for either timestamp to auto-generate the current UTC time
   - **Update top-level field**: `do-results set <field> <value>` (e.g., `set active waiting`, `set status completed`)
   - **Patch last step**: `do-results patch-last <field> <value>` (e.g., `patch-last completedAt "2026-..."`)
-- Capture timestamps via Bash: `date -u +%Y-%m-%dT%H:%M:%SZ`. Do not guess or hallucinate timestamps.
+- Pass `now` as a timestamp argument to `do-results step` — the script resolves it to UTC internally. Do not run `date` yourself or guess timestamps.
 
 ## Progress tracking
 
