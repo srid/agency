@@ -332,13 +332,29 @@ COMMENT
 
 ## Entry Points
 
-| ID               | Starts at     | Use case                                |
-| ---------------- | ------------- | --------------------------------------- |
-| `default`        | **sync**      | Full workflow from scratch              |
-| `followup`       | **implement** | Additional changes on existing PR       |
-| `post-implement` | **fmt**       | Skip research/impl, start at formatting |
-| `polish`         | **police**    | Just the quality gate                   |
-| `ci-only`        | **ci**        | Just run CI                             |
+| ID               | Starts at             | Use case                                |
+| ---------------- | --------------------- | --------------------------------------- |
+| `default`        | **sync**              | Full workflow from scratch              |
+| `followup`       | **hickey-cumulative** → **implement** | Additional changes on existing PR       |
+| `post-implement` | **fmt**               | Skip research/impl, start at formatting |
+| `polish`         | **police**            | Just the quality gate                   |
+| `ci-only`        | **ci**                | Just run CI                             |
+
+### hickey-cumulative (followup-only pre-step)
+
+When `--from followup` is used, run a **lightweight hickey scan of the full PR diff** before proceeding to implement. This catches structural issues that accumulate across multiple followups on the same PR — each individual followup may be small and clean, but the cumulative effect can silently grow complexity (e.g., a component gaining 12 new props across 5 followups without any structural review catching the prop-drilling pattern — see juspay/kolu#483).
+
+**Procedure**:
+
+1. Detect the default branch: `git symbolic-ref refs/remotes/origin/HEAD`
+2. Generate the cumulative diff: `git diff origin/HEAD...HEAD`
+3. Invoke the `hickey` skill via the Skill tool, scoping it to the **cumulative diff** (not just the latest commit). Frame it as: "Review the cumulative changes in this PR for structural issues that may have emerged across multiple incremental changes."
+4. If hickey finds issues with **"Fix in this PR"** actions, note them — they become constraints on the upcoming implement step.
+5. If hickey finds no issues, proceed immediately.
+
+This is intentionally lighter than the full **hickey** step in the default entry point: it skips research/planning (the PR already has a direction) and focuses purely on whether the *accumulated* changes have drifted into accidental complexity. Think of it as a structural health check on the PR as a whole.
+
+**Verify**: Hickey scan completed on the cumulative diff. Any "Fix in this PR" actions are recorded for the implement step.
 
 ## Rules
 
