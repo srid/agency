@@ -1,4 +1,5 @@
 ---
+name: do
 description: Do a task end-to-end — implement, PR, CI loop, ship
 argument-hint: "<issue-url | prompt> [--review] [--no-git] [--from <step>]"
 ---
@@ -49,7 +50,11 @@ After each step's verification, write/update `.do-results.json`:
 
 - `active` is a state enum, not a boolean. Set it to `"working"` when the workflow starts (**sync**), `"waiting"` when the agent is idle waiting for an external process (e.g., background CI), back to `"working"` when the external process returns, and `false` when the workflow ends (**done**). The stop hook uses this field: `"working"` blocks exits, `"waiting"` allows them (with a resume hint), `false` allows them.
 - Set `status` to `"completed"` when **done** is reached, or `"failed"` if halted. This field is informational only.
-- Use the Write tool to update the file after each step.
+- **Updating `.do-results.json`**: Use the `do-results` script (in this skill's directory) — never rewrite the entire file with the Write tool. This avoids the LLM regenerating the full (and growing) JSON on every step. Commands:
+  - **Initialize**: `do-results init <forge> <noGit>` — creates the skeleton with a timestamp
+  - **Record a step**: `do-results step <name> <status> "<verification>" "<startedAt>" "<completedAt>" ["<reason>"]`
+  - **Update top-level field**: `do-results set <field> <value>` (e.g., `set active waiting`, `set status completed`)
+  - **Patch last step**: `do-results patch-last <field> <value>` (e.g., `patch-last completedAt "2026-..."`)
 - Capture timestamps via Bash: `date -u +%Y-%m-%dT%H:%M:%SZ`. Do not guess or hallucinate timestamps.
 
 ## Progress tracking
