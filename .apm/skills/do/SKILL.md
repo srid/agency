@@ -62,7 +62,7 @@ After each step's verification, record results via the `do-results` script. The 
 Drive Claude Code's native todo UI via the `TaskCreate` tool so the user sees a live checklist of the workflow. At the start of **sync** (or the chosen `--from` entry point), seed a task list with all 14 step names in order:
 
 ```
-sync, research, hickey, branch, implement, check, docs, police, fmt, commit, test, ci, update-pr, done
+sync, research, hickey, branch, implement, check, docs, police, fmt, commit, test, update-pr, ci, done
 ```
 
 At each step boundary, update task state **alongside** the `do-results` script call — they are not redundant. The JSON file is machine state for the stop hook; the task list is the human-facing UI. Miss either and the workflow is inconsistent.
@@ -234,33 +234,11 @@ If changes are purely internal with no user-facing impact, unit tests may suffic
 
 ---
 
-### ci
-
-Read the project's instructions to find the CI command and verification method. Run CI with `run_in_background: true` if the command takes more than a few seconds.
-
-**Never pipe CI to `tail`/`head`**, and **never append `2>&1`** — background mode captures both streams.
-
-**Active state**: Before waiting for background CI, run `do-results set active waiting`. When CI returns (success or failure), run `do-results set active working` before proceeding. This lets the stop hook allow graceful exits while the agent is idle.
-
-CI commands are typically local (e.g. `nix flake check`, `just ci`, `make ci`) and are forge-independent — **run them regardless of forge**. Only the *verification method* may be forge-specific: if the project's instructions describe verification via `gh` commit-status checks and `forge != github`, fall back to exit code + command output for verification on non-GitHub forges, and note this in the step record. (Bitbucket `bkt pr checks` wiring is tracked in #10.)
-
-**Verify**: Use the verification method described in the project's instructions (e.g., checking commit statuses on GitHub, reading CI output elsewhere). If no CI command is documented, skip with a note. **The CI result must cover `HEAD`.** Before recording the step as passed, compare the commit SHA that CI ran against with `git rev-parse HEAD`. If they differ (e.g., a commit was pushed after CI started — whether from a fix retry, user-requested changes, or any other source), re-run CI against the current HEAD. CI passing on a stale commit does not satisfy verification.
-
-**On failure** — read logs or output to diagnose.
-
-**Flaky vs real**: A test is flaky only if it **passes on a subsequent retry**. Consistent failure = real bug. Before retrying, read the failing test code to judge if the failure pattern is inherently flaky (race conditions, timing, async waits).
-
-**If flaky** (max 3 retries): Retry just the failing step.
-**If real bug** (max 5 fixes): Fix → **fmt** → **commit** → retry CI. Under `--no-git`, drop **commit** from the loop (Fix → **fmt** → retry CI).
-**If retries exhausted**: Set workflow status to `"failed"`, skip to **done**.
-
----
-
 ### update-pr
 
-**If `--no-git`**: Skip with status `skipped` and reason `"--no-git"`. There is no PR to update. Proceed to **done**.
+**If `--no-git`**: Skip with status `skipped` and reason `"--no-git"`. There is no PR to update. Proceed to **ci**.
 
-**If `forge != github`**: Skip with status `skipped` and reason `"non-<forge> forge: <forge>"`. (Bitbucket `bkt pr edit` wiring is tracked in #10.) Proceed to **done**.
+**If `forge != github`**: Skip with status `skipped` and reason `"non-<forge> forge: <forge>"`. (Bitbucket `bkt pr edit` wiring is tracked in #10.) Proceed to **ci**.
 
 **If `forge == github`**:
 
@@ -280,7 +258,31 @@ Re-check the PR title/body against current scope. If scope changed, update via `
 
 **Surface deferred hickey findings**: If the hickey step produced any **"Defer `#issue`"** actions, append a `> **Deferred:** #123, #124` line to the PR body (via `gh pr edit`) so reviewers see the outstanding structural debt. These are easy to miss in a PR comment — the description is what reviewers actually read.
 
+**Why this runs before `ci`**: The draft PR is the canonical home for CI status. Opening it before CI runs means CI checks land directly on the PR, reviewers see the run history as it happens, and a failing run doesn't leave an orphaned branch with red statuses and no PR to explain them. If retries exhaust in **ci**, the draft PR remains as the artifact of the failed attempt — visible, reviewable, and ready to resume via `--from ci-only`.
+
 **Verify**: Draft PR exists (`gh pr view` succeeds), PR title/body matches the delivered scope, hickey findings posted if any, and any deferred hickey issues are linked in the body.
+
+---
+
+### ci
+
+Read the project's instructions to find the CI command and verification method. Run CI with `run_in_background: true` if the command takes more than a few seconds.
+
+**Never pipe CI to `tail`/`head`**, and **never append `2>&1`** — background mode captures both streams.
+
+**Active state**: Before waiting for background CI, run `do-results set active waiting`. When CI returns (success or failure), run `do-results set active working` before proceeding. This lets the stop hook allow graceful exits while the agent is idle.
+
+CI commands are typically local (e.g. `nix flake check`, `just ci`, `make ci`) and are forge-independent — **run them regardless of forge**. Only the *verification method* may be forge-specific: if the project's instructions describe verification via `gh` commit-status checks and `forge != github`, fall back to exit code + command output for verification on non-GitHub forges, and note this in the step record. (Bitbucket `bkt pr checks` wiring is tracked in #10.)
+
+**Verify**: Use the verification method described in the project's instructions (e.g., checking commit statuses on GitHub, reading CI output elsewhere). If no CI command is documented, skip with a note. **The CI result must cover `HEAD`.** Before recording the step as passed, compare the commit SHA that CI ran against with `git rev-parse HEAD`. If they differ (e.g., a commit was pushed after CI started — whether from a fix retry, user-requested changes, or any other source), re-run CI against the current HEAD. CI passing on a stale commit does not satisfy verification.
+
+**On failure** — read logs or output to diagnose.
+
+**Flaky vs real**: A test is flaky only if it **passes on a subsequent retry**. Consistent failure = real bug. Before retrying, read the failing test code to judge if the failure pattern is inherently flaky (race conditions, timing, async waits).
+
+**If flaky** (max 3 retries): Retry just the failing step.
+**If real bug** (max 5 fixes): Fix → **fmt** → **commit** → retry CI. Under `--no-git`, drop **commit** from the loop (Fix → **fmt** → retry CI). The draft PR already exists — subsequent pushes update it automatically, no re-run of **update-pr** needed.
+**If retries exhausted**: Set workflow status to `"failed"`, skip to **done**. The draft PR stays open as the record of the failed attempt.
 
 ---
 
@@ -360,6 +362,6 @@ COMMENT
 - **No questions.** Don't use `AskUserQuestion` unless `--review` is active during the hickey pause.
 - **Never stop between steps.** After completing a step, immediately proceed to the next one.
 - **Complete the full workflow.** Implementing code is one step of many. The task is not done until a PR URL (GitHub), a pushed branch name (non-GitHub forges), or a working-tree summary (`--no-git`) is reported.
-- **Exhausted retries = halt.** If `ci` or `test` retries are exhausted, set status to `"failed"` and skip to **done**. Do not proceed to `update-pr` as if nothing happened.
+- **Exhausted retries = halt.** If `ci` or `test` retries are exhausted, set status to `"failed"` and skip to **done**. On `ci` failure the draft PR (opened in the preceding **update-pr** step) stays open as the record of the failed attempt — do not close, undraft, or otherwise mutate it.
 
 ARGUMENTS: $ARGUMENTS
