@@ -1,0 +1,58 @@
+---
+name: lowy
+description: Evaluate architecture and module boundaries for volatility-based decomposition using Juval Lowy's framework (from "Righting Software", building on Parnas 1972). Use when reviewing module splits, service boundaries, new abstractions, or any decomposition decision. Trigger on phrases like "where should this boundary be", "how to split this", "module boundaries", "encapsulate change", "volatility", or references to Lowy, Parnas, or "Righting Software". Complements /hickey (interleaved concerns) with a different lens (change encapsulation).
+context: fork
+agent: Explore
+---
+
+# Lowy: Volatility-Based Decomposition Review
+
+Evaluate module boundaries and decomposition decisions using Juval Lowy's volatility-based decomposition framework. The core question: **do your boundaries encapsulate axes of change, or do they just group related functionality?**
+
+Source: Juval Lowy, *Righting Software* (2019), building on David Parnas, "On the Criteria to Be Used in Decomposing Systems into Modules" (1972).
+
+## Key Idea
+
+**Functional decomposition** groups code by what it does (UserService, PaymentController, AuthModule). **Volatility-based decomposition** groups code by what is likely to *change* — and encapsulates each axis of change behind a stable interface.
+
+Lowy's electricity analogy: a house's power supply has enormous volatility (AC/DC, 110v/220v, 50/60Hz, solar/grid/generator, wire gauges). All of it is encapsulated behind a receptacle. Without that encapsulation, you'd need an oscilloscope every time you plugged something in. The receptacle is the stable interface; the volatility behind it can change without affecting consumers.
+
+**Functional decomposition maximizes the blast radius of change.** When boundaries track functionality rather than volatility, a single change cuts across multiple modules. Volatility-based decomposition contains the grenade in the vault.
+
+## The Evaluation
+
+For every module boundary, service split, or new abstraction in the code under review:
+
+### 1. Name the Volatility
+
+What is likely to change behind this boundary? Be specific — not "requirements might change" but "the payment provider, the auth protocol, the notification channel." If you can't name concrete axes of change, the boundary may be arbitrary.
+
+### 2. Functional vs. Volatility Boundary
+
+Does this boundary exist because the code *does something different* (functional), or because what's behind it *changes independently* (volatility)? Functional boundaries look clean on day one but fracture under change. A `UserService` that groups all user operations is functional decomposition — the volatility of auth, profile data, and notification preferences are unrelated axes of change jammed behind one boundary.
+
+### 3. Change Blast Radius
+
+For a plausible change scenario (new provider, new format, new rule), trace how many modules would need to be modified. If the change leaks across boundaries, the decomposition is functional, not volatility-based.
+
+### 4. Interface Stability
+
+Is the interface between modules stable under the changes the module encapsulates? The receptacle doesn't change when you switch from grid to solar. If the interface must change when the encapsulated volatility changes, the abstraction is leaking.
+
+### 5. Reuse Signal
+
+Lowy: volatility-based building blocks are reusable because they encapsulate one axis of change. If a module can only be used in one context, it may be encapsulating functionality rather than volatility.
+
+## Output Format
+
+1. **Boundaries examined** — List each module boundary or decomposition decision reviewed.
+2. **Volatility map** — For each boundary: what volatility it encapsulates (or fails to).
+3. **Findings** — Boundaries that track functionality rather than volatility, with blast-radius analysis.
+4. **Simplifications** — Concrete restructuring to align boundaries with axes of change.
+5. **Actions** — One entry per finding: **Fix in this PR** or **Defer `#<issue>`**.
+
+No findings → "No actions." Findings without actions = incomplete review.
+
+## Relationship to /hickey
+
+This skill and `/hickey` are complementary lenses. Hickey asks "are independent concerns interleaved?" Lowy asks "do boundaries encapsulate axes of change?" Run both on architectural decisions for full coverage.
