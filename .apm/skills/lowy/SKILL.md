@@ -9,7 +9,7 @@ agent: Explore
 
 Evaluate module boundaries and decomposition decisions using Juval Lowy's volatility-based decomposition framework. The core question: **do your boundaries encapsulate axes of change, or do they just group related functionality?**
 
-Source: Juval Lowy, *Righting Software* (2019), building on David Parnas, "On the Criteria to Be Used in Decomposing Systems into Modules" (1972).
+Source: Juval Lowy, [*Righting Software*](https://rightingsoftware.org/) (2019), building on David Parnas, ["On the Criteria to Be Used in Decomposing Systems into Modules"](https://www.win.tue.nl/~wstomv/edu/2ip30/references/criteria_for_modularization.pdf) (1972). See also: [Volatility-Based Decomposition](https://www.informit.com/articles/article.aspx?p=2995357&seqNum=2) (book excerpt).
 
 ## Key Idea
 
