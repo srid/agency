@@ -29,21 +29,34 @@ Agency[^agency] is a near-autonomous workflow for coding agents, packaged as an 
 
 ## Usage
 
+### 0. Create `apm.yml`
+
+```
+name: yourproject
+version: 1.0.0
+type: hybrid
+
+dependencies:
+  apm:
+    - srid/agency#master
+    - juspay/skills/skills/nix-justfile
+```
+
 ### 1. Install
 
 With [Nix](https://nixos.asia/en/install) (no install needed):
 
 ```bash
-nix run github:numtide/llm-agents.nix#apm -- install srid/agency#master -t claude
+nix run github:numtide/llm-agents.nix#apm -- install -t claude
 ```
 
 Or via [uvx](https://docs.astral.sh/uv/guides/tools/):
 
 ```bash
-uvx --from apm-cli apm install srid/agency#master -t claude
+uvx --from apm-cli apm install -t claude
 ```
 
-This creates `apm.yml`, generates `.claude/` with agency's commands, skills, and hooks, and adds `apm_modules/` to `.gitignore`. You now have `/do` and `/talk` available in Claude Code.
+This generates `.claude/` with agency's commands, skills, and hooks, and adds `apm_modules/` to `.gitignore`. You now have `/do` and `/talk` available in Claude Code.
 
 For a more involved setup, see https://github.com/juspay/AI
 
