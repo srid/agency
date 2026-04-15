@@ -6,9 +6,11 @@ Agency[^agency] is a near-autonomous workflow for coding agents, packaged as an 
 
 ### Commands
 
+`/talk` and `/do` are typically what you need mostly.
+
 - **`/do`** — Full autonomous pipeline: research → hickey → branch → implement → CI → ship. Hands-off from start to PR.
-- **`/ralph`** — Iterative measurement-driven improvement loop. Measure, profile, mutate, re-measure, commit. Works for performance, bundle size, complexity — anything quantifiable.
 - **`/talk`** — Conversation-only mode. Discuss ideas, explore approaches, read code — no file changes allowed.
+- **`/ralph`** — Iterative measurement-driven improvement loop. Measure, profile, mutate, re-measure, commit. Works for performance, bundle size, complexity — anything quantifiable.
 
 ### Skills
 
