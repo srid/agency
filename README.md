@@ -7,6 +7,7 @@ Near-autonomous workflow for coding agents, packaged as an [APM](https://github.
 ### Commands
 
 - **`/do`** — Full autonomous pipeline: research → hickey → branch → implement → CI → ship. Hands-off from start to PR.
+- **`/ralph`** — Iterative measurement-driven improvement loop. Measure, profile, mutate, re-measure, commit. Works for performance, bundle size, complexity — anything quantifiable.
 - **`/talk`** — Conversation-only mode. Discuss ideas, explore approaches, read code — no file changes allowed.
 
 ### Skills
@@ -15,6 +16,7 @@ Near-autonomous workflow for coding agents, packaged as an [APM](https://github.
 - **`code-police`** — Three-pass quality gate: rule checklist, fact-check for logic errors, and elegance review with iterative refinement.
 - **`fact-check`** — Standalone correctness audit: finds silent error swallowing, unjustified fallbacks, wishful thinking, and logic errors. Prosecutor posture — no self-dismissals.
 - **`elegance`** — Iterative elegance pass: understand, research, apply, verify. Runs 3 iterations by default, each building on the last.
+- **`ralph`** — The measurement loop engine behind `/ralph`. Profiles a quantifiable metric, finds the biggest contributor, applies a targeted mutation, and re-measures. Only commits changes that demonstrably move the needle.
 - **`forge-pr`** — Writes PR titles and descriptions that devs actually want to read. Paragraphs over bullet lists, substance over boilerplate. GitHub today; Bitbucket support tracked in [#10](https://github.com/srid/agency/issues/10).
 
 ### Hooks & Instructions
