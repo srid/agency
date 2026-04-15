@@ -43,7 +43,7 @@ uvx --from apm-cli apm install srid/agency#master -t claude
 
 This creates `apm.yml`, generates `.claude/` with agency's commands, skills, and hooks, and adds `apm_modules/` to `.gitignore`. You now have `/do` and `/talk` available in Claude Code.
 
-For a more involved setup, see https://github.com/juspay/AI/pull/48
+For a more involved setup, see https://github.com/juspay/AI
 
 ### 2. Tell `/do` about your project
 
