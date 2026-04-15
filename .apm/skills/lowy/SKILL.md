@@ -43,13 +43,34 @@ Is the interface between modules stable under the changes the module encapsulate
 
 Lowy: volatility-based building blocks are reusable because they encapsulate one axis of change. If a module can only be used in one context, it may be encapsulating functionality rather than volatility.
 
+## Fact-Check Your Own Evaluation
+
+After completing all steps, **invoke `/fact-check` on your own output**. The fact-check catches:
+
+- Findings you talked yourself out of ("However, this is a reasonable grouping..." / "acceptable for now")
+- Functional boundaries rationalized as volatility boundaries without naming the concrete axis of change
+- "Low blast radius" used as a synonym for "ignore"
+- Change scenarios you didn't actually trace through the code
+
+**Flag these phrase shapes** — they mean you stopped one step early:
+
+- _"This boundary groups related functionality but could also be seen as encapsulating volatility"_ — name the volatility or it's functional decomposition. "Could be seen as" is not an axis of change.
+- _"The interface would only need minor changes"_ — minor interface changes are still leaking. The receptacle doesn't change at all.
+- _"This module is only used in one place, but that's fine for now"_ — single-use is the reuse signal firing. Investigate.
+- _"The boundary follows the framework's conventions"_ — framework conventions are functional decomposition by default. Convention is not volatility analysis.
+- _"This could theoretically change independently"_ — theoretical independence without a concrete change scenario is wishful thinking.
+- _"Out of scope for this PR" / "pre-existing"_ — process judgment, not a volatility judgment. Defer with an issue link or fix it.
+
+If fact-check finds issues, revise before presenting to the user.
+
 ## Output Format
 
 1. **Boundaries examined** — List each module boundary or decomposition decision reviewed.
 2. **Volatility map** — For each boundary: what volatility it encapsulates (or fails to).
 3. **Findings** — Boundaries that track functionality rather than volatility, with blast-radius analysis.
 4. **Simplifications** — Concrete restructuring to align boundaries with axes of change.
-5. **Actions** — One entry per finding: **Fix in this PR** or **Defer `#<issue>`**.
+5. **Fact-check result** — Output of `/fact-check` on this evaluation, including the phrase-shape check.
+6. **Actions** — One entry per finding: **Fix in this PR** or **Defer `#<issue>`**. Every finding must appear here — including those labeled "pre-existing" or "orthogonal". A finding that never reaches this section has been dismissed, not deferred.
 
 No findings → "No actions." Findings without actions = incomplete review.
 
