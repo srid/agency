@@ -44,15 +44,10 @@ dependencies:
 
 ### 1. Install
 
-With [Nix](https://nixos.asia/en/install) (no install needed):
-
-```bash
-nix run github:numtide/llm-agents.nix#apm -- install -t claude
-```
-
 Or via [uvx](https://docs.astral.sh/uv/guides/tools/):
 
 ```bash
+# Use `nix shell nixpkgs#uv -c uvx` if you don't have uvx
 uvx --from apm-cli apm install -t claude
 ```
 
