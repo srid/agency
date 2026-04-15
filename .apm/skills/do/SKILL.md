@@ -118,7 +118,7 @@ Research the task thoroughly before writing code.
 
 ### hickey
 
-Evaluate the planned approach for structural simplicity. Invoke the `hickey` skill via the Skill tool, then invoke the `lowy` skill.
+Evaluate the planned approach for structural simplicity. Invoke the `hickey` and `lowy` skills **in parallel** (two Skill tool calls in a single message) — the skills are independent and neither needs the other's output.
 
 - **hickey**: Identify concerns. Check for complecting. Suggest simplifications.
 - **lowy**: Check that module boundaries encapsulate axes of change, not just functionality.

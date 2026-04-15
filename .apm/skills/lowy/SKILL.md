@@ -27,6 +27,8 @@ For every module boundary, service split, or new abstraction in the code under r
 
 What is likely to change behind this boundary? Be specific — not "requirements might change" but "the payment provider, the auth protocol, the notification channel." If you can't name concrete axes of change, the boundary may be arbitrary.
 
+**Speculative volatility is not volatility.** A change scenario counts only if it has happened before, is on a roadmap, or is a near-certain consequence of the domain (e.g. "payment providers change" in e-commerce). "What if we swap color spaces" in an app that has never swapped color spaces is speculation, not an axis of change. Lowy's framework is about *observed* or *plausible* volatility — designing for hypothetical change is over-engineering, not encapsulation.
+
 ### 2. Functional vs. Volatility Boundary
 
 Does this boundary exist because the code *does something different* (functional), or because what's behind it *changes independently* (volatility)? Functional boundaries look clean on day one but fracture under change. A `UserService` that groups all user operations is functional decomposition — the volatility of auth, profile data, and notification preferences are unrelated axes of change jammed behind one boundary.
@@ -77,3 +79,9 @@ No findings → "No actions." Findings without actions = incomplete review.
 ## Relationship to /hickey
 
 This skill and `/hickey` are complementary lenses. Hickey asks "are independent concerns interleaved?" Lowy asks "do boundaries encapsulate axes of change?" Run both on architectural decisions for full coverage.
+
+### When Hickey and Lowy Disagree
+
+The two lenses can produce conflicting recommendations. Lowy may say "merge these — shared volatility is duplicated across both" while Hickey says "keep them separate — a mode flag would complect configuration with implementation." Neither lens is wrong; they're optimizing for different things.
+
+The resolution pattern: **unify the volatile axis without complecting the strategies.** Typically this means a wrapper or shared module that encapsulates the volatile part (satisfying Lowy) while the distinct strategies remain private and uncomplected (satisfying Hickey). If merging for blast-radius reduction requires a mode flag, conditional branching, or type-switching — that's complecting. Find the layer where unification is mechanical (a shared function, a common interface, a single config source) rather than conditional.
