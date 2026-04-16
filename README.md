@@ -126,24 +126,24 @@ applyTo: "packages/client/src/**"
 | `createEffect` that writes to signals (effect-as-state-machine) | When + what + control flow | `createMemo` for derived values; `on()` for explicit dependency tracking |
 ```
 
-**Lowy (volatility axes).** Consumed in the "Name the Volatility" step. File name is conventionally `lowy-axes.instructions.md`. Schema:
+**Lowy (areas of volatility).** Consumed in the "Name the Volatility" step. File name is conventionally `lowy-volatilities.instructions.md`. Schema is loosely based on Lowy's TradeMe enumeration in *Righting Software* Ch. 5:
 
 ```markdown
 ---
-description: Project-specific volatility axes
+description: Project-declared areas of volatility
 applyTo: "packages/client/src/**"
 ---
 
-## Volatility Axes
+## Areas of Volatility
 
-| Axis | What changes | Why volatile | Expected encapsulation |
-|------|--------------|--------------|-----------------------|
-| Reactive-owner lifecycle | Ownership/cleanup conventions across SolidJS versions | Framework-controlled; patterns shift between releases | Behind a `createSubscription`-like seam or a single root; never hand-rolled per component |
+| Area of volatility | What changes | Why volatile (likelihood × effect) | Expected encapsulation |
+|--------------------|--------------|------------------------------------|------------------------|
+| Server-pushed state delivery | Transport for live server state (polling RPC → WebSocket → oRPC async iterables → future SSE/RSC) | Likelihood: already migrated twice in this codebase; Effect: every consumer of live state would need rewriting if the transport leaked into components | Behind the `createSubscription` seam — consumers see a SolidJS-signal-shaped API regardless of transport |
 ```
 
-Rows are not findings — they declare where the project already knows change lives. The subagent checks whether the boundaries under review actually encapsulate those axes.
+Each row must pass Lowy's variable-vs-volatile bar — *state what the volatility is, why it is volatile, and what risk it poses in likelihood and effect*. Rows are not findings; they are surviving candidates from the project's own screen. The subagent re-applies the bar, challenges rows that fail it, and audits whether boundaries under review actually encapsulate the surviving volatilities (adapting Lowy's Manager/Engine/Resource targeting to whatever encapsulation vocabulary fits the stack — `createSubscription` seams, hook modules, etc.).
 
-See [Kolu's `agents/.apm/instructions/hickey-catalog.instructions.md`](https://github.com/juspay/kolu/blob/master/agents/.apm/instructions/hickey-catalog.instructions.md) for a worked example.
+See [Kolu's `agents/.apm/instructions/hickey-catalog.instructions.md`](https://github.com/juspay/kolu/blob/master/agents/.apm/instructions/hickey-catalog.instructions.md) for a worked hickey-side example.
 
 ### Putting it together
 
