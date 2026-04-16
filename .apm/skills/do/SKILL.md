@@ -146,20 +146,20 @@ After the user confirms, continue autonomously from **hickey+lowy** (or the next
 
 ### hickey + lowy
 
-Spawn `/hickey` and `/lowy` as two **parallel `Agent` subagents** (`subagent_type: "Explore"`). Do NOT use the `Skill` tool for this step — `Skill` invocations serialize on the main conversation loop, so two back-to-back `Skill` calls run one after the other even when issued in the same response. `Agent` subagents run in isolated contexts and genuinely execute concurrently, cutting this step's wall-clock time roughly in half. Offloading their analysis into forked contexts also keeps the main context lean for the downstream implement/police/ci steps.
+Invoke `hickey` and `lowy` as two **parallel Claude Code sub-agents** via the `Agent` tool (`subagent_type: "hickey"` and `subagent_type: "lowy"`). Do NOT use the `Skill` tool for this step — `Skill` invocations serialize on the main conversation loop, so two back-to-back `Skill` calls run one after the other even when issued in the same response. Dedicated sub-agents run in isolated contexts and genuinely execute concurrently, cutting this step's wall-clock time roughly in half. Offloading their analysis into forked contexts also keeps the main context lean for the downstream implement/police/ci steps.
 
 <use_parallel_tool_calls>
-In a single response, make exactly two `Agent` tool calls — one for hickey, one for lowy. Do not include any other tool calls or text in that response.
+In a single response, make exactly two `Agent` tool calls — one with `subagent_type: "hickey"`, one with `subagent_type: "lowy"`. Do not include any other tool calls or text in that response.
 </use_parallel_tool_calls>
 
-Each `Agent` prompt must be self-contained (subagents do not inherit this conversation's context). Brief each one with:
+Each `Agent` prompt must be self-contained (sub-agents do not inherit this conversation's context). Brief each one with:
 
 - The full task prompt plus anything relevant that **research** uncovered (file paths, planned approach, key constraints)
-- A pointer to the skill file (`.apm/skills/hickey/SKILL.md` or `.apm/skills/lowy/SKILL.md`) with an instruction to read it and follow its methodology exactly
 - The scope to analyze — planned changes for the default entry point; the cumulative diff `origin/HEAD...HEAD` for `followup` entries
-- An instruction to return findings in the Output Format that skill specifies
 
-After both subagents return, synthesize their findings and revise the approach to eliminate accidental complexity before proceeding.
+The sub-agent already knows to read its skill file and follow that methodology; don't re-state it in the prompt.
+
+After both sub-agents return, synthesize their findings and revise the approach to eliminate accidental complexity before proceeding.
 
 **If `--review`**: Use `EnterPlanMode` to present the revised approach for user approval:
 
