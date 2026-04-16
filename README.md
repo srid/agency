@@ -14,8 +14,8 @@ Agency[^agency] is a near-autonomous workflow for coding agents, packaged as an 
 
 ### Skills
 
-- **`hickey`** — Structural simplicity evaluation using [Rich Hickey's "Simple Made Easy"](https://www.infoq.com/presentations/Simple-Made-Easy/) framework. Catches accidental complexity that tests can't.
-- **`lowy`** — Volatility-based decomposition review using [Juval Lowy's framework](https://www.informit.com/articles/article.aspx?p=2995357&seqNum=2) (from [*Righting Software*](https://rightingsoftware.org/), building on [Parnas 1972](https://www.win.tue.nl/~wstomv/edu/2ip30/references/criteria_for_modularization.pdf)). Checks that module boundaries encapsulate axes of change, not just functionality.
+- **`hickey`** — Structural simplicity evaluation using [Rich Hickey's "Simple Made Easy"](https://www.infoq.com/presentations/Simple-Made-Easy/) framework. Catches accidental complexity that tests can't. Also ships as a sub-agent (`@agent-hickey`) so `/do` and `/talk` can run it in parallel with `lowy` without serializing on the main conversation loop.
+- **`lowy`** — Volatility-based decomposition review using [Juval Lowy's framework](https://www.informit.com/articles/article.aspx?p=2995357&seqNum=2) (from [*Righting Software*](https://rightingsoftware.org/), building on [Parnas 1972](https://www.win.tue.nl/~wstomv/edu/2ip30/references/criteria_for_modularization.pdf)). Checks that module boundaries encapsulate axes of change, not just functionality. Also ships as a sub-agent (`@agent-lowy`).
 - **`code-police`** — Three-pass quality gate: rule checklist, fact-check for logic errors, and elegance review with iterative refinement.
 - **`fact-check`** — Standalone correctness audit: finds silent error swallowing, unjustified fallbacks, wishful thinking, and logic errors. Prosecutor posture — no self-dismissals.
 - **`elegance`** — Iterative elegance pass: understand, research, apply, verify. Runs 3 iterations by default, each building on the last.
@@ -113,6 +113,9 @@ Your project's `.apm/` directory ends up looking something like:
 
 ```
 .apm/
+  agents/                           # Claude Code sub-agents (thin wrappers over skills)
+    hickey.md
+    lowy.md
   instructions/
     workflow.instructions.md        # fmt, test, ci, docs commands
     code-police-rules.instructions.md  # project-specific quality rules
