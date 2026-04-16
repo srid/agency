@@ -107,6 +107,44 @@ Data fetching must go through server functions, never direct API calls from comp
 
 These get checked alongside the built-in rules during the police pass.
 
+### 4. Add project-specific structural review vectors (optional)
+
+`hickey` and `lowy` ship with generic catalogs. Extend them with project-specific vectors by dropping an `.apm/instructions/*.instructions.md` file with an `applyTo:` glob. APM generates a `paths:`-scoped rule under `.claude/rules/`, and Claude Code auto-surfaces it as a system-reminder to the hickey/lowy subagent the moment it reads a matching file — no `/do` plumbing, no prompt wiring.
+
+**Hickey (complecting patterns).** Extends the Layer 4 catalog. File name is conventionally `hickey-catalog.instructions.md`. Schema:
+
+```markdown
+---
+description: Project-specific complecting patterns
+applyTo: "packages/client/src/**"
+---
+
+## Additional Complecting Patterns
+
+| Construct | What it complects | Simpler alternative |
+|-----------|-------------------|---------------------|
+| `createEffect` that writes to signals (effect-as-state-machine) | When + what + control flow | `createMemo` for derived values; `on()` for explicit dependency tracking |
+```
+
+**Lowy (areas of volatility).** Consumed in the "Name the Volatility" step. File name is conventionally `lowy-volatilities.instructions.md`. Schema is loosely based on Lowy's TradeMe enumeration in *Righting Software* Ch. 5:
+
+```markdown
+---
+description: Project-declared areas of volatility
+applyTo: "packages/client/src/**"
+---
+
+## Areas of Volatility
+
+| Area of volatility | What changes | Why volatile (likelihood × effect) | Expected encapsulation |
+|--------------------|--------------|------------------------------------|------------------------|
+| Server-pushed state delivery | Transport for live server state (polling RPC → WebSocket → oRPC async iterables → future SSE/RSC) | Likelihood: already migrated twice in this codebase; Effect: every consumer of live state would need rewriting if the transport leaked into components | Behind the `createSubscription` seam — consumers see a SolidJS-signal-shaped API regardless of transport |
+```
+
+Each row must pass Lowy's variable-vs-volatile bar — *state what the volatility is, why it is volatile, and what risk it poses in likelihood and effect*. Rows are not findings; they are surviving candidates from the project's own screen. The subagent re-applies the bar, challenges rows that fail it, and audits whether boundaries under review actually encapsulate the surviving volatilities (adapting Lowy's Manager/Engine/Resource targeting to whatever encapsulation vocabulary fits the stack — `createSubscription` seams, hook modules, etc.).
+
+See [Kolu's `agents/.apm/instructions/hickey-catalog.instructions.md`](https://github.com/juspay/kolu/blob/master/agents/.apm/instructions/hickey-catalog.instructions.md) for a worked hickey-side example.
+
 ### Putting it together
 
 Your project's `.apm/` directory ends up looking something like:
