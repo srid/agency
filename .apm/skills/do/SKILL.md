@@ -149,7 +149,7 @@ After the user confirms, continue autonomously from **hickey+lowy** (or the next
 Invoke `hickey` and `lowy` as two **parallel Claude Code sub-agents** via the `Agent` tool (`subagent_type: "hickey"` and `subagent_type: "lowy"`). Do NOT use the `Skill` tool for this step — `Skill` invocations serialize on the main conversation loop, so two back-to-back `Skill` calls run one after the other even when issued in the same response. Dedicated sub-agents run in isolated contexts and genuinely execute concurrently, cutting this step's wall-clock time roughly in half. Offloading their analysis into forked contexts also keeps the main context lean for the downstream implement/police/ci steps.
 
 <use_parallel_tool_calls>
-In a single response, make exactly two `Agent` tool calls — one with `subagent_type: "hickey"`, one with `subagent_type: "lowy"`. Do not include any other tool calls or text in that response.
+For maximum efficiency, invoke the `hickey` and `lowy` Agent tools **in parallel** rather than sequentially. You MUST use parallel tool calls: emit both `Agent` tool_use blocks (one with `subagent_type: "hickey"`, one with `subagent_type: "lowy"`) in a single response, with no other tool calls or text in that response.
 </use_parallel_tool_calls>
 
 Each `Agent` prompt must be self-contained (sub-agents do not inherit this conversation's context). Brief each one with:
