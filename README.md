@@ -107,6 +107,44 @@ Data fetching must go through server functions, never direct API calls from comp
 
 These get checked alongside the built-in rules during the police pass.
 
+### 4. Add project-specific structural review vectors (optional)
+
+`hickey` and `lowy` ship with generic catalogs. Extend them with project-specific vectors by dropping an `.apm/instructions/*.instructions.md` file with an `applyTo:` glob. APM generates a `paths:`-scoped rule under `.claude/rules/`, and Claude Code auto-surfaces it as a system-reminder to the hickey/lowy subagent the moment it reads a matching file — no `/do` plumbing, no prompt wiring.
+
+**Hickey (complecting patterns).** Extends the Layer 4 catalog. File name is conventionally `hickey-catalog.instructions.md`. Schema:
+
+```markdown
+---
+description: Project-specific complecting patterns
+applyTo: "packages/client/src/**"
+---
+
+## Additional Complecting Patterns
+
+| Construct | What it complects | Simpler alternative |
+|-----------|-------------------|---------------------|
+| `createEffect` that writes to signals (effect-as-state-machine) | When + what + control flow | `createMemo` for derived values; `on()` for explicit dependency tracking |
+```
+
+**Lowy (volatility axes).** Consumed in the "Name the Volatility" step. File name is conventionally `lowy-axes.instructions.md`. Schema:
+
+```markdown
+---
+description: Project-specific volatility axes
+applyTo: "packages/client/src/**"
+---
+
+## Volatility Axes
+
+| Axis | What changes | Why volatile | Expected encapsulation |
+|------|--------------|--------------|-----------------------|
+| Reactive-owner lifecycle | Ownership/cleanup conventions across SolidJS versions | Framework-controlled; patterns shift between releases | Behind a `createSubscription`-like seam or a single root; never hand-rolled per component |
+```
+
+Rows are not findings — they declare where the project already knows change lives. The subagent checks whether the boundaries under review actually encapsulate those axes.
+
+See [Kolu's `agents/.apm/instructions/hickey-catalog.instructions.md`](https://github.com/juspay/kolu/blob/master/agents/.apm/instructions/hickey-catalog.instructions.md) for a worked example.
+
 ### Putting it together
 
 Your project's `.apm/` directory ends up looking something like:

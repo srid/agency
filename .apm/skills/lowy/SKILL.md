@@ -43,6 +43,13 @@ For every module boundary, service split, or new abstraction in the code under r
 
 What is likely to change behind this boundary? Be specific — not "requirements might change" but "the payment provider, the auth protocol, the notification channel." If you can't name concrete axes of change, the boundary may be arbitrary.
 
+**Consider project-declared axes.** If a project instruction surfaces with axes the project already knows are volatile, treat each one as a candidate to check against the boundaries under review. These are declared by the project and delivered via a `paths:`-scoped rule (conventionally `lowy-axes`) that becomes a system-reminder when you read a matching file. The canonical schema is:
+
+| Axis | What changes | Why volatile | Expected encapsulation |
+|------|--------------|--------------|-----------------------|
+
+Rows in that table are not findings — they are the project's prior claims about where change lives. Your job is to check whether the boundaries under review actually encapsulate those axes, or leak them.
+
 **Speculative volatility is not volatility.** A change scenario counts only if it has happened before, is on a roadmap, or is a near-certain consequence of the domain (e.g. "payment providers change" in e-commerce). "What if we swap color spaces" in an app that has never swapped color spaces is speculation, not an axis of change. Lowy's framework is about *observed* or *plausible* volatility — designing for hypothetical change is over-engineering, not encapsulation.
 
 **Weak volatility may not deserve its own boundary.** Some volatilities are real but too minor to justify a separate component. Lowy's example: notification delivery might be volatile, but if the system already has a message bus utility, a dedicated NotificationManager adds complexity without containing meaningful additional change. Ask: does this volatility justify the cost of an additional boundary, or can it be folded into an existing one?
