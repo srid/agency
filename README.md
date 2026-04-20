@@ -15,7 +15,7 @@ Agency[^agency] is a near-autonomous workflow for coding agents, packaged as an 
 ### Skills
 
 - **`hickey`** — Structural simplicity evaluation using [Rich Hickey's "Simple Made Easy"](https://www.infoq.com/presentations/Simple-Made-Easy/) framework. Catches accidental complexity that tests can't. Also ships as a sub-agent (`@agent-hickey`) so `/do` and `/talk` can run it in parallel with `lowy` without serializing on the main conversation loop.
-- **`lowy`** — Volatility-based decomposition review using [Juval Lowy's framework](https://www.informit.com/articles/article.aspx?p=2995357&seqNum=2) (from [*Righting Software*](https://rightingsoftware.org/), building on [Parnas 1972](https://www.win.tue.nl/~wstomv/edu/2ip30/references/criteria_for_modularization.pdf)). Checks that module boundaries encapsulate axes of change, not just functionality. Also ships as a sub-agent (`@agent-lowy`). See [*Hickey/Lowy*](https://kolu.dev/blog/hickey-lowy/) for how the two lenses pair up in `/do`'s PR-comment analysis.
+- **`lowy`** — Volatility-based decomposition review using [Juval Lowy's framework](https://www.informit.com/articles/article.aspx?p=2995357&seqNum=2) (from [*Righting Software*](https://rightingsoftware.org/), building on [Parnas 1972](https://www.win.tue.nl/~wstomv/edu/2ip30/references/criteria_for_modularization.pdf)). Checks that module boundaries encapsulate axes of change, not just functionality. Also ships as a sub-agent (`@agent-lowy`).
 - **`code-police`** — Three-pass quality gate: rule checklist, fact-check for logic errors, and elegance review with iterative refinement.
 - **`fact-check`** — Standalone correctness audit: finds silent error swallowing, unjustified fallbacks, wishful thinking, and logic errors. Prosecutor posture — no self-dismissals.
 - **`elegance`** — Iterative elegance pass: understand, research, apply, verify. Runs 3 iterations by default, each building on the last.
@@ -26,6 +26,17 @@ Agency[^agency] is a near-autonomous workflow for coding agents, packaged as an 
 
 - **`do-stop-guard`** — Prevents Claude from stopping mid-`/do` workflow. Reads `.do-results.json` to know if a run is active.
 - **`apm-sources`** — Tells agents that `.claude/` is generated — edit `.apm/` sources instead.
+
+## Structural reviews
+
+Type-checkers, tests, and CI catch correctness. They don't catch design. An LLM-generated diff can pass every automated gate and still complect two roles into one construct, or draw a module boundary along the wrong axis of change.
+
+`/do` closes that gap with two structural-review passes that run in parallel as sub-agents and land as a findings ledger on the PR:
+
+- **`hickey`** — accidental complexity, after Rich Hickey's *Simple Made Easy*.
+- **`lowy`** — volatility-based decomposition, after Juval Lowy's *Righting Software*.
+
+Read [**Hickey/Lowy on kolu.dev**](https://kolu.dev/blog/hickey-lowy/) for the full framing — what each lens looks for, why the pair catches what tests miss, and how to extend them with project-specific vectors (see *Add project-specific structural review vectors* below).
 
 ## Usage
 
