@@ -27,6 +27,17 @@ Agency[^agency] is a near-autonomous workflow for coding agents, packaged as an 
 - **`do-stop-guard`** — Prevents Claude from stopping mid-`/do` workflow. Reads `.do-results.json` to know if a run is active.
 - **`apm-sources`** — Tells agents that `.claude/` is generated — edit `.apm/` sources instead.
 
+## Structural reviews
+
+Type-checkers, tests, and CI catch correctness. They don't catch design. An LLM-generated diff can pass every automated gate and still complect two roles into one construct, or draw a module boundary along the wrong axis of change.
+
+`/do` closes that gap with two structural-review passes that run in parallel as sub-agents and land as a findings ledger on the PR:
+
+- **`hickey`** — accidental complexity, after Rich Hickey's *Simple Made Easy*.
+- **`lowy`** — volatility-based decomposition, after Juval Lowy's *Righting Software*.
+
+Read [**Hickey/Lowy on kolu.dev**](https://kolu.dev/blog/hickey-lowy/) for the full framing — what each lens looks for, why the pair catches what tests miss, and how to extend them with project-specific vectors (see *Add project-specific structural review vectors* below).
+
 ## Usage
 
 ### 0. Create `apm.yml`
