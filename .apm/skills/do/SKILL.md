@@ -269,12 +269,29 @@ After both sub-agents return, synthesize their findings. Findings marked **"Defe
 
 Use `git diff origin/HEAD...HEAD --name-only` to check if the PR contains code changes. If all changed files are documentation-only (e.g., `.md`, `.txt`, `README`, docs/) — skip this step with a note.
 
-Otherwise, invoke the `/code-police` skill via the Skill tool. It runs three passes: rule checklist, fact-check, and elegance.
+Otherwise, invoke the `/code-police` skill via the Skill tool. It runs three passes: rule checklist, fact-check, and elegance (which delegates to `/simplify` when available).
 
 When `/code-police` asks about scope: **changes in the current branch/PR only**.
 
-**Verify**: All 3 passes clean ("All clear").
-**If violations found** (max 3 attempts): Fix the violations and re-invoke `/code-police`.
+**Commit each violation fix individually.** The same rule as **hickey + lowy**: PR history is the story of the work, and a reviewer should see one commit per rule violation or elegance refinement, not a lump "police pass" commit covering eight unrelated things.
+
+For each violation reported by `/code-police` (across all three passes), in turn:
+
+1. Apply the fix for that one violation — scope the edit tightly.
+2. Run the project's format command on changed files, if configured.
+3. `git add <changed files>` — stage only this fix.
+4. Commit with a conventional prefix identifying the pass and rule:
+   - Rules pass: `fix(police): <rule-id> — <short description>` (e.g. `fix(police): no-dead-code — remove commented-out fallback`)
+   - Fact-check pass: `fix(police): fact-check — <short description>` (e.g. `fix(police): fact-check — propagate error from loader`)
+   - Elegance pass (`/simplify`-applied or inline-loop-applied): `refactor(police): elegance — <short description>`
+5. `git push`.
+
+For the elegance pass specifically: `/simplify` applies fixes in batches across three lenses (reuse, quality, efficiency). Commit each distinct refactor as a separate commit — do not roll them into one "elegance" commit. If a lens produces multiple independent changes (two reuse-via-helper refactors in different files, say), those are separate commits too.
+
+**Under `--no-git`**: Skip the commit/push steps. Apply fixes to the working tree and continue. The user reviews the combined delta.
+
+**Verify**: All 3 passes clean ("All clear"). Under `--no-git`, the tree reflects the fixes; otherwise `git log origin/HEAD..HEAD --oneline` shows one commit per violation addressed.
+**If violations found** (max 3 attempts): Fix the violations (one commit per fix, as above) and re-invoke `/code-police`.
 
 ---
 
