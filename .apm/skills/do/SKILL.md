@@ -1,7 +1,7 @@
 ---
 name: do
 description: Do a task end-to-end — implement, PR, CI loop, ship
-argument-hint: "<issue-url | prompt> [--review] [--no-git] [--skip-setup] [--from <step>]"
+argument-hint: "<issue-url | prompt> [--review] [--no-git] [--skip-setup] [--from <step>] [--review-model=<opus|sonnet|haiku>]"
 ---
 
 # Do Workflow
@@ -12,7 +12,7 @@ Take a task and do it top-to-bottom: research, branch, implement, pass CI, open 
 
 ## Arguments
 
-Parse the arguments string: `[--review] [--no-git] [--skip-setup] [--from <step-id>] <task description or issue-url>`
+Parse the arguments string: `[--review] [--no-git] [--skip-setup] [--from <step-id>] [--review-model=<opus|sonnet|haiku>] <task description or issue-url>`
 
 The workflow is **forge-aware**: it auto-detects whether the repo lives on GitHub or elsewhere during the **sync** step (see Forge Detection). Only GitHub has an active code path today — Bitbucket/other forges gracefully skip PR-related steps. Tracking: [srid/agency#10](https://github.com/srid/agency/issues/10).
 
@@ -20,6 +20,7 @@ The workflow is **forge-aware**: it auto-detects whether the repo lives on GitHu
 - `--no-git`: Extend the working tree **in place** — do not create a branch, commit, push, or touch any PR. Research, implement, check, docs, police, fmt, and test all run; git-mutating steps (**branch**, **commit**, **create-pr**) are skipped. Use this when you have uncommitted local work and want the agent to build on it without taking over git state. Feedback from a Bitbucket user in [#26](https://github.com/srid/agency/issues/26).
 - `--skip-setup`: Bypass the setup step gate and run every applicable step. By default, after **research** the workflow pauses to present a recommended step plan via `AskUserQuestion`: the AI assesses which steps are relevant to the task (e.g., a docs-only change doesn't need **check** or **test**; a trivial one-liner doesn't need **hickey+lowy** or **police**) and presents a multi-select checklist of skippable steps with pre-selected recommendations. The user confirms or adjusts, then the workflow continues autonomously. Steps the user deselects are recorded as `skipped` with reason `"setup: user skipped"`. Pass `--skip-setup` when you want fully hands-off behavior and don't want to be interrupted. **sync**, **research**, and **done** are never skippable. See the **Setup step gate** section below for details.
 - `--from <step-id>`: Start from a specific step (see entry points below)
+- `--review-model=<model>`: Model to use for the **hickey+lowy** sub-agent invocations. Accepts `opus`, `sonnet`, or `haiku`. Defaults to `sonnet` — cheap enough to run on every task without thinking about cost. Pass `opus` when the task warrants deeper structural critique (large or architecturally significant diffs, refactors that cross module boundaries, work the user wants an extra-careful second pair of eyes on). Takes precedence over the `model: sonnet` in the hickey/lowy agent frontmatter via the `Agent` tool's `model` parameter.
 
 ## Results Tracking
 
@@ -248,6 +249,8 @@ Each `Agent` prompt must be self-contained (sub-agents do not inherit this conve
 - The scope to analyze: the actual diff, `git diff origin/HEAD...HEAD` — this is the same scope regardless of entry point (default or followup), since the branch at this point holds the primary feature commit (plus any cumulative followup commits) and no further work is pending
 
 The sub-agent already knows to read its skill file and follow that methodology; don't re-state it in the prompt.
+
+**Model override.** If the user passed `--review-model=<model>`, pass `model: "<model>"` in **both** `Agent` tool calls — this overrides the `model: sonnet` in the agents' frontmatter via the `Agent` tool's built-in `model` parameter. If the flag was not passed, omit the `model` parameter entirely so the agent definition's default (sonnet) applies. Accept only `opus`, `sonnet`, and `haiku`; reject anything else at argument-parse time with a one-line error, since a typo silently falling back to sonnet would hide a budget decision the user was trying to express.
 
 After both sub-agents return, synthesize their findings. Findings marked **"Defer #issue"** or **"No-op"** are surfaced in the PR comment (see **create-pr**) but not acted on here.
 
