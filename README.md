@@ -8,14 +8,14 @@ Agency[^agency] is a near-autonomous workflow for coding agents, packaged as an 
 
 `/talk` and `/do` are typically what you need mostly.
 
-- **`/do`** — Full pipeline: research → hickey → branch → implement → CI → ship. Pauses once after research to confirm which steps are relevant for the task; pass `--skip-setup` for fully hands-off.
+- **`/do`** — Full pipeline: research → implement → structural review (hickey, lowy) → quality gate (code-police) → CI → ship. Structural review runs **post-implement on the concrete diff**, and each "Fix in this PR" finding lands as its own commit — so the PR history reads as a progression from primary implementation to each refinement. Pauses once after research to confirm which steps are relevant for the task; pass `--skip-setup` for fully hands-off.
 - **`/talk`** — Conversation-only mode. Discuss ideas, explore approaches, read code — no file changes allowed.
 - **`/ralph`** — Iterative measurement-driven improvement loop. Measure, profile, mutate, re-measure, commit. Works for performance, bundle size, complexity — anything quantifiable.
 
 ### Skills
 
-- **`hickey`** — Structural simplicity evaluation using [Rich Hickey's "Simple Made Easy"](https://www.infoq.com/presentations/Simple-Made-Easy/) framework. Catches accidental complexity that tests can't. Also ships as a sub-agent (`@agent-hickey`) so `/do` and `/talk` can run it in parallel with `lowy` without serializing on the main conversation loop.
-- **`lowy`** — Volatility-based decomposition review using [Juval Lowy's framework](https://www.informit.com/articles/article.aspx?p=2995357&seqNum=2) (from [*Righting Software*](https://rightingsoftware.org/), building on [Parnas 1972](https://www.win.tue.nl/~wstomv/edu/2ip30/references/criteria_for_modularization.pdf)). Checks that module boundaries encapsulate axes of change, not just functionality. Also ships as a sub-agent (`@agent-lowy`).
+- **`hickey`** — Structural simplicity evaluation using [Rich Hickey's "Simple Made Easy"](https://www.infoq.com/presentations/Simple-Made-Easy/) framework. Catches accidental complexity that tests can't. Ships as a sub-agent (`@agent-hickey`) so `/do` can run it in parallel with `lowy` post-implement without serializing on the main conversation loop. Not auto-invoked from `/talk` — complecting critique needs a concrete diff to bite.
+- **`lowy`** — Volatility-based decomposition review using [Juval Lowy's framework](https://www.informit.com/articles/article.aspx?p=2995357&seqNum=2) (from [*Righting Software*](https://rightingsoftware.org/), building on [Parnas 1972](https://www.win.tue.nl/~wstomv/edu/2ip30/references/criteria_for_modularization.pdf)). Checks that module boundaries encapsulate axes of change, not just functionality. Ships as a sub-agent (`@agent-lowy`). Auto-invoked from both `/do` (post-implement, alongside hickey) and `/talk` (where the design-level volatility lens is still useful on a sketch).
 - **`code-police`** — Three-pass quality gate: rule checklist, fact-check for logic errors, and an elegance pass (delegates to Claude Code's `/simplify` when available, otherwise runs an iterative refinement loop).
 - **`fact-check`** — Standalone correctness audit: finds silent error swallowing, unjustified fallbacks, wishful thinking, and logic errors. Prosecutor posture — no self-dismissals.
 - **`elegance`** — Iterative elegance pass: understand, research, apply, verify. Runs 3 iterations by default, each building on the last.
@@ -31,7 +31,7 @@ Agency[^agency] is a near-autonomous workflow for coding agents, packaged as an 
 
 Type-checkers, tests, and CI catch correctness. They don't catch design. An LLM-generated diff can pass every automated gate and still complect two roles into one construct, or draw a module boundary along the wrong axis of change.
 
-`/do` closes that gap with two structural-review passes that run in parallel as sub-agents and land as a findings ledger on the PR:
+`/do` closes that gap with two structural-review passes that run **post-implement on the concrete diff** as parallel sub-agents. Each "Fix in this PR" finding is applied and committed individually — PR history reads as the progression from the primary implementation through each structural refinement — and the full findings ledger is posted as a PR comment:
 
 - **`hickey`** — accidental complexity, after Rich Hickey's *Simple Made Easy*.
 - **`lowy`** — volatility-based decomposition, after Juval Lowy's *Righting Software*.
