@@ -249,9 +249,19 @@ Each `Agent` prompt must be self-contained (sub-agents do not inherit this conve
 
 The sub-agent already knows to read its skill file and follow that methodology; don't re-state it in the prompt.
 
-After both sub-agents return, synthesize their findings. For each finding with a **"Fix in this PR"** action, apply the fix now. Findings marked **"Defer #issue"** or **"No-op"** are surfaced in the PR comment (see **create-pr**) but not acted on here.
+After both sub-agents return, synthesize their findings. Findings marked **"Defer #issue"** or **"No-op"** are surfaced in the PR comment (see **create-pr**) but not acted on here.
 
-**Verify**: Every finding has an action recorded (fix, defer, or no-op). No unactioned findings.
+**Apply each "Fix in this PR" finding as its own commit** — do not batch multiple findings into one commit. A reviewer reading the PR's commit history should be able to read one "address hickey finding: decomplect viewportDimensions" commit at a time and follow the structural refinement as a sequence, not decode a grab-bag diff. For each finding in turn:
+
+1. Apply the fix narrowly — only the lines that address this specific finding.
+2. Run the project's format command (from **fmt** instructions) on the changed files, if one is configured.
+3. `git add <changed files>` — stage only the files this fix touched.
+4. `git commit -m "refactor(hickey): <short finding label>"` (or `refactor(lowy): …` depending on the lens). The body of the message should restate the finding in one line so the commit is self-explanatory in `git log`.
+5. `git push` — push after each commit so the draft PR (once created) accumulates commits in real time. (The `-u` flag is only needed on the first push, which already happened in **commit**.)
+
+**Under `--no-git`**: Skip the commit/push steps entirely. Apply fixes to the working tree and move on — the user will review the combined working-tree delta themselves. Record the step as passed with verification noting "--no-git: fixes applied to working tree, not committed."
+
+**Verify**: Every finding has an action recorded (fix, defer, or no-op). Every "Fix in this PR" finding has a corresponding commit on the feature branch (check via `git log origin/HEAD..HEAD --oneline`), except under `--no-git`. No unactioned findings.
 
 ---
 
