@@ -1,6 +1,6 @@
 ---
 description: "Enter talk mode — conversation only, no file changes"
-argument-hint: "[--no-laconic] <topic or question>"
+argument-hint: "[--no-laconic] [--review-model=<opus|sonnet|haiku>] <topic or question>"
 ---
 
 # Probe (Talk Mode)
@@ -73,6 +73,8 @@ Any time the conversation produces a concrete code plan, diff proposal, or desig
 Hickey's complecting critique deliberately does **not** run here. It needs a concrete diff to bite — running it on a sketch tends to surface generic concerns rather than the specific interleavings that matter. `/do` runs hickey post-implement on the real diff. Talk mode sticks with Lowy because volatility-based decomposition is the design-level lens that's useful while the design is still a sketch.
 
 Skip the Lowy pass only when the turn is pure Q&A with no proposed change (e.g. "how does X work?"). When in doubt, run it.
+
+**Model override.** If `ARGUMENTS` contains `--review-model=<model>` (accept `opus`, `sonnet`, or `haiku`; strip the flag before treating the rest as the topic), pass `model: "<model>"` in the `Agent(subagent_type="lowy")` call. This overrides the `model: sonnet` in `lowy`'s agent frontmatter via the `Agent` tool's built-in `model` parameter. Without the flag, omit `model` so the default (sonnet) applies. Reject unknown values with a one-line error instead of silently falling back — a typo shouldn't quietly erase a budget decision.
 
 ## Laconic mode (default)
 

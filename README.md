@@ -36,6 +36,8 @@ Type-checkers, tests, and CI catch correctness. They don't catch design. An LLM-
 - **`hickey`** — accidental complexity, after Rich Hickey's *Simple Made Easy*.
 - **`lowy`** — volatility-based decomposition, after Juval Lowy's *Righting Software*.
 
+Both default to Sonnet to keep the review cheap enough to run on every task. Pass **`--review-model=opus`** on `/do` (or `/talk`, which only runs Lowy) when the diff warrants a deeper pass — large or architecturally significant changes, cross-module refactors, anything you want extra-careful eyes on. `haiku` is also accepted for cheap scans.
+
 Read [**Hickey/Lowy on kolu.dev**](https://kolu.dev/blog/hickey-lowy/) for the full framing — what each lens looks for, why the pair catches what tests miss, and how to extend them with project-specific vectors (see *Add project-specific structural review vectors* below).
 
 ## Usage
