@@ -4,39 +4,40 @@ Agency[^agency] is a near-autonomous workflow for coding agents, packaged as an 
 
 ## What's included
 
-### Commands
-
-`/talk` and `/do` are typically what you need mostly.
-
-- **`/do`** — Full pipeline: research → implement → structural review (hickey, lowy) → quality gate (code-police) → CI → ship. Structural review runs **post-implement on the concrete diff**, and each "Fix in this PR" finding lands as its own commit — so the PR history reads as a progression from primary implementation to each refinement. Pauses once after research to confirm which steps are relevant for the task; pass `--skip-setup` for fully hands-off.
-- **`/talk`** — Conversation-only mode. Discuss ideas, explore approaches, read code — no file changes allowed.
-- **`/ralph`** — Iterative measurement-driven improvement loop. Measure, profile, mutate, re-measure, commit. Works for performance, bundle size, complexity — anything quantifiable.
-
 ### Skills
 
-- **`hickey`** — Structural simplicity evaluation using [Rich Hickey's "Simple Made Easy"](https://www.infoq.com/presentations/Simple-Made-Easy/) framework. Catches accidental complexity that tests can't. Ships as a sub-agent (`@agent-hickey`) so `/do` can run it in parallel with `lowy` post-implement without serializing on the main conversation loop. Not auto-invoked from `/talk` — complecting critique needs a concrete diff to bite.
-- **`lowy`** — Volatility-based decomposition review using [Juval Lowy's framework](https://www.informit.com/articles/article.aspx?p=2995357&seqNum=2) (from [*Righting Software*](https://rightingsoftware.org/), building on [Parnas 1972](https://www.win.tue.nl/~wstomv/edu/2ip30/references/criteria_for_modularization.pdf)). Checks that module boundaries encapsulate axes of change, not just functionality. Ships as a sub-agent (`@agent-lowy`). Auto-invoked from both `/do` (post-implement, alongside hickey) and `/talk` (where the design-level volatility lens is still useful on a sketch).
+`talk` and `do` are typically what you need mostly.
+
+#### Primary skills
+
+- **`do`** — Full pipeline: research → implement → structural review (hickey, lowy) → quality gate (code-police) → CI → ship. Structural review runs **post-implement on the concrete diff**, and each "Fix in this PR" finding lands as its own commit — so the PR history reads as a progression from primary implementation to each refinement. Pauses once after research to confirm which steps are relevant for the task; pass `--skip-setup` for fully hands-off.
+- **`talk`** — Conversation-only mode. Discuss ideas, explore approaches, read code — no file changes allowed.
+- **`ralph`** — Iterative measurement-driven improvement loop. Measure, profile, mutate, re-measure, commit. Works for performance, bundle size, complexity — anything quantifiable.
+
+#### Supporting skills
+
+- **`hickey`** — Structural simplicity evaluation using [Rich Hickey's "Simple Made Easy"](https://www.infoq.com/presentations/Simple-Made-Easy/) framework. Catches accidental complexity that tests can't. Ships as a sub-agent (`@agent-hickey`) so `do` can run it in parallel with `lowy` post-implement without serializing on the main conversation loop. Not auto-invoked from `talk` — complecting critique needs a concrete diff to bite.
+- **`lowy`** — Volatility-based decomposition review using [Juval Lowy's framework](https://www.informit.com/articles/article.aspx?p=2995357&seqNum=2) (from [*Righting Software*](https://rightingsoftware.org/), building on [Parnas 1972](https://www.win.tue.nl/~wstomv/edu/2ip30/references/criteria_for_modularization.pdf)). Checks that module boundaries encapsulate axes of change, not just functionality. Ships as a sub-agent (`@agent-lowy`). Auto-invoked from both `do` (post-implement, alongside hickey) and `talk` (where the design-level volatility lens is still useful on a sketch).
 - **`code-police`** — Three-pass quality gate: rule checklist, fact-check for logic errors, and an elegance pass (delegates to Claude Code's `/simplify` when available, otherwise runs an iterative refinement loop).
 - **`fact-check`** — Standalone correctness audit: finds silent error swallowing, unjustified fallbacks, wishful thinking, and logic errors. Prosecutor posture — no self-dismissals.
 - **`elegance`** — Iterative elegance pass: understand, research, apply, verify. Runs 3 iterations by default, each building on the last.
-- **`ralph`** — The measurement loop engine behind `/ralph`. Profiles a quantifiable metric, finds the biggest contributor, applies a targeted mutation, and re-measures. Only commits changes that demonstrably move the needle.
 - **`forge-pr`** — Writes PR titles and descriptions that devs actually want to read. Paragraphs over bullet lists, substance over boilerplate. GitHub today; Bitbucket support tracked in [#10](https://github.com/srid/agency/issues/10).
 
 ### Hooks & Instructions
 
-- **`do-stop-guard`** — Prevents Claude from stopping mid-`/do` workflow. Reads `.do-results.json` to know if a run is active.
+- **`do-stop-guard`** — Prevents Claude from stopping mid-`do` workflow. Reads `.do-results.json` to know if a run is active.
 - **`apm-sources`** — Tells agents that `.claude/` is generated — edit `.apm/` sources instead.
 
 ## Structural reviews
 
 Type-checkers, tests, and CI catch correctness. They don't catch design. An LLM-generated diff can pass every automated gate and still complect two roles into one construct, or draw a module boundary along the wrong axis of change.
 
-`/do` closes that gap with two structural-review passes that run **post-implement on the concrete diff** as parallel sub-agents. Each "Fix in this PR" finding is applied and committed individually — PR history reads as the progression from the primary implementation through each structural refinement — and the full findings ledger is posted as a PR comment:
+`do` closes that gap with two structural-review passes that run **post-implement on the concrete diff** as parallel sub-agents. Each "Fix in this PR" finding is applied and committed individually — PR history reads as the progression from the primary implementation through each structural refinement — and the full findings ledger is posted as a PR comment:
 
 - **`hickey`** — accidental complexity, after Rich Hickey's *Simple Made Easy*.
 - **`lowy`** — volatility-based decomposition, after Juval Lowy's *Righting Software*.
 
-Both default to Sonnet to keep the review cheap enough to run on every task. Pass **`--review-model=opus`** on `/do` (or `/talk`, which only runs Lowy) when the diff warrants a deeper pass — large or architecturally significant changes, cross-module refactors, anything you want extra-careful eyes on. `haiku` is also accepted for cheap scans.
+Both default to Sonnet to keep the review cheap enough to run on every task. Pass **`--review-model=opus`** to `do` (or `talk`, which only runs Lowy) when the diff warrants a deeper pass — large or architecturally significant changes, cross-module refactors, anything you want extra-careful eyes on. `haiku` is also accepted for cheap scans.
 
 Read [**Hickey/Lowy on kolu.dev**](https://kolu.dev/blog/hickey-lowy/) for the full framing — what each lens looks for, why the pair catches what tests miss, and how to extend them with project-specific vectors (see *Add project-specific structural review vectors* below).
 
@@ -64,19 +65,19 @@ Or via [uvx](https://docs.astral.sh/uv/guides/tools/):
 uvx --from apm-cli apm install -t claude
 ```
 
-This generates `.claude/` with agency's commands, skills, and hooks, and adds `apm_modules/` to `.gitignore`. You now have `/do` and `/talk` available in Claude Code.
+This generates `.claude/` with agency's skills, agents, and hooks, and adds `apm_modules/` to `.gitignore`. You now have the `do` and `talk` skills available in supported hosts.
 
 For a more involved setup, see https://github.com/juspay/AI
 
-### 2. Tell `/do` about your project
+### 2. Tell `do` about your project
 
-`/do` runs autonomously but needs to know your project's check, format, test, and CI commands. Without this, it skips those steps.
+`do` runs autonomously but needs to know your project's check, format, test, and CI commands. Without this, it skips those steps.
 
 Create `.apm/instructions/workflow.instructions.md`:
 
 ```markdown
 ---
-description: Workflow commands for the /do pipeline
+description: Workflow commands for the do pipeline
 applyTo: "**"
 ---
 
@@ -98,7 +99,7 @@ Keep `README.md` in sync with user-facing changes.
 
 Run `apm install` again to regenerate `.claude/`.
 
-The `/do` steps that read these instructions: **check**, **fmt**, **test**, **ci**, and **docs**. Each step looks for its heading in your project instructions and runs whatever command you specified. If a step finds nothing documented, it skips with a note.
+The `do` steps that read these instructions: **check**, **fmt**, **test**, **ci**, and **docs**. Each step looks for its heading in your project instructions and runs whatever command you specified. If a step finds nothing documented, it skips with a note.
 
 ### 3. Add project-specific quality rules (optional)
 
@@ -122,7 +123,7 @@ These get checked alongside the built-in rules during the police pass.
 
 ### 4. Add project-specific structural review vectors (optional)
 
-`hickey` and `lowy` ship with generic catalogs. Extend them with project-specific vectors by dropping an `.apm/instructions/*.instructions.md` file with an `applyTo:` glob. APM generates a `paths:`-scoped rule under `.claude/rules/`, and Claude Code auto-surfaces it as a system-reminder to the hickey/lowy subagent the moment it reads a matching file — no `/do` plumbing, no prompt wiring.
+`hickey` and `lowy` ship with generic catalogs. Extend them with project-specific vectors by dropping an `.apm/instructions/*.instructions.md` file with an `applyTo:` glob. APM generates a `paths:`-scoped rule under `.claude/rules/`, and Claude Code auto-surfaces it as a system-reminder to the hickey/lowy subagent the moment it reads a matching file — no `do` plumbing, no extra wiring.
 
 **Hickey (complecting patterns).** Extends the Layer 4 catalog. File name is conventionally `hickey-catalog.instructions.md`. Schema:
 
