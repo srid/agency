@@ -1,0 +1,478 @@
+# Mockup: /do workflow as a declarative spec.
+#
+# This file is a stress-test of the workflow.toml format proposed in #98. No engine
+# exists yet; this document is a design artifact. Every directive here is a
+# hypothesis about what the engine must understand. When the engine is built, any
+# directive this file uses that the engine does not support is a bug in the engine
+# spec, not in this file.
+#
+# Design goal: cover every weird corner of the current SKILL.md — setup gate,
+# --review plan pause, --from <step> entry points, --no-git skip cascade,
+# forge-conditional skips, parallel hickey/lowy, commit-per-finding rules, retry
+# budgets, evidence gates — and prove the TOML is expressive enough to replace
+# the prose recipe without leaking discretion back to the agent.
+#
+# Tracking: https://github.com/srid/agency/issues/98
+
+[workflow]
+name = "do"
+description = "Do a task end-to-end — implement, PR, CI loop, ship."
+version = 1
+
+
+# ============================================================================
+# Flags
+# ============================================================================
+# CLI flags the user passes to `/do`. The engine parses them and exposes them
+# to skip_when predicates and instruction templating (as ${flag.<name>}).
+
+[[flag]]
+name = "review"
+description = "Pause after research for plan approval via EnterPlanMode."
+
+[[flag]]
+name = "no-git"
+description = "Extend working tree in place — skip branch, commit, create-pr."
+
+[[flag]]
+name = "skip-setup"
+description = "Bypass the setup step gate; all applicable steps run."
+
+[[flag]]
+name = "from"
+type = "string"
+description = "Entry point — named starting step. See [entry_points]."
+
+[[flag]]
+name = "review-model"
+type = "enum"
+values = ["opus", "sonnet", "haiku"]
+description = "Model for hickey/lowy sub-agents."
+
+
+# ============================================================================
+# Entry points
+# ============================================================================
+# Map --from <name> to a starting step. Steps earlier than the entry point are
+# marked `completed` immediately after state seed so the progress UI stays
+# consistent (14-item view regardless of entry point).
+
+[entry_points]
+default        = "sync"
+followup       = "implement"
+post-implement = "fmt"
+polish         = "hickey"      # hickey and lowy share a parallel_group; either triggers both
+ci-only        = "ci"
+
+
+# ============================================================================
+# Progress UI
+# ============================================================================
+# Engine emits a progress-tick event on every step boundary. A thin agent shim
+# translates it into harness-native UI. On Claude Code: TaskCreate/TaskUpdate.
+# On Codex (no TaskCreate): dropped on the floor — the engine's own state file
+# is the source of truth.
+
+[progress]
+tool              = "TaskCreate"
+seed_all_on_start = true
+
+
+# ============================================================================
+# Completion policy
+# ============================================================================
+# "completed" requires all steps `passed`, with these skip reasons counting
+# toward completion. Any failed step blocks completion. No redefining "passed."
+
+[completion]
+accept_skipped_reasons = [
+  "--no-git",
+  "setup: user skipped",
+  "non-github forge",
+  "no check command configured",
+  "no docs files configured",
+  "no fmt command configured",
+  "no test command configured",
+  "no CI command configured",
+  "docs-only changes",
+  "harness lacks Agent tool",
+  "harness lacks Skill tool",
+  "harness lacks AskUserQuestion tool",
+]
+
+
+# ============================================================================
+# Steps
+# ============================================================================
+# Steps form a DAG. A step is "ready" when all dependencies have status `passed`
+# or `skipped`. Steps in the same parallel_group are emitted together by `next`
+# and the agent is expected to execute them concurrently (e.g. two Agent calls
+# in one response).
+
+# --- sync ---------------------------------------------------------------------
+# Existing bash script handles fetch, fast-forward, forge detection, dirty-tree
+# hint. Engine parses "key=value" lines from stdout into workflow state.
+
+[[step]]
+name                = "sync"
+instructions_script = "scripts/steps/sync"
+instructions_args   = ["${flag.no-git}"]
+provides            = ["forge", "branch", "defaultBranch"]
+never_skip          = true
+evidence            = { exit = 0, stdout_contains = "forge=" }
+
+
+# --- research -----------------------------------------------------------------
+# Creative step; evidence gates are necessarily weak. min_chars + mentions_files
+# catch the "I didn't research at all" case without demanding an artifact the
+# step doesn't naturally produce.
+
+[[step]]
+name         = "research"
+depends_on   = ["sync"]
+never_skip   = true
+instructions = """
+Research the task thoroughly before writing code.
+
+- If given a GitHub issue URL and forge == github, fetch with `gh issue view`.
+  On non-GitHub forges, treat issue-like URLs as opaque context.
+- Never assume — read the code, check the config.
+- Delegation rule: before your third Read, delegate to Agent(subagent_type=Explore).
+  Main-context reads reserved for (a) user-named files,
+  (b) .apm/instructions/** and files referenced from them,
+  (c) targeted verification of file:line cited by an Explore subagent (offset/limit only).
+
+Use Grep/Glob before Read when a search answers the question.
+"""
+evidence    = { min_chars = 300, mentions_files = true }
+review_hook = { when = { flag = "review" }, requires_tool = "EnterPlanMode", fallback = "cli_confirm" }
+
+
+# --- setup-gate ---------------------------------------------------------------
+# Runs by default. Records user's per-step skip selections to workflow state.
+# Downstream steps consult via skip_when = { setup_deselected = "<name>" }.
+
+[[step]]
+name          = "setup-gate"
+depends_on    = ["research"]
+skip_when     = { flag = "skip-setup" }
+requires_tool = "AskUserQuestion"
+fallback_tool = "cli_multiselect"
+sets_state    = "setup_selections"
+instructions  = """
+Assess which remaining steps are relevant to this task. Consider:
+- Nature of change (docs-only, config, trivial fix, refactor, feature, bug fix).
+- Scope (files, lines, complexity).
+- Project config (whether check/test/fmt/docs commands are configured).
+
+Present a single AskUserQuestion with multiSelect: true listing skippable steps
+(all except sync, research, setup-gate, done). Pre-select those relevant to the
+task; deselect those judged not useful. Include a one-line rationale.
+
+Deselected steps will skip with reason "setup: user skipped".
+"""
+evidence = { state_key = "setup_selections" }
+
+
+# --- branch -------------------------------------------------------------------
+
+[[step]]
+name         = "branch"
+depends_on   = ["setup-gate"]
+skip_when    = { flag = "no-git", reason = "--no-git" }
+instructions = """
+Detect default branch: git symbolic-ref refs/remotes/origin/HEAD
+Create a descriptive feature branch from origin/<default>.
+
+Just the local branch — no commit, no push, no PR. Those come later.
+"""
+evidence = { current_branch_not_in = ["master", "main"] }
+
+
+# --- implement ----------------------------------------------------------------
+# Evidence is weak (working_tree_changed + test-file-added-for-bugfix) but the
+# core discipline — bug fix writes failing test first, multi-path feature writes
+# e2e per path — can't be automated. That's what test/ci verify downstream.
+
+[[step]]
+name         = "implement"
+depends_on   = ["branch"]
+never_skip   = true
+instructions = """
+If bug fix: write a failing test first (e2e or unit, whichever fits), then fix.
+Otherwise: implement the planned changes. Prefer simplicity. Do the boring obvious thing.
+
+E2E coverage: if the change introduces multiple user-facing paths, enumerate them
+and write an e2e scenario for each distinct path.
+"""
+evidence = { working_tree_changed = true }
+
+
+# --- check --------------------------------------------------------------------
+# Fastest gate — runs first after implement to fail fast on broken code.
+
+[[step]]
+name       = "check"
+depends_on = ["implement"]
+skip_when  = [
+  { setup_deselected       = "check",         reason = "setup: user skipped" },
+  { project_config_missing = "check_command", reason = "no check command configured" },
+]
+instructions = """
+Read project instructions to find the check command (fast static-correctness:
+tsc --noEmit, cargo check, cabal build, mypy, dune build @check). Run it.
+"""
+retry    = { max = 3, on = "failure" }
+evidence = { exit = 0 }
+
+
+# --- docs ---------------------------------------------------------------------
+
+[[step]]
+name       = "docs"
+depends_on = ["check"]
+skip_when  = [
+  { setup_deselected       = "docs",      reason = "setup: user skipped" },
+  { project_config_missing = "docs_files", reason = "no docs files configured" },
+]
+instructions = """
+Read project instructions to find documentation files to keep in sync (e.g., README.md).
+Compare against changes in this PR. Fix outdated sections.
+"""
+retry    = { max = 3, on = "outdated" }
+evidence = { docs_in_sync = true }
+
+
+# --- fmt ----------------------------------------------------------------------
+
+[[step]]
+name       = "fmt"
+depends_on = ["docs"]
+skip_when  = [
+  { setup_deselected       = "fmt",         reason = "setup: user skipped" },
+  { project_config_missing = "fmt_command", reason = "no fmt command configured" },
+]
+instructions = "Read project instructions to find the format command. Run it."
+evidence     = { exit = 0 }
+
+
+# --- commit -------------------------------------------------------------------
+# Primary feature commit. Downstream hickey/lowy/police add follow-up commits.
+
+[[step]]
+name         = "commit"
+depends_on   = ["fmt"]
+skip_when    = { flag = "no-git", reason = "--no-git" }
+instructions = """
+Create a NEW commit (never amend) with a conventional commit message for the
+primary implementation. Push with `git push -u origin <branch>` (sets upstream
+on first push).
+"""
+evidence = { new_commit_on_branch = true, pushed = true }
+
+
+# --- hickey + lowy (parallel_group = "review") --------------------------------
+# Two sub-agents, same scope, different lenses. Engine emits both instructions
+# in one `next` response; agent must invoke both Agent calls in a single
+# response. On harnesses without the Agent tool, both steps skip with reason
+# "harness lacks Agent tool" — structural harness-incompatibility handling.
+
+[[step]]
+name           = "hickey"
+depends_on     = ["commit"]
+parallel_group = "review"
+requires_tool  = "Agent"
+skip_when      = { setup_deselected = "hickey+lowy", reason = "setup: user skipped" }
+instructions   = """
+Invoke Agent(subagent_type="hickey") with:
+- Full task prompt + research findings (file paths, intended approach, key constraints).
+- Scope: git diff origin/HEAD...HEAD
+
+If --review-model is set, pass model="${flag.review-model}" to the Agent call.
+The sub-agent reads its own skill file; do not re-state methodology.
+
+After return, for each "Fix in this PR" finding:
+  1. Apply narrowly (only lines addressing this finding).
+  2. Run fmt on changed files.
+  3. git add <changed files>; git commit -m "refactor(hickey): <short finding label>".
+  4. git push.
+
+Findings marked "Defer #issue" or "No-op" are recorded for the PR comment but
+not acted on here. Under --no-git, skip the commit/push steps — apply fixes to
+the working tree only.
+"""
+evidence = [
+  { commits_pattern = "^refactor\\(hickey\\):" },
+  { or_state_key    = "hickey_no_findings" },
+]
+evidence_when_flag_no_git = { state_key = "hickey_worktree_applied" }
+
+[[step]]
+name           = "lowy"
+depends_on     = ["commit"]
+parallel_group = "review"
+requires_tool  = "Agent"
+skip_when      = { setup_deselected = "hickey+lowy", reason = "setup: user skipped" }
+instructions   = """
+Invoke Agent(subagent_type="lowy") in parallel with hickey (same scope, same
+model-override rules, volatility lens instead of complecting lens).
+
+For each "Fix in this PR" finding, commit with prefix `refactor(lowy): ...`.
+"""
+evidence = [
+  { commits_pattern = "^refactor\\(lowy\\):" },
+  { or_state_key    = "lowy_no_findings" },
+]
+evidence_when_flag_no_git = { state_key = "lowy_worktree_applied" }
+
+
+# --- police -------------------------------------------------------------------
+
+[[step]]
+name           = "police"
+depends_on     = ["hickey", "lowy"]
+requires_skill = "code-police"
+skip_when      = [
+  { setup_deselected = "police",                                 reason = "setup: user skipped" },
+  { predicate_script = "scripts/predicates/all-docs-only",       reason = "docs-only changes" },
+]
+instructions = """
+Invoke the /code-police skill via the Skill tool. Three passes: rule checklist,
+fact-check, elegance (delegates to /simplify when available).
+
+When /code-police asks about scope: changes in the current branch/PR only.
+
+For each violation (across all three passes), commit individually:
+- Rules:      fix(police): <rule-id> — <short description>
+- Fact-check: fix(police): fact-check — <short description>
+- Elegance:   refactor(police): elegance — <short description>
+
+Elegance pass: /simplify applies fixes in batches across reuse/quality/efficiency
+lenses. Commit each distinct refactor separately — do not roll into one
+"elegance" commit.
+
+Under --no-git: apply fixes to working tree only; skip commit/push.
+"""
+retry    = { max = 3, on = "violations" }
+evidence = [
+  { all_passes_clean = true },
+  { commits_pattern  = "^(fix|refactor)\\(police\\):" },
+]
+evidence_when_flag_no_git = { state_key = "police_worktree_applied" }
+
+
+# --- test ---------------------------------------------------------------------
+
+[[step]]
+name       = "test"
+depends_on = ["police"]
+skip_when  = [
+  { setup_deselected       = "test",         reason = "setup: user skipped" },
+  { project_config_missing = "test_command", reason = "no test command configured" },
+]
+instructions = """
+Read project instructions for the test command and strategy. Run only tests
+relevant to changed paths (git diff origin/HEAD...HEAD --name-only).
+
+If changes are purely internal, unit tests may suffice — skip e2e if no relevant
+scenarios exist.
+
+Flaky vs real: flaky only if it passes on a subsequent retry. Consistent
+failure = real bug.
+
+On real bug: fix → fmt → commit → retry (under --no-git: fix → fmt → retry).
+"""
+retry    = { max_flaky = 0, max_real = 4, on = "failure" }
+evidence = { exit = 0 }
+
+
+# --- create-pr ----------------------------------------------------------------
+
+[[step]]
+name       = "create-pr"
+depends_on = ["test"]
+skip_when  = [
+  { flag = "no-git",                           reason = "--no-git" },
+  { var  = "forge", not_equal = "github",      reason = "non-github forge" },
+]
+requires_skill = "forge-pr"
+instructions = """
+Check whether a PR exists for this branch: gh pr view.
+
+If no PR exists (first run):
+  1. Load the forge-pr skill BEFORE writing PR title/body (MANDATORY).
+  2. Create a draft PR: gh pr create --draft.
+  3. Post hickey/lowy analysis as a PR comment. Format: leading findings ledger
+     table | # | Lens | Finding | Disposition |, then per-lens rationale prose.
+     Heading: ## [Hickey/Lowy](https://kolu.dev/blog/hickey-lowy/) Analysis
+
+If PR exists (followup / --from entry points): re-check title/body via
+gh pr edit if scope changed.
+
+Surface deferred hickey/lowy findings in the PR body:
+> **Deferred:** #123, #124
+"""
+evidence = { pr_exists = true }
+
+
+# --- ci -----------------------------------------------------------------------
+
+[[step]]
+name         = "ci"
+depends_on   = ["create-pr"]
+skip_when    = { project_config_missing = "ci_command", reason = "no CI command configured" }
+background   = true
+never_pipe   = ["tail", "head"]   # engine refuses commands that pipe CI to these
+never_append = "2>&1"             # background mode already captures both streams
+active_state = "waiting"          # engine flips active=waiting while agent idles; back to working on return
+instructions = """
+Read project instructions for the CI command. Run with run_in_background: true.
+
+Verification: method described in project instructions (e.g., gh commit-status
+checks on GitHub). If forge != github, fall back to exit code + command output.
+
+Must cover HEAD: compare CI's commit SHA vs git rev-parse HEAD. If they differ
+(a commit was pushed after CI started), re-run CI against current HEAD. CI
+passing on a stale commit does not satisfy verification.
+
+On failure: read logs; classify flaky vs real (flaky = passes on retry).
+- Flaky: retry just the failing step.
+- Real bug: fix → fmt → commit → retry CI (under --no-git: fix → fmt → retry).
+- Exhausted: workflow status "failed"; skip to done. Draft PR stays open as
+  the record of the failed attempt — do not close, undraft, or mutate.
+"""
+retry    = { max_flaky = 3, max_real = 5, on = "failure" }
+evidence = [
+  { ci_status         = "passed" },
+  { covers_commit_sha = "HEAD" },
+]
+
+
+# --- done ---------------------------------------------------------------------
+# Script emits markdown timing table + <<<FACTS ... FACTS>>> block. Engine
+# passes FACTS into the instruction template so the agent can compose
+# optimization suggestions specific to this run's data.
+
+[[step]]
+name                = "done"
+depends_on          = ["ci"]
+never_skip          = true
+instructions_script = "scripts/steps/done"
+instructions        = """
+After the script prints its timing table, read the FACTS block and generate
+2–4 concrete optimization suggestions specific to this run's data (slow step,
+flaky test, fix iterations, etc.).
+
+Then:
+- Under --no-git: print timing + suggestions to terminal only. No PR comment.
+  List files modified via git status --porcelain. Remind user changes are
+  uncommitted.
+- Under forge != github: report branch name + remote URL. Terminal only.
+- Under forge == github: report PR URL, then post final step status as a PR
+  comment via gh pr comment. Use the timing table from the done script
+  verbatim; strip the FACTS block.
+"""
+evidence = [
+  { exit = 0 },
+  { pr_comment_posted_when_forge = "github" },
+]
