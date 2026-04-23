@@ -2,6 +2,9 @@
 
 Agency[^agency] is a near-autonomous workflow for coding agents, packaged as an [APM](https://github.com/microsoft/apm) package.
 
+> [!IMPORTANT]
+> Agency has mainly been tested with Claude Code & Codex. YMMV with other agents.
+
 ## What's included
 
 ### Skills
