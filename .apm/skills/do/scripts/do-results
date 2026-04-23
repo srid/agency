@@ -50,7 +50,8 @@ ENDJSON
     startedAt="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
     existing="$($JQ -r '.pendingStep.name // empty' "$FILE")"
     if [ -n "$existing" ]; then
-      echo "do-results: overwriting stale pendingStep '$existing' — step-end was not called" >&2
+      echo "do-results: pendingStep '$existing' already active — call step-end before starting '$name'" >&2
+      exit 1
     fi
     $JQ --arg n "$name" --arg sa "$startedAt" \
        '.pendingStep = {"name":$n,"startedAt":$sa}' \
