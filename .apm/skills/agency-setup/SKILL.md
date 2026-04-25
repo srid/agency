@@ -87,7 +87,15 @@ Skip this step in **update** mode if the file already exists.
 - `Cargo.toml`, `flake.nix`, `pyproject.toml`
 - `.github/workflows/` for CI hints
 
-Write `.apm/instructions/workflow.instructions.md` based on **what you actually found**. Use this template, leaving any section you couldn't determine as a `# TODO` line — better to skip a step than guess wrong:
+For each of the four sections (Check, Format, Test, CI), there are three possible outcomes:
+
+- **Found a clear command** in the project → fill it in.
+- **Found a plausible command but you're not certain** → use `AskUserQuestion` to confirm. Offer the candidate as one option and "skip this section" as another, with a free-form fallback for the user to type a different command.
+- **Found nothing** → use `AskUserQuestion` to ask the user directly. Always include a "skip this section" option so they can explicitly discard it. Don't fabricate commands.
+
+Sections the user discards are **omitted from the generated file entirely** — no `# TODO` placeholders. `do` already handles missing sections by skipping the corresponding step with a note, which is the right behavior for a section the user has consciously declined.
+
+Final file uses this template, including only the sections the user kept:
 
 ```markdown
 ---
@@ -96,22 +104,20 @@ applyTo: "**"
 ---
 
 ## Check command
-<command, or: # TODO: configure check command>
+<command>
 
 ## Format command
-<command, or: # TODO>
+<command>
 
 ## Test command
-<command, or: # TODO>
+<command>
 
 ## CI command
-<command, or: # TODO>
+<command>
 
 ## Documentation
 Keep `README.md` in sync with user-facing changes.
 ```
-
-Don't fabricate commands. If `package.json` has no `typecheck` script and there's no `tsc` config, leave the section as `# TODO`. The user can fill it in.
 
 After writing this file, **re-run `apm install`** so the new instructions get picked up by the generated host config.
 
@@ -121,7 +127,7 @@ Summarize for the user, in this order:
 
 1. Which `apm` invocation you used (so the user knows the exact command for ad-hoc `apm` calls later).
 2. Which `targets:` ended up in `apm.yml`.
-3. What workflow commands you detected, and which were left as `# TODO`.
+3. Which workflow sections were filled in (and from where) versus skipped at the user's request.
 4. Files changed (staged, not committed). Tell them to review the diff before committing.
 5. **Restart the agent CLI** (Claude Code, Codex, opencode, etc.) so it picks up the newly generated skills — without a restart, `/talk` and `/do` won't be available in the running session.
 6. After restart, try `/talk <question>` or `/do <task>` to verify everything works.
