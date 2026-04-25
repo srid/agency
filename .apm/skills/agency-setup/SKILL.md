@@ -16,6 +16,10 @@ Don't commit anything — leave changes staged for the user to review.
 
 Strip the flag before treating the rest as additional context.
 
+## Invariant: `apm install` and `apm compile` run *after* every file change
+
+`apm install` regenerates the host folders (`.claude/`, `.opencode/`, `.codex/`) from `apm.yml` plus the contents of `.apm/`, and `apm compile -t <subset>` produces the project-root `AGENTS.md` for Codex / opencode from the same inputs. **Any** change to `apm.yml` or anything under `.apm/` invalidates both outputs. So this skill makes all file changes first (steps 1–5) and runs `apm install` (and `apm compile` where needed) exactly once at the end (step 6). Don't run install or compile partway through — later steps may add or modify files that must land in the same regeneration. If you ever edit `apm.yml` or `.apm/*` outside the prescribed order, you must re-run both before reporting back.
+
 ## 1. Pick an `apm` invocation
 
 `apm` does not need to be installed — run it through `uvx`. Try in order, stopping at the first that works:
@@ -62,30 +66,16 @@ If `apm.yml` already exists, edit it idempotently:
 
 Don't touch unrelated entries.
 
-## 4. Run `apm install` (and `apm compile` for Codex / opencode)
+## 4. Ensure `.gitignore` covers agency runtime artifacts
 
-Run `<apm-invocation> install` from the directory containing `apm.yml`. `apm` reads `targets:` from the yml and generates the runtime-specific folders (`.claude/` / `.opencode/` / `.codex/`), plus adds `apm_modules/` to `.gitignore`.
-
-**`install` does not generate the project-root `AGENTS.md` instruction file.** Codex and opencode read `AGENTS.md` at session start; without it they will not see the workflow instructions, code-police rules, or any other `.apm/instructions/` content. To produce it, also run:
-
-```sh
-<apm-invocation> compile -t <subset>
-```
-
-…where `<subset>` is the comma-separated list of `codex` and/or `opencode` from your `targets:` (e.g., `-t codex,opencode` if both are declared, `-t codex` if only Codex). **Skip the compile step entirely if `claude` is the only target** — Claude Code reads `.claude/` natively and doesn't need `AGENTS.md` (compiling `CLAUDE.md` is intentionally avoided).
-
-If `install` or `compile` fails, surface the error verbatim and stop — don't paper over it.
-
-## 5. Ensure `.gitignore` covers agency runtime artifacts
-
-`apm install` adds `apm_modules/` for you, but `do` writes `.do-results.json` at the repo root during a workflow run and that should not be committed. Make sure both lines exist in `.gitignore` (create the file if missing), idempotently — don't duplicate entries that are already there:
+`apm install` (which runs in step 6) will add `apm_modules/` for you, but `do` writes `.do-results.json` at the repo root during a workflow run and that should not be committed. Make sure both lines exist in `.gitignore` (create the file if missing), idempotently — don't duplicate entries that are already there:
 
 - `/.do-results.json`
 - `/apm_modules/` (verify; `apm install` may already have added it as `apm_modules/` — either form is fine)
 
-## 6. Draft `.apm/instructions/workflow.instructions.md`
+## 5. Draft `.apm/instructions/workflow.instructions.md`
 
-If this file already exists, **leave it alone** — the user has either already configured it or is intentionally hand-maintaining it. Skip to step 7.
+If this file already exists, **leave it alone** — the user has either already configured it or is intentionally hand-maintaining it. Skip to step 6.
 
 If it's missing (whether this is a first-time setup or an upgrade where the user added `srid/agency` to `apm.yml` themselves but never wrote workflow instructions), create it now.
 
@@ -129,7 +119,21 @@ applyTo: "**"
 Keep `README.md` in sync with user-facing changes.
 ```
 
-After writing this file, **re-run `apm install`** (and `apm compile -t <subset>` if `codex` or `opencode` is in `targets:`) so the new instructions get picked up by the generated host config and the project-root `AGENTS.md`.
+## 6. Run `apm install` (and `apm compile` for Codex / opencode)
+
+Now that every file change is on disk, regenerate the host configs in a single pass. Run `<apm-invocation> install` from the directory containing `apm.yml`. `apm` reads `targets:` from the yml and generates the runtime-specific folders (`.claude/` / `.opencode/` / `.codex/`), plus adds `apm_modules/` to `.gitignore`.
+
+**`install` does not generate the project-root `AGENTS.md` instruction file.** Codex and opencode read `AGENTS.md` at session start; without it they will not see the workflow instructions, code-police rules, or any other `.apm/instructions/` content. To produce it, also run:
+
+```sh
+<apm-invocation> compile -t <subset>
+```
+
+…where `<subset>` is the comma-separated list of `codex` and/or `opencode` from your `targets:` (e.g., `-t codex,opencode` if both are declared, `-t codex` if only Codex). **Skip the compile step entirely if `claude` is the only target** — Claude Code reads `.claude/` natively and doesn't need `AGENTS.md` (compiling `CLAUDE.md` is intentionally avoided).
+
+If `install` or `compile` fails, surface the error verbatim and stop — don't paper over it.
+
+If you discover after this step that you still need to touch `apm.yml` or anything under `.apm/`, run `install` (and `compile` if applicable) again before moving on. The invariant at the top is non-negotiable.
 
 ## 7. Report back
 
