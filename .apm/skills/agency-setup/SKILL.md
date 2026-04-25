@@ -116,6 +116,7 @@ Summarize for the user, in this order:
 2. Which `targets:` ended up in `apm.yml`.
 3. What workflow commands you detected, and which were left as `# TODO`.
 4. Files changed (staged, not committed). Tell them to review the diff before committing.
-5. Next step: try `/talk <question>` or `/do <task>` to verify everything works.
+5. **Restart the agent CLI** (Claude Code, Codex, opencode, etc.) so it picks up the newly generated skills — without a restart, `/talk` and `/do` won't be available in the running session.
+6. After restart, try `/talk <question>` or `/do <task>` to verify everything works.
 
 ARGUMENTS: $ARGUMENTS
