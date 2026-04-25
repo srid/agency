@@ -3,7 +3,9 @@
 Agency[^agency] is a near-autonomous workflow for coding agents, packaged as an [APM](https://github.com/microsoft/apm) package.
 
 > [!IMPORTANT]
-> Agency has mainly been tested with Claude Code & Codex. YMMV with other agents.
+> Agency has mainly been tested with Claude Code & Codex; opencode is supported but less battle-tested. YMMV with other agents.
+
+Drop two skills into your coding agent: **`do`** runs end-to-end (research → implement → structural review → CI → ship), and **`talk`** is read-only for design discussion and code exploration.
 
 ## Quickstart
 
@@ -11,11 +13,15 @@ Paste this into your AI agent (Claude Code, Codex, opencode) at the root of the 
 
 > Set up this repo to use srid/agency by following the instructions at <https://github.com/srid/agency/blob/master/.apm/skills/agency-setup/SKILL.md>.
 
-The agent will run `apm` via `uvx` (no install needed — falls back to `nix shell nixpkgs#uv -c uvx` if you have Nix but not `uvx`), create or extend `apm.yml`, run `apm install` (plus `apm compile -t codex,opencode` when those hosts are declared, since they need a project-root `AGENTS.md`), and draft `.apm/instructions/workflow.instructions.md` from your project's existing scripts. Review the staged changes before committing.
+The agent will:
+
+- Run `apm` via `uvx` (no install needed; falls back to `nix shell nixpkgs#uv -c uvx` if you have Nix but not `uvx`)
+- Create or extend `apm.yml` and run `apm install` (plus `apm compile -t codex,opencode` when those hosts are declared, since they need a project-root `AGENTS.md`)
+- Draft `.apm/instructions/workflow.instructions.md` from your project's existing scripts
+
+Review the staged changes before committing.
 
 Pasting the same prompt again later acts as an **update** — it detects the existing install and refreshes generated files. Append `--update` to also re-pin `srid/agency` to `#master`.
-
-For the manual path or a deeper explanation, see [Usage](#usage) below.
 
 ## What's included
 
@@ -37,7 +43,7 @@ For the manual path or a deeper explanation, see [Usage](#usage) below.
 - **`fact-check`** — Standalone correctness audit: finds silent error swallowing, unjustified fallbacks, wishful thinking, and logic errors. Prosecutor posture — no self-dismissals.
 - **`elegance`** — Iterative elegance pass: understand, research, apply, verify. Runs 3 iterations by default, each building on the last.
 - **`forge-pr`** — Writes PR titles and descriptions that devs actually want to read. Paragraphs over bullet lists, substance over boilerplate. GitHub today; Bitbucket support tracked in [#10](https://github.com/srid/agency/issues/10).
-- **`agency-setup`** — Bootstraps or updates srid/agency in a project: runs `apm` via `uvx` (no install needed), configures `apm.yml`, runs `apm install`, and drafts `.apm/instructions/workflow.instructions.md` from the project's existing scripts. Powers the [Quickstart](#quickstart) prompt. Re-paste the prompt later to refresh; append `--update` to also re-pin `srid/agency`.
+- **`agency-setup`** — Bootstraps or updates srid/agency in a project. Powers the [Quickstart](#quickstart) prompt; re-paste later to refresh, or append `--update` to re-pin `srid/agency` to `#master`.
 
 ### Hooks & Instructions
 
@@ -55,142 +61,7 @@ Type-checkers, tests, and CI catch correctness. They don't catch design. An LLM-
 
 Both default to Sonnet to keep the review cheap enough to run on every task. Pass **`--review-model=opus`** to `do` (or `talk`, which only runs Lowy) when the diff warrants a deeper pass — large or architecturally significant changes, cross-module refactors, anything you want extra-careful eyes on. `haiku` is also accepted for cheap scans.
 
-Read [**Hickey/Lowy on kolu.dev**](https://kolu.dev/blog/hickey-lowy/) for the full framing — what each lens looks for, why the pair catches what tests miss, and how to extend them with project-specific vectors (see *Add project-specific structural review vectors* below).
-
-## Usage
-
-### 0. Create `apm.yml`
-
-```
-name: yourproject
-version: 1.0.0
-type: hybrid
-
-dependencies:
-  apm:
-    - srid/agency#master
-    - juspay/skills/skills/nix-justfile
-```
-
-### 1. Install
-
-Or via [uvx](https://docs.astral.sh/uv/guides/tools/):
-
-```bash
-# Use `nix shell nixpkgs#uv -c uvx` if you don't have uvx
-uvx --from apm-cli apm install -t claude
-```
-
-This generates `.claude/` with agency's skills, agents, and hooks, and adds `apm_modules/` to `.gitignore`. You now have the `do` and `talk` skills available in supported hosts.
-
-For a more involved setup, see https://github.com/juspay/AI
-
-### 2. Tell `do` about your project
-
-`do` runs autonomously but needs to know your project's check, format, test, and CI commands. Without this, it skips those steps.
-
-Create `.apm/instructions/workflow.instructions.md`:
-
-```markdown
----
-description: Workflow commands for the do pipeline
-applyTo: "**"
----
-
-## Check command
-`npm run typecheck` — fast static-correctness gate (e.g. `tsc --noEmit`, `cargo check`, `cabal build`, `mypy`).
-
-## Format command
-`npm run lint:fix`
-
-## Test command
-`npm test` — run only tests relevant to changed code paths.
-
-## CI command
-`npm run ci` — verify by checking exit code 0.
-
-## Documentation
-Keep `README.md` in sync with user-facing changes.
-```
-
-Run `apm install` again to regenerate `.claude/`.
-
-The `do` steps that read these instructions: **check**, **fmt**, **test**, **ci**, and **docs**. Each step looks for its heading in your project instructions and runs whatever command you specified. If a step finds nothing documented, it skips with a note.
-
-### 3. Add project-specific quality rules (optional)
-
-`code-police` ships with generic rules. Layer on your own by creating `.apm/instructions/code-police-rules.instructions.md`:
-
-```markdown
----
-description: Project-specific code-police rules
----
-
-## Code Police Rules
-
-### no-raw-sql
-Use the query builder for all database access. No raw SQL strings outside migrations.
-
-### always-use-server-functions
-Data fetching must go through server functions, never direct API calls from components.
-```
-
-These get checked alongside the built-in rules during the police pass.
-
-### 4. Add project-specific structural review vectors (optional)
-
-`hickey` and `lowy` ship with generic catalogs. Extend them with project-specific vectors by dropping an `.apm/instructions/*.instructions.md` file with an `applyTo:` glob. APM generates a `paths:`-scoped rule under `.claude/rules/`, and Claude Code auto-surfaces it as a system-reminder to the hickey/lowy subagent the moment it reads a matching file — no `do` plumbing, no extra wiring.
-
-**Hickey (complecting patterns).** Extends the Layer 4 catalog. File name is conventionally `hickey-catalog.instructions.md`. Schema:
-
-```markdown
----
-description: Project-specific complecting patterns
-applyTo: "packages/client/src/**"
----
-
-## Additional Complecting Patterns
-
-| Construct | What it complects | Simpler alternative |
-|-----------|-------------------|---------------------|
-| `createEffect` that writes to signals (effect-as-state-machine) | When + what + control flow | `createMemo` for derived values; `on()` for explicit dependency tracking |
-```
-
-**Lowy (areas of volatility).** Consumed in the "Name the Volatility" step. File name is conventionally `lowy-volatilities.instructions.md`. Schema is loosely based on Lowy's TradeMe enumeration in *Righting Software* Ch. 5:
-
-```markdown
----
-description: Project-declared areas of volatility
-applyTo: "packages/client/src/**"
----
-
-## Areas of Volatility
-
-| Area of volatility | What changes | Why volatile (likelihood × effect) | Expected encapsulation |
-|--------------------|--------------|------------------------------------|------------------------|
-| Server-pushed state delivery | Transport for live server state (polling RPC → WebSocket → oRPC async iterables → future SSE/RSC) | Likelihood: already migrated twice in this codebase; Effect: every consumer of live state would need rewriting if the transport leaked into components | Behind the `createSubscription` seam — consumers see a SolidJS-signal-shaped API regardless of transport |
-```
-
-Each row must pass Lowy's variable-vs-volatile bar — *state what the volatility is, why it is volatile, and what risk it poses in likelihood and effect*. Rows are not findings; they are surviving candidates from the project's own screen. The subagent re-applies the bar, challenges rows that fail it, and audits whether boundaries under review actually encapsulate the surviving volatilities (adapting Lowy's Manager/Engine/Resource targeting to whatever encapsulation vocabulary fits the stack — `createSubscription` seams, hook modules, etc.).
-
-See [Kolu's `agents/.apm/instructions/hickey-catalog.instructions.md`](https://github.com/juspay/kolu/blob/master/agents/.apm/instructions/hickey-catalog.instructions.md) for a worked hickey-side example.
-
-### Putting it together
-
-Your project's `.apm/` directory ends up looking something like:
-
-```
-.apm/
-  agents/                           # Claude Code sub-agents (thin wrappers over skills)
-    hickey.md
-    lowy.md
-  instructions/
-    workflow.instructions.md        # fmt, test, ci, docs commands
-    code-police-rules.instructions.md  # project-specific quality rules
-    architecture.instructions.md    # optional: architectural constraints
-```
-
-See [Kolu's `agents/.apm/`](https://github.com/juspay/kolu/tree/master/agents/.apm) for a real-world example with workflow config, architecture docs, and custom code-police rules layered on top of agency.
+Read [**Hickey/Lowy on kolu.dev**](https://kolu.dev/blog/hickey-lowy/) for the full framing — what each lens looks for and why the pair catches what tests miss. Both can be extended with project-specific patterns by dropping an `.apm/instructions/*.instructions.md` file with an `applyTo:` glob; see [Kolu's `hickey-catalog.instructions.md`](https://github.com/juspay/kolu/blob/master/agents/.apm/instructions/hickey-catalog.instructions.md) for a worked example.
 
 ## Examples
 
