@@ -131,7 +131,13 @@ Summarize for the user, in this order:
 2. Which `targets:` ended up in `apm.yml`.
 3. Which workflow sections were filled in (and from where) versus skipped at the user's request.
 4. Files changed (staged, not committed). Tell them to review the diff before committing.
-5. **Restart the agent CLI** (Claude Code, Codex, opencode, etc.) so it picks up the newly generated skills — without a restart, `/talk` and `/do` won't be available in the running session.
-6. After restart, try `/talk <question>` or `/do <task>` to verify everything works.
+5. **Optional instructions to consider adding** — list whichever of these files do **not** yet exist under `.apm/instructions/`, and explain briefly what each is for. They're project-specific and can't be auto-generated, but the user should know they exist so they can layer them on:
+   - `code-police-rules.instructions.md` — project-specific quality rules checked alongside the built-in `code-police` rules.
+   - `hickey-catalog.instructions.md` — project-specific complecting patterns extending the Hickey Layer 4 catalog.
+   - `lowy-volatilities.instructions.md` — project-declared areas of volatility used by the Lowy review pass.
+
+   Point them at [Kolu's `.apm/instructions/`](https://github.com/juspay/kolu/tree/master/.apm/instructions) as a worked example. Skip files that already exist.
+6. **Restart the agent CLI** (Claude Code, Codex, opencode, etc.) so it picks up the newly generated skills — without a restart, `/talk` and `/do` won't be available in the running session.
+7. After restart, try `/talk <question>` or `/do <task>` to verify everything works.
 
 ARGUMENTS: $ARGUMENTS
