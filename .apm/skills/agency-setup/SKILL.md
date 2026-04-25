@@ -6,18 +6,15 @@ argument-hint: "[--update]"
 
 # Agency Setup
 
-Configure (or refresh) this repo to use [srid/agency](https://github.com/srid/agency). Detect what state the project is in and do the right thing — first-time bootstrap vs. refreshing an existing install.
+Configure (or refresh) this repo to use [srid/agency](https://github.com/srid/agency). Each step below is **idempotent** — it inspects what's already on disk and acts only on what's missing or out of date. The skill works equally well as first-time bootstrap, full refresh, or **partial-install upgrade** (e.g. user already added `srid/agency` to `apm.yml` manually but never created `workflow.instructions.md` — the skill detects the gap and fills it without re-doing the parts that already exist).
 
-This skill is **idempotent** and safe to re-run. Don't commit anything — leave changes staged for the user to review.
+Don't commit anything — leave changes staged for the user to review.
 
-## Modes
+## The `--update` flag
 
-Detect the mode from repo state — **don't require the user to pass a flag**. The Quickstart prompt is the same for first-time setup and updates; users who paste it again after install expect it to refresh, not start over.
+`--update` in `ARGUMENTS` is the only explicit mode hint, and it does exactly one thing: re-pin the `srid/agency` ref in `apm.yml` to `#master` (in case the user pinned it to an older tag/sha and wants to move forward). **Every other step runs unconditionally** — they each decide for themselves whether they have work to do.
 
-- **First-time setup** — `apm.yml` is missing, or it exists but has no `srid/agency` entry under `dependencies.apm:`.
-- **Update** — `apm.yml` already pins `srid/agency`. Skip steps that would clobber the user's existing config; just refresh.
-
-`--update` in `ARGUMENTS` is an explicit hint that **also** requests bumping the `srid/agency` ref back to `#master` (in case the user pinned it to a tag/sha and wants to move forward). Without the flag, leave the existing pin alone in update mode. Strip the flag before treating the rest as additional context.
+Strip the flag before treating the rest as additional context.
 
 ## 1. Pick an `apm` invocation
 
@@ -57,10 +54,13 @@ dependencies:
     - srid/agency#master
 ```
 
-If `apm.yml` already exists:
+If `apm.yml` already exists, edit it idempotently:
 
-- In **first-time** mode: append `srid/agency#master` to `dependencies.apm:`, preserving every existing entry. If `dependencies.apm:` doesn't exist, add it. If `targets:` is missing or doesn't include the detected host, add the host to it (don't remove existing targets).
-- In **update** mode: leave `apm.yml` alone unless `--update` was passed explicitly — in that case, re-pin the `srid/agency` line to `#master`. Don't touch other entries.
+- If `dependencies.apm:` is missing the `srid/agency` entry, append `srid/agency#master`. Preserve every existing entry. If the `dependencies.apm:` block itself is missing, add it.
+- If `targets:` is missing or doesn't include the detected host, add the host. Don't remove existing targets.
+- If `--update` was passed explicitly **and** `srid/agency` is already pinned to something other than `#master`, re-pin it to `#master`. Without the flag, leave the existing pin alone.
+
+Don't touch unrelated entries.
 
 ## 4. Run `apm install`
 
@@ -77,7 +77,9 @@ If install fails, surface the error verbatim and stop — don't paper over it.
 
 ## 6. Draft `.apm/instructions/workflow.instructions.md`
 
-Skip this step in **update** mode if the file already exists.
+If this file already exists, **leave it alone** — the user has either already configured it or is intentionally hand-maintaining it. Skip to step 7.
+
+If it's missing (whether this is a first-time setup or an upgrade where the user added `srid/agency` to `apm.yml` themselves but never wrote workflow instructions), create it now.
 
 `do` runs autonomously but needs to know your project's check, format, test, and CI commands. Inspect the project to figure them out — look at:
 
