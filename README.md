@@ -5,6 +5,18 @@ Agency[^agency] is a near-autonomous workflow for coding agents, packaged as an 
 > [!IMPORTANT]
 > Agency has mainly been tested with Claude Code & Codex. YMMV with other agents.
 
+## Quickstart
+
+Paste this into your AI agent (Claude Code, Codex, opencode) at the root of the repo you want to set up:
+
+> Set up this repo to use srid/agency by following the instructions at <https://github.com/srid/agency/blob/master/.apm/skills/agency-setup/SKILL.md>.
+
+The agent will run `apm` via `uvx` (no install needed — falls back to `nix shell nixpkgs#uv -c uvx` if you have Nix but not `uvx`), create or extend `apm.yml`, run `apm install` for your host, and draft `.apm/instructions/workflow.instructions.md` from your project's existing scripts. Review the staged changes before committing.
+
+Pasting the same prompt again later acts as an **update** — it detects the existing install and refreshes generated files. Append `--update` to also re-pin `srid/agency` to `#master`.
+
+For the manual path or a deeper explanation, see [Usage](#usage) below.
+
 ## What's included
 
 ### Skills
@@ -25,6 +37,7 @@ Agency[^agency] is a near-autonomous workflow for coding agents, packaged as an 
 - **`fact-check`** — Standalone correctness audit: finds silent error swallowing, unjustified fallbacks, wishful thinking, and logic errors. Prosecutor posture — no self-dismissals.
 - **`elegance`** — Iterative elegance pass: understand, research, apply, verify. Runs 3 iterations by default, each building on the last.
 - **`forge-pr`** — Writes PR titles and descriptions that devs actually want to read. Paragraphs over bullet lists, substance over boilerplate. GitHub today; Bitbucket support tracked in [#10](https://github.com/srid/agency/issues/10).
+- **`agency-setup`** — Bootstraps or updates srid/agency in a project: runs `apm` via `uvx` (no install needed), configures `apm.yml`, runs `apm install`, and drafts `.apm/instructions/workflow.instructions.md` from the project's existing scripts. Powers the [Quickstart](#quickstart) prompt. Re-paste the prompt later to refresh; append `--update` to also re-pin `srid/agency`.
 
 ### Hooks & Instructions
 
