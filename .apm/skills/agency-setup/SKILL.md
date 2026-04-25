@@ -16,9 +16,9 @@ Don't commit anything — leave changes staged for the user to review.
 
 Strip the flag before treating the rest as additional context.
 
-## Invariant: `apm install` runs *after* every file change
+## Invariant: `apm install` and `apm compile` run *after* every file change
 
-`apm install` regenerates `.claude/`, `.opencode/`, `.codex/`, and the project-root `AGENTS.md` from `apm.yml` plus the contents of `.apm/`. **Any** change to `apm.yml` or anything under `.apm/` invalidates the generated output. So this skill makes all file changes first (steps 1–5) and runs `apm install` (and `apm compile` where needed) exactly once at the end (step 6). Don't run install partway through — later steps may add or modify files that must land in the same regeneration. If you ever edit `apm.yml` or `.apm/*` outside the prescribed order, you must re-run install before reporting back.
+`apm install` regenerates the host folders (`.claude/`, `.opencode/`, `.codex/`) from `apm.yml` plus the contents of `.apm/`, and `apm compile -t <subset>` produces the project-root `AGENTS.md` for Codex / opencode from the same inputs. **Any** change to `apm.yml` or anything under `.apm/` invalidates both outputs. So this skill makes all file changes first (steps 1–5) and runs `apm install` (and `apm compile` where needed) exactly once at the end (step 6). Don't run install or compile partway through — later steps may add or modify files that must land in the same regeneration. If you ever edit `apm.yml` or `.apm/*` outside the prescribed order, you must re-run both before reporting back.
 
 ## 1. Pick an `apm` invocation
 
