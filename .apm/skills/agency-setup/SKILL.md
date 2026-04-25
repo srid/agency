@@ -68,7 +68,14 @@ Run `<apm-invocation> install` from the directory containing `apm.yml`. `apm` re
 
 If install fails, surface the error verbatim and stop — don't paper over it.
 
-## 5. Draft `.apm/instructions/workflow.instructions.md`
+## 5. Ensure `.gitignore` covers agency runtime artifacts
+
+`apm install` adds `apm_modules/` for you, but `do` writes `.do-results.json` at the repo root during a workflow run and that should not be committed. Make sure both lines exist in `.gitignore` (create the file if missing), idempotently — don't duplicate entries that are already there:
+
+- `/.do-results.json`
+- `/apm_modules/` (verify; `apm install` may already have added it as `apm_modules/` — either form is fine)
+
+## 6. Draft `.apm/instructions/workflow.instructions.md`
 
 Skip this step in **update** mode if the file already exists.
 
@@ -108,7 +115,7 @@ Don't fabricate commands. If `package.json` has no `typecheck` script and there'
 
 After writing this file, **re-run `apm install`** so the new instructions get picked up by the generated host config.
 
-## 6. Report back
+## 7. Report back
 
 Summarize for the user, in this order:
 
