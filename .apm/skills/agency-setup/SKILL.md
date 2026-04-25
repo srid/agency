@@ -62,11 +62,19 @@ If `apm.yml` already exists, edit it idempotently:
 
 Don't touch unrelated entries.
 
-## 4. Run `apm install`
+## 4. Run `apm install` (and `apm compile` for Codex / opencode)
 
-Run `<apm-invocation> install` from the directory containing `apm.yml`. `apm` reads `targets:` from the yml and generates `.claude/` / `.opencode/` / `.codex/` accordingly, plus adds `apm_modules/` to `.gitignore`.
+Run `<apm-invocation> install` from the directory containing `apm.yml`. `apm` reads `targets:` from the yml and generates the runtime-specific folders (`.claude/` / `.opencode/` / `.codex/`), plus adds `apm_modules/` to `.gitignore`.
 
-If install fails, surface the error verbatim and stop — don't paper over it.
+**`install` does not generate the project-root `AGENTS.md` instruction file.** Codex and opencode read `AGENTS.md` at session start; without it they will not see the workflow instructions, code-police rules, or any other `.apm/instructions/` content. To produce it, also run:
+
+```sh
+<apm-invocation> compile --target <subset>
+```
+
+…where `<subset>` is the comma-separated list of `codex` and/or `opencode` from your `targets:` (e.g., `--target codex,opencode` if both are declared, `--target codex` if only Codex). **Skip the compile step entirely if `claude` is the only target** — Claude Code reads `.claude/` natively and doesn't need `AGENTS.md` (compiling `CLAUDE.md` is intentionally avoided).
+
+If `install` or `compile` fails, surface the error verbatim and stop — don't paper over it.
 
 ## 5. Ensure `.gitignore` covers agency runtime artifacts
 
@@ -121,7 +129,7 @@ applyTo: "**"
 Keep `README.md` in sync with user-facing changes.
 ```
 
-After writing this file, **re-run `apm install`** so the new instructions get picked up by the generated host config.
+After writing this file, **re-run `apm install`** (and `apm compile --target <subset>` if `codex` or `opencode` is in `targets:`) so the new instructions get picked up by the generated host config and the project-root `AGENTS.md`.
 
 ## 7. Report back
 
