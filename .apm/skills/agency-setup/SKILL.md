@@ -26,7 +26,7 @@ Detect the mode from repo state — **don't require the user to pass a flag**. T
 1. `uvx --from apm-cli apm --version`
 2. `nix shell nixpkgs#uv -c uvx --from apm-cli apm --version`
 
-If neither works (no `uvx` and no `nix`), tell the user to install one of [`uv`](https://docs.astral.sh/uv/) or [`nix`](https://nixos.org/) and stop. Don't try to install package managers yourself.
+If neither works (no `uvx` and no `nix`), tell the user to install one of [`uv`](https://docs.astral.sh/uv/) or [`nix`](https://nixos.asia/en/install) and stop. Don't try to install package managers yourself.
 
 Use whichever prefix succeeded as the `apm` invocation for every subsequent `apm` call in this run (e.g., `uvx --from apm-cli apm install`).
 
