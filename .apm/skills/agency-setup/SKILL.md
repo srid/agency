@@ -33,13 +33,15 @@ Use whichever prefix succeeded as the `apm` invocation for every subsequent `apm
 
 ## 2. Detect the host targets
 
-The host targets go into `apm.yml` as a `targets:` list (next step) — `apm install` reads them, no `-t` flag needed. Detect from what's already on disk and the host you're running in:
+The host targets go into `apm.yml` (next step) — `apm install` reads them, no `-t` flag needed. Detect from what's already on disk and the host you're running in:
 
 - `.claude/` exists, or you're running in Claude Code → `claude`
 - `.opencode/` exists, or you're running in opencode → `opencode`
 - `.codex/` exists, or you're running in Codex → `codex`
 
 Multiple matches are fine — declare all of them. If nothing matches and the host you're in isn't one of the three, use `AskUserQuestion` to confirm. Do **not** guess silently — installing for the wrong target wastes a round trip.
+
+**Single vs. multiple targets:** `apm` has a bug where the plural `targets:` list breaks when only one entry is present. Use the singular `target: <name>` scalar for exactly one target, and the `targets:` list only when you have two or more.
 
 ## 3. Create or extend `apm.yml`
 
@@ -50,18 +52,19 @@ name: <repo-directory-name>
 version: 1.0.0
 type: hybrid
 
-targets:
-  - <detected-target>
+target: <detected-target>
 
 dependencies:
   apm:
     - srid/agency#master
 ```
 
+(If you detected two or more hosts, use the `targets:` list form instead — see the note in step 2.)
+
 If `apm.yml` already exists, edit it idempotently:
 
 - If `dependencies.apm:` is missing the `srid/agency` entry, append `srid/agency#master`. Preserve every existing entry. If the `dependencies.apm:` block itself is missing, add it.
-- If `targets:` is missing or doesn't include the detected host, add the host. Don't remove existing targets.
+- If neither `target:` nor `targets:` includes the detected host, add it. Don't remove existing targets. When adding a host pushes the count from one to two, convert `target: <name>` into a `targets:` list with both entries; when removing a host (not something this skill does, but worth knowing) drops the count back to one, convert the list back to the scalar form.
 - If `--update` was passed explicitly **and** `srid/agency` is already pinned to something other than `#master`, re-pin it to `#master`. Without the flag, leave the existing pin alone.
 
 Don't touch unrelated entries.
@@ -121,7 +124,7 @@ Keep `README.md` in sync with user-facing changes.
 
 ## 6. Run `apm install` (and `apm compile` for Codex / opencode)
 
-Now that every file change is on disk, regenerate the host configs in a single pass. Run `<apm-invocation> install` from the directory containing `apm.yml`. `apm` reads `targets:` from the yml and generates the runtime-specific folders (`.claude/` / `.opencode/` / `.codex/`), plus adds `apm_modules/` to `.gitignore`.
+Now that every file change is on disk, regenerate the host configs in a single pass. Run `<apm-invocation> install` from the directory containing `apm.yml`. `apm` reads `target:` / `targets:` from the yml and generates the runtime-specific folders (`.claude/` / `.opencode/` / `.codex/`), plus adds `apm_modules/` to `.gitignore`.
 
 **`install` does not generate the project-root `AGENTS.md` instruction file.** Codex and opencode read `AGENTS.md` at session start; without it they will not see the workflow instructions, code-police rules, or any other `.apm/instructions/` content. To produce it, also run:
 
@@ -129,7 +132,7 @@ Now that every file change is on disk, regenerate the host configs in a single p
 <apm-invocation> compile -t <subset>
 ```
 
-…where `<subset>` is the comma-separated list of `codex` and/or `opencode` from your `targets:` (e.g., `-t codex,opencode` if both are declared, `-t codex` if only Codex). **Skip the compile step entirely if `claude` is the only target** — Claude Code reads `.claude/` natively and doesn't need `AGENTS.md` (compiling `CLAUDE.md` is intentionally avoided).
+…where `<subset>` is the comma-separated list of `codex` and/or `opencode` from your declared targets (e.g., `-t codex,opencode` if both are declared, `-t codex` if only Codex). **Skip the compile step entirely if `claude` is the only target** — Claude Code reads `.claude/` natively and doesn't need `AGENTS.md` (compiling `CLAUDE.md` is intentionally avoided).
 
 If `install` or `compile` fails, surface the error verbatim and stop — don't paper over it.
 
@@ -140,7 +143,7 @@ If you discover after this step that you still need to touch `apm.yml` or anythi
 Summarize for the user, in this order:
 
 1. Which `apm` invocation you used (so the user knows the exact command for ad-hoc `apm` calls later).
-2. Which `targets:` ended up in `apm.yml`.
+2. Which target(s) ended up in `apm.yml` (and which form — `target:` scalar or `targets:` list).
 3. Which workflow sections were filled in (and from where) versus skipped at the user's request.
 4. Files changed (staged, not committed). Tell them to review the diff before committing.
 5. **Optional instructions to consider adding** — list whichever of these files do **not** yet exist under `.apm/instructions/`, and explain briefly what each is for. They're project-specific and can't be auto-generated, but the user should know they exist so they can layer them on:
