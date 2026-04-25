@@ -137,7 +137,12 @@ Summarize for the user, in this order:
    - `lowy-volatilities.instructions.md` — project-declared areas of volatility used by the Lowy review pass.
 
    Point them at [Kolu's `.apm/instructions/`](https://github.com/juspay/kolu/tree/master/.apm/instructions) as a worked example. Skip files that already exist.
-6. **Restart the agent CLI** (Claude Code, Codex, opencode, etc.) so it picks up the newly generated skills — without a restart, `/talk` and `/do` won't be available in the running session.
-7. After restart, try `/talk <question>` or `/do <task>` to verify everything works.
+6. **Restart the agent CLI** (Claude Code, Codex, opencode, etc.) so it picks up the newly generated skills — without a restart, the new skills won't be available in the running session.
+7. After restart, try `talk` or `do` to verify everything works. Tell the user the **exact** invocation syntax for the target(s) you installed for — don't make them guess:
+   - **Claude Code** → `/talk <question>` and `/do <task>` (slash commands).
+   - **Codex** → `$talk <question>` and `$do <task>` (dollar prefix).
+   - **opencode** → invoke `/skills` and pick `talk` or `do` from the list.
+
+   If you installed for multiple targets, list the syntax for each.
 
 ARGUMENTS: $ARGUMENTS
