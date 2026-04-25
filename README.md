@@ -64,11 +64,31 @@ Type-checkers, tests, and CI catch correctness. They don't catch design. An LLM-
 
 Both default to Sonnet to keep the review cheap enough to run on every task. Pass **`--review-model=opus`** to `do` (or `talk`, which only runs Lowy) when the diff warrants a deeper pass — large or architecturally significant changes, cross-module refactors, anything you want extra-careful eyes on. `haiku` is also accepted for cheap scans.
 
-Read [**Hickey/Lowy on kolu.dev**](https://kolu.dev/blog/hickey-lowy/) for the full framing — what each lens looks for and why the pair catches what tests miss. Both can be extended with project-specific patterns by dropping an `.apm/instructions/*.instructions.md` file with an `applyTo:` glob; see [Kolu's `hickey-catalog.instructions.md`](https://github.com/juspay/kolu/blob/master/agents/.apm/instructions/hickey-catalog.instructions.md) for a worked example.
+Read [**Hickey/Lowy on kolu.dev**](https://kolu.dev/blog/hickey-lowy/) for the full framing — what each lens looks for and why the pair catches what tests miss. Both can be extended with project-specific patterns by dropping an `.apm/instructions/*.instructions.md` file with an `applyTo:` glob; see [Kolu's `hickey-catalog.instructions.md`](https://github.com/juspay/kolu/blob/master/.apm/instructions/hickey-catalog.instructions.md) for a worked example.
+
+## Project-specific code-police rules
+
+`code-police` ships with generic rules. Layer on your own by creating `.apm/instructions/code-police-rules.instructions.md`:
+
+```markdown
+---
+description: Project-specific code-police rules
+---
+
+## Code Police Rules
+
+### no-raw-sql
+Use the query builder for all database access. No raw SQL strings outside migrations.
+
+### always-use-server-functions
+Data fetching must go through server functions, never direct API calls from components.
+```
+
+These get checked alongside the built-in rules during the police pass.
 
 ## Examples
 
-- **[Kolu](https://github.com/juspay/kolu)** — Terminal multiplexer that uses agency for its autonomous development workflow. See its [`apm.yml`](https://github.com/juspay/kolu/blob/master/apm.yml) and [`agents/.apm/`](https://github.com/juspay/kolu/tree/master/agents/.apm) for how project-specific instructions layer on top of agency's generic workflow.
+- **[Kolu](https://github.com/juspay/kolu)** — Terminal multiplexer that uses agency for its autonomous development workflow. See its [`apm.yml`](https://github.com/juspay/kolu/blob/master/apm.yml) and [`.apm/`](https://github.com/juspay/kolu/tree/master/.apm) for how project-specific instructions layer on top of agency's generic workflow.
 
 ## Development
 
