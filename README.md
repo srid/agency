@@ -64,7 +64,7 @@ Type-checkers, tests, and CI catch correctness. They don't catch design. An LLM-
 
 Both default to Sonnet to keep the review cheap enough to run on every task. Pass **`--review-model=opus`** to `do` (or `talk`, which only runs Lowy) when the diff warrants a deeper pass — large or architecturally significant changes, cross-module refactors, anything you want extra-careful eyes on. `haiku` is also accepted for cheap scans.
 
-Read [**Hickey/Lowy on kolu.dev**](https://kolu.dev/blog/hickey-lowy/) for the full framing — what each lens looks for and why the pair catches what tests miss. Both can be extended with project-specific patterns by dropping an `.apm/instructions/*.instructions.md` file with an `applyTo:` glob; see [Kolu's `hickey-catalog.instructions.md`](https://github.com/juspay/kolu/blob/master/.apm/instructions/hickey-catalog.instructions.md) for a worked example.
+Read [**Hickey/Lowy on kolu.dev**](https://kolu.dev/blog/hickey-lowy/) for the full framing — what each lens looks for and why the pair catches what tests miss. Both can be extended with project-specific patterns by dropping an `.apm/instructions/*.instructions.md` file with an `applyTo:` glob; see Kolu's [`hickey-catalog.instructions.md`](https://github.com/juspay/kolu/blob/master/.apm/instructions/hickey-catalog.instructions.md) and [`lowy-volatilities.instructions.md`](https://github.com/juspay/kolu/blob/master/.apm/instructions/lowy-volatilities.instructions.md) for worked examples.
 
 ## Project-specific code-police rules
 
@@ -84,7 +84,7 @@ Use the query builder for all database access. No raw SQL strings outside migrat
 Data fetching must go through server functions, never direct API calls from components.
 ```
 
-These get checked alongside the built-in rules during the police pass.
+These get checked alongside the built-in rules during the police pass. See [Kolu's `code-police-rules.instructions.md`](https://github.com/juspay/kolu/blob/master/.apm/instructions/code-police-rules.instructions.md) for a worked example.
 
 ## Examples
 
