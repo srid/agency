@@ -11,7 +11,7 @@ Paste this into your AI agent (Claude Code, Codex, opencode) at the root of the 
 
 > Set up this repo to use srid/agency by following the instructions at <https://github.com/srid/agency/blob/master/.apm/skills/agency-setup/SKILL.md>.
 
-The agent will run `apm` via `uvx` (no install needed — falls back to `nix shell nixpkgs#uv -c uvx` if you have Nix but not `uvx`), create or extend `apm.yml`, run `apm install` for your host, and draft `.apm/instructions/workflow.instructions.md` from your project's existing scripts. Review the staged changes before committing.
+The agent will run `apm` via `uvx` (no install needed — falls back to `nix shell nixpkgs#uv -c uvx` if you have Nix but not `uvx`), create or extend `apm.yml`, run `apm install` (plus `apm compile -t codex,opencode` when those hosts are declared, since they need a project-root `AGENTS.md`), and draft `.apm/instructions/workflow.instructions.md` from your project's existing scripts. Review the staged changes before committing.
 
 Pasting the same prompt again later acts as an **update** — it detects the existing install and refreshes generated files. Append `--update` to also re-pin `srid/agency` to `#master`.
 
