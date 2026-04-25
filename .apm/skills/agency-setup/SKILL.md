@@ -28,17 +28,17 @@ Detect the mode from repo state — **don't require the user to pass a flag**. T
 
 If neither works (no `uvx` and no `nix`), tell the user to install one of [`uv`](https://docs.astral.sh/uv/) or [`nix`](https://nixos.org/) and stop. Don't try to install package managers yourself.
 
-Use whichever prefix succeeded as the `apm` invocation for every subsequent `apm` call in this run (e.g., `uvx --from apm-cli apm install -t claude`).
+Use whichever prefix succeeded as the `apm` invocation for every subsequent `apm` call in this run (e.g., `uvx --from apm-cli apm install`).
 
-## 2. Detect the host target
+## 2. Detect the host targets
 
-Pass `-t <target>` to `apm install`. Detect the target from what's already on disk and the host you're running in:
+The host targets go into `apm.yml` as a `targets:` list (next step) — `apm install` reads them, no `-t` flag needed. Detect from what's already on disk and the host you're running in:
 
 - `.claude/` exists, or you're running in Claude Code → `claude`
 - `.opencode/` exists, or you're running in opencode → `opencode`
 - `.codex/` exists, or you're running in Codex → `codex`
 
-If still ambiguous, use `AskUserQuestion` to confirm. Do **not** guess silently — installing for the wrong target wastes a round trip.
+Multiple matches are fine — declare all of them. If nothing matches and the host you're in isn't one of the three, use `AskUserQuestion` to confirm. Do **not** guess silently — installing for the wrong target wastes a round trip.
 
 ## 3. Create or extend `apm.yml`
 
@@ -49,6 +49,9 @@ name: <repo-directory-name>
 version: 1.0.0
 type: hybrid
 
+targets:
+  - <detected-target>
+
 dependencies:
   apm:
     - srid/agency#master
@@ -56,12 +59,12 @@ dependencies:
 
 If `apm.yml` already exists:
 
-- In **first-time** mode: append `srid/agency#master` to `dependencies.apm:`, preserving every existing entry. If `dependencies.apm:` doesn't exist, add it.
+- In **first-time** mode: append `srid/agency#master` to `dependencies.apm:`, preserving every existing entry. If `dependencies.apm:` doesn't exist, add it. If `targets:` is missing or doesn't include the detected host, add the host to it (don't remove existing targets).
 - In **update** mode: leave `apm.yml` alone unless `--update` was passed explicitly — in that case, re-pin the `srid/agency` line to `#master`. Don't touch other entries.
 
 ## 4. Run `apm install`
 
-Run `<apm-invocation> install -t <target>` from the directory containing `apm.yml`. This generates `.claude/` (or `.opencode/` / `.codex/`) and adds `apm_modules/` to `.gitignore`.
+Run `<apm-invocation> install` from the directory containing `apm.yml`. `apm` reads `targets:` from the yml and generates `.claude/` / `.opencode/` / `.codex/` accordingly, plus adds `apm_modules/` to `.gitignore`.
 
 If install fails, surface the error verbatim and stop — don't paper over it.
 
@@ -110,7 +113,7 @@ After writing this file, **re-run `apm install`** so the new instructions get pi
 Summarize for the user, in this order:
 
 1. Which `apm` invocation you used (so the user knows the exact command for ad-hoc `apm` calls later).
-2. What target you installed for.
+2. Which `targets:` ended up in `apm.yml`.
 3. What workflow commands you detected, and which were left as `# TODO`.
 4. Files changed (staged, not committed). Tell them to review the diff before committing.
 5. Next step: try `/talk <question>` or `/do <task>` to verify everything works.
