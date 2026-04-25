@@ -11,7 +11,9 @@ Drop two skills into your coding agent: **`do`** runs end-to-end (research → i
 
 Paste this into your AI agent (Claude Code, Codex, opencode) at the root of the repo you want to set up:
 
-> Set up this repo to use srid/agency by following the instructions at <https://github.com/srid/agency/blob/master/.apm/skills/agency-setup/SKILL.md>.
+```
+Set up this repo to use srid/agency by following the instructions at https://github.com/srid/agency/blob/master/.apm/skills/agency-setup/SKILL.md
+```
 
 The agent will:
 
