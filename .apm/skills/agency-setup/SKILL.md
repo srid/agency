@@ -1,20 +1,15 @@
 ---
 name: agency-setup
 description: Bootstrap or update srid/agency in this project — run apm via uvx, configure apm.yml, install skills, draft workflow instructions. Use for first-time setup or to refresh an existing install.
-argument-hint: "[--update]"
 ---
 
 # Agency Setup
 
 Configure (or refresh) this repo to use [srid/agency](https://github.com/srid/agency). Each step below is **idempotent** — it inspects what's already on disk and acts only on what's missing or out of date. The skill works equally well as first-time bootstrap, full refresh, or **partial-install upgrade** (e.g. user already added `srid/agency` to `apm.yml` manually but never created `workflow.instructions.md` — the skill detects the gap and fills it without re-doing the parts that already exist).
 
+When the repo already has `srid/agency` in `apm.yml`, this skill also refreshes it to the latest ref (via `apm deps update srid/agency` in step 6) — there's no separate "update" mode.
+
 Don't commit anything — leave changes staged for the user to review.
-
-## The `--update` flag
-
-`--update` in `ARGUMENTS` is the only explicit mode hint, and it does exactly one thing: run `<apm-invocation> deps update srid/agency` at the start of step 6 to refresh the dependency to the latest ref before `apm install` and `apm compile` run. **Every other step runs unconditionally** — they each decide for themselves whether they have work to do.
-
-Strip the flag before treating the rest as additional context.
 
 ## Invariant: `apm install` and `apm compile` run *after* every file change
 
@@ -44,6 +39,8 @@ Multiple matches are fine — declare all of them. If nothing matches and the ho
 **Single vs. multiple targets:** `apm` has a bug where the plural `targets:` list breaks when only one entry is present. Use the singular `target: <name>` scalar for exactly one target, and the `targets:` list only when you have two or more.
 
 ## 3. Create or extend `apm.yml`
+
+Before editing, note whether `srid/agency` is already listed under `dependencies.apm:` — step 6 needs that fact to decide whether to refresh the dep.
 
 If `apm.yml` does not exist, write:
 
@@ -121,11 +118,11 @@ applyTo: "**"
 Keep `README.md` in sync with user-facing changes.
 ```
 
-## 6. Run `apm deps update` (if `--update`), then `apm install` (and `apm compile` for Codex / opencode)
+## 6. Refresh `srid/agency` (if already present), then run `apm install` (and `apm compile` for Codex / opencode)
 
-If `--update` was passed, first run `<apm-invocation> deps update srid/agency` from the directory containing `apm.yml`. `apm install` alone won't move an already-installed dependency to a newer ref — `deps update` is what pulls the latest commit on the pinned ref. Skip this sub-step entirely when `--update` was not passed.
+If `srid/agency` was already listed in `apm.yml` at the start of this run (you noted this in step 3), first run `<apm-invocation> deps update srid/agency` from the directory containing `apm.yml`. `apm install` alone won't move an already-installed dependency to a newer ref — `deps update` is what pulls the latest commit on the pinned ref. Skip this sub-step on first-time setup, where step 3 just added the entry; `apm install` will fetch it fresh.
 
-Then, regardless of `--update`, regenerate the host configs in a single pass. Run `<apm-invocation> install` from the directory containing `apm.yml`. `apm` reads `target:` / `targets:` from the yml and generates the runtime-specific folders (`.claude/` / `.opencode/` / `.codex/`), plus adds `apm_modules/` to `.gitignore`.
+Then, regenerate the host configs in a single pass. Run `<apm-invocation> install` from the directory containing `apm.yml`. `apm` reads `target:` / `targets:` from the yml and generates the runtime-specific folders (`.claude/` / `.opencode/` / `.codex/`), plus adds `apm_modules/` to `.gitignore`.
 
 **`install` does not generate the project-root `AGENTS.md` instruction file.** Codex and opencode read `AGENTS.md` at session start; without it they will not see the workflow instructions, code-police rules, or any other `.apm/instructions/` content. To produce it, also run:
 
@@ -160,5 +157,3 @@ Summarize for the user, in this order:
    - **opencode** → invoke `/skills` and pick `talk` or `do` from the list.
 
    If you installed for multiple targets, list the syntax for each.
-
-ARGUMENTS: $ARGUMENTS
