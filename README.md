@@ -20,7 +20,7 @@ The agent will:
 
 - Run `apm` via `uvx` (no install needed; falls back to `nix shell nixpkgs#uv -c uvx` if you have Nix but not `uvx`)
 - Create or extend `apm.yml` and run `apm install` (plus `apm compile -t codex,opencode` when those hosts are declared, since they need a project-root `AGENTS.md`)
-- Draft `.apm/instructions/workflow.instructions.md` from your project's existing scripts
+- Draft `.agency/do.md` from your project's existing scripts
 
 Review the staged changes before committing.
 
@@ -64,25 +64,40 @@ Type-checkers, tests, and CI catch correctness. They don't catch design. An LLM-
 
 Both default to Sonnet to keep the review cheap enough to run on every task. Pass **`--review-model=opus`** to `do` (or `talk`, which only runs Lowy) when the diff warrants a deeper pass — large or architecturally significant changes, cross-module refactors, anything you want extra-careful eyes on. `haiku` is also accepted for cheap scans.
 
-Read [**Hickey/Lowy on kolu.dev**](https://kolu.dev/blog/hickey-lowy/) for the full framing — what each lens looks for and why the pair catches what tests miss. Both can be extended with project-specific patterns via the `## Hickey catalog` and `## Lowy volatilities` sections of `workflow.instructions.md` (see [Project extensions](#project-extensions) below).
+Read [**Hickey/Lowy on kolu.dev**](https://kolu.dev/blog/hickey-lowy/) for the full framing — what each lens looks for and why the pair catches what tests miss. Both can be extended with project-specific patterns by dropping `.agency/hickey.md` / `.agency/lowy.md` files (see [Project config](#project-config) below).
 
-## Project extensions
+## Project config
 
-Four agency skills (`code-police`, `hickey`, `lowy`, `/do`'s `evidence` step) read project-specific configuration from named sections of `.apm/instructions/workflow.instructions.md` — the same file that already declares your `Check` / `Format` / `Test` / `CI` commands. One file, four optional sections; each is free-form and can be inline prose, a pointer to another file, or a script reference:
+Each agency skill reads its project-specific configuration from a single file named after itself, under a top-level `.agency/` directory:
+
+| File | Read by | Contains |
+|------|---------|----------|
+| `.agency/do.md` | `/do` | `## Check command` / `## Format command` / `## Test command` / `## CI command` / `## Documentation` (required for those steps to run) and an optional `## PR evidence` section that opts into the evidence step |
+| `.agency/code-police.md` | `code-police` | extra quality rules layered on top of the built-in checklist |
+| `.agency/hickey.md` | `hickey` | extra complecting/fragmentation patterns extending the Layer 4 catalog |
+| `.agency/lowy.md` | `lowy` | project-declared areas of volatility used by the review pass |
+
+All four files are **plain Markdown** — no frontmatter, no `applyTo:`, no APM ceremony — and **opt-in** (the consuming skill silently skips its extension behavior when the file is missing). Each skill reads only its own file; nothing crosses, so a project can adopt skills à la carte without touching the others.
+
+Content is free-form: inline prose, a pointer to another file (`See ./code-police-rules.md`), or a script reference all work. Example `.agency/do.md`:
 
 ```markdown
-## Code-police rules
-### no-raw-sql
-Use the query builder for all database access. No raw SQL strings outside migrations.
+# /do config
 
-### always-use-server-functions
-Data fetching must go through server functions, never direct API calls from components.
+## Check command
+just check
 
-## Hickey catalog
-See ./hickey-patterns.md.
+## Format command
+just fmt
 
-## Lowy volatilities
-See ./lowy-volatilities.md.
+## Test command
+just test
+
+## CI command
+just ci
+
+## Documentation
+Keep README.md in sync with user-facing changes.
 
 ## PR evidence
 For every PR that touches the UI:
@@ -90,13 +105,11 @@ For every PR that touches the UI:
 1. Use the `chrome-devtools` MCP to launch `npm run dev` and navigate to the affected route.
 2. Capture a screenshot of the new state and upload it via `gh api` to the repo's release-asset endpoint.
 3. Embed the resulting URL inline in the PR comment under `## Evidence`.
-
-For perf-sensitive changes, run `hyperfine` against `main` and the PR branch and paste the table into the comment instead.
 ```
 
-Each section is **opt-in** — the consuming skill skips its extension behavior when the section is missing. `code-police` and the structural reviewers fold the project content into their existing analysis; `/do`'s `evidence` step spawns a sub-agent so the capture work (MCP calls, image uploads) doesn't pollute `/do`'s main context. Agency does not prescribe any specific tool or format — `chrome-devtools` MCP, `hyperfine`, `asciinema`, custom scripts all work.
+Agency does not prescribe any specific tool or format — `chrome-devtools` MCP, `hyperfine`, `asciinema`, custom scripts all work.
 
-See [Kolu's `workflow.instructions.md`](https://github.com/juspay/kolu/blob/master/.apm/instructions/workflow.instructions.md) for a worked example.
+See [Kolu's `.agency/`](https://github.com/juspay/kolu/tree/master/.agency) for a worked example.
 
 ## Examples
 
