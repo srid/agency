@@ -34,7 +34,7 @@ Pasting the same prompt again later acts as an **update** — it detects the exi
 
 #### Primary skills
 
-- **`do`** — Full pipeline: research → implement → structural review (hickey, lowy) → quality gate (code-police) → CI → ship. Structural review runs **post-implement on the concrete diff**, and each "Fix in this PR" finding lands as its own commit — so the PR history reads as a progression from primary implementation to each refinement. Fully autonomous; skip specific steps by mentioning them in the prompt.
+- **`do`** — Full pipeline: research → implement → structural review (hickey, lowy) → quality gate (code-police) → CI → evidence (opt-in) → ship. Structural review runs **post-implement on the concrete diff**, and each "Fix in this PR" finding lands as its own commit — so the PR history reads as a progression from primary implementation to each refinement. Fully autonomous; skip specific steps by mentioning them in the prompt.
 - **`talk`** — Conversation-and-research mode. Discuss ideas, explore approaches, read code, inspect upstream sources in temporary scratch space when needed — no repo changes allowed.
 - **`ralph`** — Iterative measurement-driven improvement loop. Measure, profile, mutate, re-measure, commit. Works for performance, bundle size, complexity — anything quantifiable.
 
@@ -85,6 +85,33 @@ Data fetching must go through server functions, never direct API calls from comp
 ```
 
 These get checked alongside the built-in rules during the police pass. See [Kolu's `code-police-rules.instructions.md`](https://github.com/juspay/kolu/blob/master/.apm/instructions/code-police-rules.instructions.md) for a worked example.
+
+## Project-specific PR evidence
+
+Mechanical gates (tests, CI, hickey/lowy) verify the diff is _correct_; they don't show the diff is _working_. `do`'s **`evidence` step** closes that gap by posting an `## Evidence` PR comment with project-defined empirical artifacts — UI screenshots, benchmark numbers, demo recordings — captured against the just-shipped change.
+
+The step is **opt-in**: it runs only when `.apm/instructions/pr-evidence.instructions.md` exists, and it skips silently otherwise. The instruction file is project-specific and tells the agent what to capture and how:
+
+```markdown
+---
+description: How to capture and post post-merge evidence on PRs
+---
+
+## PR Evidence
+
+For every PR that touches the UI:
+
+1. Use the `chrome-devtools` MCP to launch `npm run dev` and navigate to the
+   affected route.
+2. Capture a screenshot of the new state and upload it via `gh api` to the
+   repo's release-asset endpoint.
+3. Embed the resulting URL inline in the PR comment under `## Evidence`.
+
+For perf-sensitive changes, run `hyperfine` against `main` and the PR branch
+and paste the table into the comment instead.
+```
+
+Agency does not prescribe the capture mechanism — chrome-devtools MCP, `hyperfine`, `asciinema`, manual scripts all work. The convention is just _"`/do`'s `evidence` step reads this file and follows it"_.
 
 ## Examples
 
