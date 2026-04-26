@@ -64,54 +64,39 @@ Type-checkers, tests, and CI catch correctness. They don't catch design. An LLM-
 
 Both default to Sonnet to keep the review cheap enough to run on every task. Pass **`--review-model=opus`** to `do` (or `talk`, which only runs Lowy) when the diff warrants a deeper pass — large or architecturally significant changes, cross-module refactors, anything you want extra-careful eyes on. `haiku` is also accepted for cheap scans.
 
-Read [**Hickey/Lowy on kolu.dev**](https://kolu.dev/blog/hickey-lowy/) for the full framing — what each lens looks for and why the pair catches what tests miss. Both can be extended with project-specific patterns by dropping an `.apm/instructions/*.instructions.md` file with an `applyTo:` glob; see Kolu's [`hickey-catalog.instructions.md`](https://github.com/juspay/kolu/blob/master/.apm/instructions/hickey-catalog.instructions.md) and [`lowy-volatilities.instructions.md`](https://github.com/juspay/kolu/blob/master/.apm/instructions/lowy-volatilities.instructions.md) for worked examples.
+Read [**Hickey/Lowy on kolu.dev**](https://kolu.dev/blog/hickey-lowy/) for the full framing — what each lens looks for and why the pair catches what tests miss. Both can be extended with project-specific patterns via the `## Hickey catalog` and `## Lowy volatilities` sections of `workflow.instructions.md` (see [Project extensions](#project-extensions) below).
 
-## Project-specific code-police rules
+## Project extensions
 
-`code-police` ships with generic rules. Layer on your own by creating `.apm/instructions/code-police-rules.instructions.md`:
+Four agency skills (`code-police`, `hickey`, `lowy`, `/do`'s `evidence` step) read project-specific configuration from named sections of `.apm/instructions/workflow.instructions.md` — the same file that already declares your `Check` / `Format` / `Test` / `CI` commands. One file, four optional sections; each is free-form and can be inline prose, a pointer to another file, or a script reference:
 
 ```markdown
----
-description: Project-specific code-police rules
----
-
-## Code Police Rules
-
+## Code-police rules
 ### no-raw-sql
 Use the query builder for all database access. No raw SQL strings outside migrations.
 
 ### always-use-server-functions
 Data fetching must go through server functions, never direct API calls from components.
-```
 
-These get checked alongside the built-in rules during the police pass. See [Kolu's `code-police-rules.instructions.md`](https://github.com/juspay/kolu/blob/master/.apm/instructions/code-police-rules.instructions.md) for a worked example.
+## Hickey catalog
+See ./hickey-patterns.md.
 
-## Project-specific PR evidence
+## Lowy volatilities
+See ./lowy-volatilities.md.
 
-Mechanical gates (tests, CI, hickey/lowy) verify the diff is _correct_; they don't show the diff is _working_. `do`'s **`evidence` step** closes that gap by posting an `## Evidence` PR comment with project-defined empirical artifacts — UI screenshots, benchmark numbers, demo recordings — captured against the just-shipped change.
-
-The step is **opt-in**: it runs only when `.apm/instructions/pr-evidence.instructions.md` exists, and it skips silently otherwise. The instruction file is project-specific and tells the agent what to capture and how:
-
-```markdown
----
-description: How to capture and post post-merge evidence on PRs
----
-
-## PR Evidence
-
+## PR evidence
 For every PR that touches the UI:
 
-1. Use the `chrome-devtools` MCP to launch `npm run dev` and navigate to the
-   affected route.
-2. Capture a screenshot of the new state and upload it via `gh api` to the
-   repo's release-asset endpoint.
+1. Use the `chrome-devtools` MCP to launch `npm run dev` and navigate to the affected route.
+2. Capture a screenshot of the new state and upload it via `gh api` to the repo's release-asset endpoint.
 3. Embed the resulting URL inline in the PR comment under `## Evidence`.
 
-For perf-sensitive changes, run `hyperfine` against `main` and the PR branch
-and paste the table into the comment instead.
+For perf-sensitive changes, run `hyperfine` against `main` and the PR branch and paste the table into the comment instead.
 ```
 
-Agency does not prescribe the capture mechanism — chrome-devtools MCP, `hyperfine`, `asciinema`, manual scripts all work. The convention is just _"`/do`'s `evidence` step reads this file and follows it"_.
+Each section is **opt-in** — the consuming skill skips its extension behavior when the section is missing. `code-police` and the structural reviewers fold the project content into their existing analysis; `/do`'s `evidence` step spawns a sub-agent so the capture work (MCP calls, image uploads) doesn't pollute `/do`'s main context. Agency does not prescribe any specific tool or format — `chrome-devtools` MCP, `hyperfine`, `asciinema`, custom scripts all work.
+
+See [Kolu's `workflow.instructions.md`](https://github.com/juspay/kolu/blob/master/.apm/instructions/workflow.instructions.md) for a worked example.
 
 ## Examples
 
