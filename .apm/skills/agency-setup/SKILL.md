@@ -12,7 +12,7 @@ Don't commit anything — leave changes staged for the user to review.
 
 ## The `--update` flag
 
-`--update` in `ARGUMENTS` is the only explicit mode hint, and it does exactly one thing: re-pin the `srid/agency` ref in `apm.yml` to `#master` (in case the user pinned it to an older tag/sha and wants to move forward). **Every other step runs unconditionally** — they each decide for themselves whether they have work to do.
+`--update` in `ARGUMENTS` is the only explicit mode hint, and it does exactly one thing: run `<apm-invocation> deps update srid/agency` at the start of step 6 to refresh the dependency to the latest ref before `apm install` and `apm compile` run. **Every other step runs unconditionally** — they each decide for themselves whether they have work to do.
 
 Strip the flag before treating the rest as additional context.
 
@@ -65,9 +65,8 @@ If `apm.yml` already exists, edit it idempotently:
 
 - If `dependencies.apm:` is missing the `srid/agency` entry, append `srid/agency#master`. Preserve every existing entry. If the `dependencies.apm:` block itself is missing, add it.
 - If neither `target:` nor `targets:` includes the detected host, add it. Don't remove existing targets. When adding a host pushes the count from one to two, convert `target: <name>` into a `targets:` list with both entries; when removing a host (not something this skill does, but worth knowing) drops the count back to one, convert the list back to the scalar form.
-- If `--update` was passed explicitly **and** `srid/agency` is already pinned to something other than `#master`, re-pin it to `#master`. Without the flag, leave the existing pin alone.
 
-Don't touch unrelated entries.
+Don't touch unrelated entries. Refreshing an existing `srid/agency` pin is handled by `apm deps update` in step 6 — don't hand-edit the ref here.
 
 ## 4. Ensure `.gitignore` covers agency runtime artifacts
 
@@ -122,9 +121,11 @@ applyTo: "**"
 Keep `README.md` in sync with user-facing changes.
 ```
 
-## 6. Run `apm install` (and `apm compile` for Codex / opencode)
+## 6. Run `apm deps update` (if `--update`), then `apm install` (and `apm compile` for Codex / opencode)
 
-Now that every file change is on disk, regenerate the host configs in a single pass. Run `<apm-invocation> install` from the directory containing `apm.yml`. `apm` reads `target:` / `targets:` from the yml and generates the runtime-specific folders (`.claude/` / `.opencode/` / `.codex/`), plus adds `apm_modules/` to `.gitignore`.
+If `--update` was passed, first run `<apm-invocation> deps update srid/agency` from the directory containing `apm.yml`. `apm install` alone won't move an already-installed dependency to a newer ref — `deps update` is what pulls the latest commit on the pinned ref. Skip this sub-step entirely when `--update` was not passed.
+
+Then, regardless of `--update`, regenerate the host configs in a single pass. Run `<apm-invocation> install` from the directory containing `apm.yml`. `apm` reads `target:` / `targets:` from the yml and generates the runtime-specific folders (`.claude/` / `.opencode/` / `.codex/`), plus adds `apm_modules/` to `.gitignore`.
 
 **`install` does not generate the project-root `AGENTS.md` instruction file.** Codex and opencode read `AGENTS.md` at session start; without it they will not see the workflow instructions, code-police rules, or any other `.apm/instructions/` content. To produce it, also run:
 
