@@ -1,20 +1,15 @@
 ---
 name: agency-setup
 description: Bootstrap or update srid/agency in this project — run apm via uvx, configure apm.yml, install skills, draft workflow instructions. Use for first-time setup or to refresh an existing install.
-argument-hint: "[--update]"
 ---
 
 # Agency Setup
 
 Configure (or refresh) this repo to use [srid/agency](https://github.com/srid/agency). Each step below is **idempotent** — it inspects what's already on disk and acts only on what's missing or out of date. The skill works equally well as first-time bootstrap, full refresh, or **partial-install upgrade** (e.g. user already added `srid/agency` to `apm.yml` manually but never created `workflow.instructions.md` — the skill detects the gap and fills it without re-doing the parts that already exist).
 
+When the repo already has `srid/agency` in `apm.yml`, this skill also refreshes it to the latest ref (via `apm deps update srid/agency` in step 6) — there's no separate "update" mode.
+
 Don't commit anything — leave changes staged for the user to review.
-
-## The `--update` flag
-
-`--update` in `ARGUMENTS` is the only explicit mode hint, and it does exactly one thing: re-pin the `srid/agency` ref in `apm.yml` to `#master` (in case the user pinned it to an older tag/sha and wants to move forward). **Every other step runs unconditionally** — they each decide for themselves whether they have work to do.
-
-Strip the flag before treating the rest as additional context.
 
 ## Invariant: `apm install` and `apm compile` run *after* every file change
 
@@ -45,6 +40,8 @@ Multiple matches are fine — declare all of them. If nothing matches and the ho
 
 ## 3. Create or extend `apm.yml`
 
+Before editing, note whether `srid/agency` is already listed under `dependencies.apm:` — step 6 needs that fact to decide whether to refresh the dep.
+
 If `apm.yml` does not exist, write:
 
 ```yaml
@@ -65,9 +62,8 @@ If `apm.yml` already exists, edit it idempotently:
 
 - If `dependencies.apm:` is missing the `srid/agency` entry, append `srid/agency#master`. Preserve every existing entry. If the `dependencies.apm:` block itself is missing, add it.
 - If neither `target:` nor `targets:` includes the detected host, add it. Don't remove existing targets. When adding a host pushes the count from one to two, convert `target: <name>` into a `targets:` list with both entries; when removing a host (not something this skill does, but worth knowing) drops the count back to one, convert the list back to the scalar form.
-- If `--update` was passed explicitly **and** `srid/agency` is already pinned to something other than `#master`, re-pin it to `#master`. Without the flag, leave the existing pin alone.
 
-Don't touch unrelated entries.
+Don't touch unrelated entries. Refreshing an existing `srid/agency` pin is handled by `apm deps update` in step 6 — don't hand-edit the ref here.
 
 ## 4. Ensure `.gitignore` covers agency runtime artifacts
 
@@ -122,9 +118,11 @@ applyTo: "**"
 Keep `README.md` in sync with user-facing changes.
 ```
 
-## 6. Run `apm install` (and `apm compile` for Codex / opencode)
+## 6. Refresh `srid/agency` (if already present), then run `apm install` (and `apm compile` for Codex / opencode)
 
-Now that every file change is on disk, regenerate the host configs in a single pass. Run `<apm-invocation> install` from the directory containing `apm.yml`. `apm` reads `target:` / `targets:` from the yml and generates the runtime-specific folders (`.claude/` / `.opencode/` / `.codex/`), plus adds `apm_modules/` to `.gitignore`.
+If `srid/agency` was already listed in `apm.yml` at the start of this run (you noted this in step 3), first run `<apm-invocation> deps update srid/agency` from the directory containing `apm.yml`. `apm install` alone won't move an already-installed dependency to a newer ref — `deps update` is what pulls the latest commit on the pinned ref. Skip this sub-step on first-time setup, where step 3 just added the entry; `apm install` will fetch it fresh.
+
+Then, regenerate the host configs in a single pass. Run `<apm-invocation> install` from the directory containing `apm.yml`. `apm` reads `target:` / `targets:` from the yml and generates the runtime-specific folders (`.claude/` / `.opencode/` / `.codex/`), plus adds `apm_modules/` to `.gitignore`.
 
 **`install` does not generate the project-root `AGENTS.md` instruction file.** Codex and opencode read `AGENTS.md` at session start; without it they will not see the workflow instructions, code-police rules, or any other `.apm/instructions/` content. To produce it, also run:
 
@@ -159,5 +157,3 @@ Summarize for the user, in this order:
    - **opencode** → invoke `/skills` and pick `talk` or `do` from the list.
 
    If you installed for multiple targets, list the syntax for each.
-
-ARGUMENTS: $ARGUMENTS
