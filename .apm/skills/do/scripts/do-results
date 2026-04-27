@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
-# Manages .do-results.json for the /do workflow.
-# Avoids LLM token generation by handling all JSON mutations in bash+jq.
+# Generic step-results recorder. Manages a workflow's lifecycle state +
+# step-record list in a JSON file, with all mutations done in bash+jq so the
+# caller doesn't burn LLM tokens on JSON arithmetic.
+#
+# The script knows only about workflow lifecycle (active, status), step records
+# (name, status, verification, timestamps, optional reason), and arbitrary
+# top-level fields the caller wants to remember. It does NOT know about any
+# workflow-specific concepts (e.g. forge or noGit are /do's business — the
+# /do workflow stashes them via `set` after init, not as init arguments).
 #
 # Usage:
-#   do-results init <forge> <noGit>           — create initial skeleton
+#   do-results init                           — create the lifecycle skeleton
 #   do-results step-start <name>              — stamp pendingStep with now; call at step start
 #   do-results step-end <status> <verif> [reason]
 #                                             — pop pendingStep, append with completedAt=now
@@ -11,11 +18,11 @@
 #                                             — append a completed step with explicit timestamps
 #                                               (use when startedAt comes from a single-shell caller)
 #                                               pass "now" for startedAt/completedAt to auto-generate UTC timestamp
-#   do-results set <field> <value>            — update a top-level field (active, status)
+#   do-results set <field> <value>            — set/update an arbitrary top-level field
 #
 # Every mutation echoes a one-line confirmation on stdout so the caller can
-# trust the write succeeded without re-reading .do-results.json. Format:
-#   init       — init: forge=<forge> noGit=<bool>
+# trust the write succeeded without re-reading the JSON. Format:
+#   init       — init: startedAt=<ts>
 #   step-start — pending: <name>
 #   step-end   — recorded: <name> <status> (steps=<count>, pending=<none|name>)
 #   step       — recorded: <name> <status> (steps=<count>)
@@ -37,8 +44,6 @@ shift
 
 case "$cmd" in
   init)
-    forge="${1:?forge required (github|bitbucket|unknown)}"
-    noGit="${2:?noGit required (true|false)}"
     startedAt="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
     cat > "$FILE" <<ENDJSON
 {
@@ -46,12 +51,10 @@ case "$cmd" in
   "startedAt": "$startedAt",
   "active": "working",
   "status": "running",
-  "forge": "$forge",
-  "noGit": $noGit,
   "steps": []
 }
 ENDJSON
-    echo "init: forge=$forge noGit=$noGit"
+    echo "init: startedAt=$startedAt"
     ;;
 
   step-start)

@@ -27,21 +27,24 @@ Every step is bookended by two `scripts/do-results` calls: `step-start <name>` b
 
 **Trust the script's stdout.** Every mutation echoes a one-line confirmation. Treat that line as your confirmation that the write succeeded; the script is the only public surface, and whatever it persists internally is private.
 
-**Concepts the script tracks** (passed in as arguments):
+**Lifecycle the script tracks intrinsically**:
 
-- `forge` — `github`, `bitbucket`, or `unknown`. Set by the sync script.
-- `noGit` — `true` or `false`. Reflects the `--no-git` flag. Git-mutating steps (**branch**, **commit**, **create-pr**) skip with `reason="--no-git"` when set.
 - Step `status` — `passed`, `failed`, or `skipped`. A `skipped` step must include a `reason` (e.g. `"non-github forge: bitbucket"`, `"--no-git"`, `"no check command configured"`).
 - `active` — state enum (not a boolean). Set to `working` when the workflow starts (**sync**), `waiting` when the agent is idle waiting for an external process (e.g. background CI), back to `working` when that process returns, and `false` when **done** is reached. The stop hook uses this: `working` blocks exits; `waiting` and `false` allow them.
 - Workflow `status` — `completed` when **done** finishes, `failed` if halted. Informational.
 
+**Workflow fields /do also stashes via `set`** (the script doesn't interpret these — it just remembers them):
+
+- `forge` — `github`, `bitbucket`, or `unknown`. Populated by `scripts/steps/sync` after forge detection.
+- `noGit` — `true` or `false`. Reflects the `--no-git` flag. Git-mutating steps (**branch**, **commit**, **create-pr**) skip with `reason="--no-git"` when set.
+
 **Commands** (invoke with the full path, e.g. `.../skills/do/scripts/do-results ...`):
 
-- `init <forge> <noGit>` — initialize. Echoes `init: forge=<f> noGit=<bool>`.
+- `init` — initialize the workflow's lifecycle skeleton. Echoes `init: startedAt=<ts>`.
 - `step-start <name>` — call before step work. Echoes `pending: <name>`.
 - `step-end <status> "<verification>" ["<reason>"]` — call after verification. Echoes `recorded: <name> <status> (steps=<count>, pending=<none|name>)`.
 - `step <name> <status> "<verification>" <startedAt> <completedAt> ["<reason>"]` — single-call form used by `scripts/steps/sync` where `startedAt` was captured in shell. Echoes `recorded: <name> <status> (steps=<count>)`. Agent code should prefer `step-start` / `step-end`.
-- `set <field> <value>` — update `active` or `status` (e.g. `set active waiting`, `set status completed`). Echoes `set: <field>=<value>`.
+- `set <field> <value>` — set an arbitrary top-level field. Used both for lifecycle (`set active waiting`, `set status completed`) and for /do-specific values that sync stashes (`set forge github`, `set noGit false`). Echoes `set: <field>=<value>`.
 
 **Discipline**:
 
