@@ -12,6 +12,14 @@
 #                                               (use when startedAt comes from a single-shell caller)
 #                                               pass "now" for startedAt/completedAt to auto-generate UTC timestamp
 #   do-results set <field> <value>            — update a top-level field (active, status)
+#
+# Every mutation echoes a one-line confirmation on stdout so the caller can
+# trust the write succeeded without re-reading .do-results.json. Format:
+#   init       — init: forge=<forge> noGit=<bool>
+#   step-start — pending: <name>
+#   step-end   — recorded: <name> <status> (steps=<count>, pending=<none|name>)
+#   step       — recorded: <name> <status> (steps=<count>)
+#   set        — set: <field>=<value>
 
 set -euo pipefail
 
@@ -43,6 +51,7 @@ case "$cmd" in
   "steps": []
 }
 ENDJSON
+    echo "init: forge=$forge noGit=$noGit"
     ;;
 
   step-start)
@@ -56,6 +65,7 @@ ENDJSON
     $JQ --arg n "$name" --arg sa "$startedAt" \
        '.pendingStep = {"name":$n,"startedAt":$sa}' \
        "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
+    echo "pending: $name"
     ;;
 
   step-end)
@@ -82,6 +92,9 @@ ENDJSON
          '.steps += [{"name":$n,"status":$s,"verification":$v,"startedAt":$sa,"completedAt":$ca}] | del(.pendingStep)' \
          "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
     fi
+    count="$($JQ -r '.steps | length' "$FILE")"
+    pending="$($JQ -r '.pendingStep.name // "none"' "$FILE")"
+    echo "recorded: $name $status (steps=$count, pending=$pending)"
     ;;
 
   step)
@@ -107,6 +120,8 @@ ENDJSON
          '.steps += [{"name":$n,"status":$s,"verification":$v,"startedAt":$sa,"completedAt":$ca}]' \
          "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
     fi
+    count="$($JQ -r '.steps | length' "$FILE")"
+    echo "recorded: $name $status (steps=$count)"
     ;;
 
   set)
@@ -118,6 +133,7 @@ ENDJSON
     else
       $JQ --arg f "$field" --arg v "$value" '.[$f] = $v' "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
     fi
+    echo "set: $field=$value"
     ;;
 
   *)

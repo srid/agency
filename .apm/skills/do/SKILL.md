@@ -51,14 +51,16 @@ Each step is bookended by two calls to the `scripts/do-results` script (in this 
 
 - `active` is a state enum, not a boolean. Set it to `"working"` when the workflow starts (**sync**), `"waiting"` when the agent is idle waiting for an external process (e.g., background CI), back to `"working"` when the external process returns, and `false` when the workflow ends (**done**). The stop hook uses this field: `"working"` blocks exits; `"waiting"` and `false` allow them.
 - Set `status` to `"completed"` when **done** is reached, or `"failed"` if halted. This field is informational only.
-- **Always use the `scripts/do-results` script** (in this skill's directory, alongside `scripts/steps/`) — never write the JSON file directly. Invoke with the full path (e.g. `.../skills/do/scripts/do-results ...`). Commands:
-  - **Initialize**: `scripts/do-results init <forge> <noGit>` — creates the skeleton with a timestamp
-  - **Start a step**: `scripts/do-results step-start <name>` — stamps `pendingStep` with the current UTC time. Call this **before** doing the step's work.
-  - **End a step**: `scripts/do-results step-end <status> "<verification>" ["<reason>"]` — pops `pendingStep` and appends the completed step with `completedAt` set to the current UTC time.
-  - **Record a step in one call** (advanced): `scripts/do-results step <name> <status> "<verification>" <startedAt> <completedAt> ["<reason>"]` — used by `scripts/steps/sync` where `startedAt` is captured in shell. Agent code should prefer `step-start` / `step-end`.
-  - **Update top-level field**: `scripts/do-results set <field> <value>` (e.g., `set active waiting`, `set status completed`)
+- **Always use the `scripts/do-results` script** (in this skill's directory, alongside `scripts/steps/`) — never write the JSON file directly. Invoke with the full path (e.g. `.../skills/do/scripts/do-results ...`). Every command echoes a one-line confirmation on stdout (see _Stdout confirmations_ below). Commands:
+  - **Initialize**: `scripts/do-results init <forge> <noGit>` — creates the skeleton with a timestamp. Echoes `init: forge=<f> noGit=<bool>`.
+  - **Start a step**: `scripts/do-results step-start <name>` — stamps `pendingStep` with the current UTC time. Call this **before** doing the step's work. Echoes `pending: <name>`.
+  - **End a step**: `scripts/do-results step-end <status> "<verification>" ["<reason>"]` — pops `pendingStep` and appends the completed step with `completedAt` set to the current UTC time. Echoes `recorded: <name> <status> (steps=<count>, pending=<none|name>)`.
+  - **Record a step in one call** (advanced): `scripts/do-results step <name> <status> "<verification>" <startedAt> <completedAt> ["<reason>"]` — used by `scripts/steps/sync` where `startedAt` is captured in shell. Echoes `recorded: <name> <status> (steps=<count>)`. Agent code should prefer `step-start` / `step-end`.
+  - **Update top-level field**: `scripts/do-results set <field> <value>` (e.g., `set active waiting`, `set status completed`). Echoes `set: <field>=<value>`.
 - **Bookend every step with `step-start` at the top and `step-end` at the bottom.** Calling `step-end` without a prior `step-start` is an error, and calling `step` with `now` for both timestamps collapses duration to 0 — neither pattern is allowed. The only exceptions: `sync` is recorded by `scripts/steps/sync` itself, and skipped steps (where duration is always 0 by definition) may use `step-start` followed immediately by `step-end` with status `skipped`.
 - Do not run `date` yourself or guess timestamps — `do-results` resolves the current UTC time internally.
+
+**Stdout confirmations — trust them, don't re-read.** Every mutation prints its result on stdout. Use that line as your confirmation that the write succeeded; do **not** `Read` `.do-results.json` to verify your own writes. The JSON file is machine state for the stop hook (and for `scripts/steps/done` at the end), not a polling target for the agent. Re-reading it after each step costs tokens and adds nothing the echo doesn't already convey. The only legitimate reason to inspect `.do-results.json` directly is failure recovery on a mid-workflow restart (e.g., after a crash), and even then, prefer reading the **last echo line** in the surrounding shell output if it's still in scope.
 
 ## Progress tracking
 
@@ -102,7 +104,7 @@ The script:
 
 **Only `github` has an active code path today.** Both `bitbucket` and `unknown` cause forge-dependent steps (PR creation, PR comments, PR edits, CI status) to skip gracefully. Bitbucket support is planned — see [srid/agency#10](https://github.com/srid/agency/issues/10).
 
-**Verify**: Script exited 0 and printed a `forge=` line. `.do-results.json` exists and its `forge`/`noGit` fields match.
+**Verify**: Script exited 0 and printed `forge=`, `branch=`, `defaultBranch=` lines on stdout. (Sync's `do-results init`/`step sync` calls are silenced — sync owns its own stdout protocol — so don't expect their echoes here. The JSON file is now established; trust it without re-reading.)
 
 ---
 
