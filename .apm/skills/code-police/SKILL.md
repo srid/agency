@@ -101,7 +101,7 @@ For each finding: file, line, one-line risk, concrete fix. If no issues, say so 
 
 ## Pass 3: Elegance
 
-**Skip on tiny diffs.** Run `git diff origin/HEAD...HEAD --shortstat` (or the appropriate base-branch ref). If the diff is **under 50 lines** OR touches **fewer than 5 files**, skip this pass and report `Elegance | 0 | Skipped (tiny diff)` in the summary. The elegance pass's three-lens fan-out has overhead that's disproportionate to a few-line change; rules and fact-check still run. If the diff exceeds either threshold, proceed below.
+**Skip on tiny diffs.** Run `git diff origin/HEAD...HEAD --shortstat` (or the appropriate base-branch ref). If the diff is **under 10 lines**, skip this pass and report `Elegance | 0 | Skipped (tiny diff)` in the summary. The elegance pass's three-lens fan-out has overhead that's disproportionate to a few-line change; rules and fact-check still run. If the diff exceeds the threshold, proceed below.
 
 Review the changes for elegance and simplicity.
 
