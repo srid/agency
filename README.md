@@ -36,7 +36,7 @@ Pasting the same prompt again later acts as an **update** — it detects the exi
 
 #### Primary skills
 
-- **`do`** — Full pipeline: research → implement → structural review (hickey, lowy) → quality gate (code-police) → CI → evidence (opt-in) → ship. Structural review runs **post-implement on the concrete diff**, and each "Fix in this PR" finding lands as its own commit — so the PR history reads as a progression from primary implementation to each refinement. Fully autonomous; skip specific steps by mentioning them in the prompt.
+- **`do`** — Full pipeline: research → implement → structural review (hickey, lowy) → quality gate (code-police) → CI → evidence (opt-in) → ship. Structural review runs **post-implement on the concrete diff**, and each "Fix in this PR" finding lands as its own commit — so the PR history reads as a progression from primary implementation to each refinement. Fully autonomous; skip specific steps by mentioning them in the prompt, or pass **`--minimal`** to skip docs/hickey+lowy/police/evidence wholesale on trivially-scoped diffs (one-line fixes, typos, config tweaks).
 - **`talk`** — Conversation-and-research mode. Discuss ideas, explore approaches, read code, inspect upstream sources in temporary scratch space when needed — no repo changes allowed.
 - **`ralph`** — Iterative measurement-driven improvement loop. Measure, profile, mutate, re-measure, commit. Works for performance, bundle size, complexity — anything quantifiable.
 
