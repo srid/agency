@@ -159,7 +159,7 @@ Then, regenerate the host configs in a single pass. Run `<apm-invocation> instal
 <apm-invocation> compile -t <subset>
 ```
 
-…where `<subset>` is the comma-separated list of `codex` and/or `opencode` from your declared targets (e.g., `-t codex,opencode` if both are declared, `-t codex` if only Codex). **Skip the compile step entirely if `claude` is the only target** — Claude Code reads `.claude/` natively and doesn't need `AGENTS.md` (compiling `CLAUDE.md` is intentionally avoided).
+…where `<subset>` is the comma-separated list of `codex` and/or `opencode` from your declared targets (e.g., `-t codex,opencode` if both are declared, `-t codex` if only Codex). **Always pass `-t` explicitly** — like `install`, `compile` won't infer targets from `apm.yml`, so the flag is required. **Skip the compile step entirely if `claude` is the only target** — Claude Code reads `.claude/` natively and doesn't need `AGENTS.md` (compiling `CLAUDE.md` is intentionally avoided).
 
 If `install` or `compile` fails, surface the error verbatim and stop — don't paper over it.
 
