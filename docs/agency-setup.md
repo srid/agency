@@ -8,7 +8,7 @@ Don't commit anything — leave changes staged for the user to review.
 
 ## Invariant: `apm install` and `apm compile` run *after* every file change
 
-`apm install` regenerates the host folders (`.claude/`, `.opencode/`, `.codex/`) from `apm.yml` plus the contents of `.apm/`, and `apm compile -t <subset>` produces the project-root `AGENTS.md` for Codex / opencode from the same inputs. **Any** change to `apm.yml` or anything under `.apm/` invalidates both outputs. So this guide makes all file changes first (steps 1–6) and runs `apm install` (and `apm compile` where needed) exactly once at the end (step 7). Don't run install or compile partway through — later steps may add or modify files that must land in the same regeneration. If you ever edit `apm.yml` or `.apm/*` outside the prescribed order, you must re-run both before reporting back.
+`apm install -t <subset>` regenerates the host folders (`.claude/`, `.opencode/`, `.codex/`) from `apm.yml` plus the contents of `.apm/`, and `apm compile -t <subset>` produces the project-root `AGENTS.md` for Codex / opencode from the same inputs. **Any** change to `apm.yml` or anything under `.apm/` invalidates both outputs. So this guide makes all file changes first (steps 1–6) and runs `apm install` (and `apm compile` where needed) exactly once at the end (step 7). Don't run install or compile partway through — later steps may add or modify files that must land in the same regeneration. If you ever edit `apm.yml` or `.apm/*` outside the prescribed order, you must re-run both before reporting back.
 
 ## 1. Pick an `apm` invocation
 
@@ -19,11 +19,11 @@ Don't commit anything — leave changes staged for the user to review.
 
 If neither works (no `uvx` and no `nix`), tell the user to install one of [`uv`](https://docs.astral.sh/uv/) or [`nix`](https://nixos.asia/en/install) and stop. Don't try to install package managers yourself.
 
-Use whichever prefix succeeded as the `apm` invocation for every subsequent `apm` call in this run (e.g., `uvx --from apm-cli apm install`).
+Use whichever prefix succeeded as the `apm` invocation for every subsequent `apm` call in this run (e.g., `uvx --from apm-cli apm install -t claude`).
 
 ## 2. Detect the host targets
 
-The host targets go into `apm.yml` (next step) — `apm install` reads them, no `-t` flag needed. Detect from what's already on disk and the host you're running in:
+The host targets go into `apm.yml` (next step) and are also passed to `apm install -t <subset>` and `apm compile -t <subset>` in step 7. Detect from what's already on disk and the host you're running in:
 
 - `.claude/` exists, or you're running in Claude Code → `claude`
 - `.opencode/` exists, or you're running in opencode → `opencode`
@@ -151,7 +151,7 @@ Keep `README.md` in sync with user-facing changes.
 
 If `srid/agency` was already listed in `apm.yml` at the start of this run (you noted this in step 3), first run `<apm-invocation> deps update srid/agency` from the directory containing `apm.yml`. `apm install` alone won't move an already-installed dependency to a newer ref — `deps update` is what pulls the latest commit on the pinned ref. Skip this sub-step on first-time setup, where step 3 just added the entry; `apm install` will fetch it fresh.
 
-Then, regenerate the host configs in a single pass. Run `<apm-invocation> install` from the directory containing `apm.yml`. `apm` reads `target:` / `targets:` from the yml and generates the runtime-specific folders (`.claude/` / `.opencode/` / `.codex/`), plus adds `apm_modules/` to `.gitignore`.
+Then, regenerate the host configs in a single pass. Run `<apm-invocation> install -t <subset>` from the directory containing `apm.yml`, where `<subset>` is the comma-separated list of every target you declared in step 2 (e.g., `-t claude`, `-t codex,opencode`, or `-t claude,codex,opencode`). **Always pass `-t` explicitly** — even though `apm.yml` declares the targets, the install command requires the flag to know which host folders to generate. `apm` generates the runtime-specific folders (`.claude/` / `.opencode/` / `.codex/`), plus adds `apm_modules/` to `.gitignore`.
 
 **`install` does not generate the project-root `AGENTS.md` instruction file.** Codex and opencode read `AGENTS.md` at session start; without it they will not see any `.apm/instructions/` content (project-wide preamble, conventions, etc.). To produce it, also run:
 
