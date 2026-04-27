@@ -2,7 +2,7 @@
 
 Configure (or refresh) this repo to use [srid/agency](https://github.com/srid/agency). This is a plain Markdown guide, not an APM skill, so installing agency does not add a one-off setup skill to downstream repos. Each step below is **idempotent** — it inspects what's already on disk and acts only on what's missing or out of date. The guide works equally well as first-time bootstrap, full refresh, or **partial-install upgrade** (e.g. user already added `srid/agency` to `apm.yml` manually but never created `.agency/do.md` — the guide detects the gap and fills it without re-doing the parts that already exist).
 
-When the repo already has `srid/agency` in `apm.yml`, this guide also refreshes it to the latest ref (via `apm deps update srid/agency` in step 7) — there's no separate "update" mode.
+When the repo already has `srid/agency` in `apm.yml`, this guide also refreshes it to the latest ref (via `apm deps update -t <subset> srid/agency` in step 7) — there's no separate "update" mode.
 
 Don't commit anything — leave changes staged for the user to review.
 
@@ -149,7 +149,7 @@ Keep `README.md` in sync with user-facing changes.
 
 ## 7. Refresh `srid/agency` (if already present), then run `apm install` (and `apm compile` for Codex / opencode)
 
-If `srid/agency` was already listed in `apm.yml` at the start of this run (you noted this in step 3), first run `<apm-invocation> deps update srid/agency` from the directory containing `apm.yml`. `apm install` alone won't move an already-installed dependency to a newer ref — `deps update` is what pulls the latest commit on the pinned ref. Skip this sub-step on first-time setup, where step 3 just added the entry; `apm install` will fetch it fresh.
+If `srid/agency` was already listed in `apm.yml` at the start of this run (you noted this in step 3), first run `<apm-invocation> deps update -t <subset> srid/agency` from the directory containing `apm.yml`, where `<subset>` is the same comma-separated list of targets you'll pass to `install` below. `apm install` alone won't move an already-installed dependency to a newer ref — `deps update` is what pulls the latest commit on the pinned ref. **Always pass `-t` explicitly** — even though `apm.yml` declares the targets, `deps update` (like `install` and `compile`) requires the flag. Skip this sub-step on first-time setup, where step 3 just added the entry; `apm install` will fetch it fresh.
 
 Then, regenerate the host configs in a single pass. Run `<apm-invocation> install -t <subset>` from the directory containing `apm.yml`, where `<subset>` is the comma-separated list of every target you declared in step 2 (e.g., `-t claude`, `-t codex,opencode`, or `-t claude,codex,opencode`). **Always pass `-t` explicitly** — even though `apm.yml` declares the targets, the install command requires the flag to know which host folders to generate. `apm` generates the runtime-specific folders (`.claude/` / `.opencode/` / `.codex/`), plus adds `apm_modules/` to `.gitignore`.
 
