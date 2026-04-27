@@ -1,19 +1,14 @@
----
-name: agency-setup
-description: Bootstrap or update srid/agency in this project — run apm via uvx, configure apm.yml, install skills, draft .agency/do.md. Use for first-time setup or to refresh an existing install.
----
-
 # Agency Setup
 
-Configure (or refresh) this repo to use [srid/agency](https://github.com/srid/agency). Each step below is **idempotent** — it inspects what's already on disk and acts only on what's missing or out of date. The skill works equally well as first-time bootstrap, full refresh, or **partial-install upgrade** (e.g. user already added `srid/agency` to `apm.yml` manually but never created `.agency/do.md` — the skill detects the gap and fills it without re-doing the parts that already exist).
+Configure (or refresh) this repo to use [srid/agency](https://github.com/srid/agency). This is a plain Markdown guide, not an APM skill, so installing agency does not add a one-off setup skill to downstream repos. Each step below is **idempotent** — it inspects what's already on disk and acts only on what's missing or out of date. The guide works equally well as first-time bootstrap, full refresh, or **partial-install upgrade** (e.g. user already added `srid/agency` to `apm.yml` manually but never created `.agency/do.md` — the guide detects the gap and fills it without re-doing the parts that already exist).
 
-When the repo already has `srid/agency` in `apm.yml`, this skill also refreshes it to the latest ref (via `apm deps update srid/agency` in step 7) — there's no separate "update" mode.
+When the repo already has `srid/agency` in `apm.yml`, this guide also refreshes it to the latest ref (via `apm deps update srid/agency` in step 7) — there's no separate "update" mode.
 
 Don't commit anything — leave changes staged for the user to review.
 
 ## Invariant: `apm install` and `apm compile` run *after* every file change
 
-`apm install` regenerates the host folders (`.claude/`, `.opencode/`, `.codex/`) from `apm.yml` plus the contents of `.apm/`, and `apm compile -t <subset>` produces the project-root `AGENTS.md` for Codex / opencode from the same inputs. **Any** change to `apm.yml` or anything under `.apm/` invalidates both outputs. So this skill makes all file changes first (steps 1–6) and runs `apm install` (and `apm compile` where needed) exactly once at the end (step 7). Don't run install or compile partway through — later steps may add or modify files that must land in the same regeneration. If you ever edit `apm.yml` or `.apm/*` outside the prescribed order, you must re-run both before reporting back.
+`apm install` regenerates the host folders (`.claude/`, `.opencode/`, `.codex/`) from `apm.yml` plus the contents of `.apm/`, and `apm compile -t <subset>` produces the project-root `AGENTS.md` for Codex / opencode from the same inputs. **Any** change to `apm.yml` or anything under `.apm/` invalidates both outputs. So this guide makes all file changes first (steps 1–6) and runs `apm install` (and `apm compile` where needed) exactly once at the end (step 7). Don't run install or compile partway through — later steps may add or modify files that must land in the same regeneration. If you ever edit `apm.yml` or `.apm/*` outside the prescribed order, you must re-run both before reporting back.
 
 ## 1. Pick an `apm` invocation
 
@@ -61,7 +56,7 @@ dependencies:
 If `apm.yml` already exists, edit it idempotently:
 
 - If `dependencies.apm:` is missing the `srid/agency` entry, append `srid/agency#master`. Preserve every existing entry. If the `dependencies.apm:` block itself is missing, add it.
-- If neither `target:` nor `targets:` includes the detected host, add it. Don't remove existing targets. When adding a host pushes the count from one to two, convert `target: <name>` into a `targets:` list with both entries; when removing a host (not something this skill does, but worth knowing) drops the count back to one, convert the list back to the scalar form.
+- If neither `target:` nor `targets:` includes the detected host, add it. Don't remove existing targets. When adding a host pushes the count from one to two, convert `target: <name>` into a `targets:` list with both entries; when removing a host (not something this guide does, but worth knowing) drops the count back to one, convert the list back to the scalar form.
 
 Don't touch unrelated entries. Refreshing an existing `srid/agency` pin is handled by `apm deps update` in step 7 — don't hand-edit the ref here.
 
@@ -78,7 +73,7 @@ Don't touch unrelated entries. Refreshing an existing `srid/agency` pin is handl
 
 Otherwise, work through the registry below in order. **Each entry is idempotent** — re-running on an already-migrated repo is a no-op (the detection condition will simply fail). Apply only the entries whose detection condition is currently true.
 
-For each entry: announce to the user which migration is being applied and which files it touches, then perform the listed steps. Do **not** ask permission per entry — the user invoked this skill to refresh their install; that's authorization. Migrations only restructure files; they don't drop content.
+For each entry: announce to the user which migration is being applied and which files it touches, then perform the listed steps. Do **not** ask permission per entry — the user invoked this guide to refresh their install; that's authorization. Migrations only restructure files; they don't drop content.
 
 ### #123 (simplify) — project config to `.agency/<skill>.md`
 

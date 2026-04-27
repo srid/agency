@@ -13,8 +13,10 @@ Paste this into your AI agent (Claude Code, Codex, opencode) at the root of the 
 
 ```
 Set up this repo to use srid/agency by following the instructions at
-https://github.com/srid/agency/blob/master/.apm/skills/agency-setup/SKILL.md
+https://github.com/srid/agency/blob/master/docs/agency-setup.md
 ```
+
+The setup instructions are repository documentation, not an installed skill.
 
 The agent will:
 
@@ -46,7 +48,6 @@ Pasting the same prompt again later acts as an **update** — it detects the exi
 - **`fact-check`** — Standalone correctness audit: finds silent error swallowing, unjustified fallbacks, wishful thinking, and logic errors. Prosecutor posture — no self-dismissals.
 - **`elegance`** — Iterative elegance pass: understand, research, apply, verify. Runs 3 iterations by default, each building on the last.
 - **`forge-pr`** — Writes PR titles and descriptions that devs actually want to read. Paragraphs over bullet lists, substance over boilerplate. GitHub today; Bitbucket support tracked in [#10](https://github.com/srid/agency/issues/10).
-- **`agency-setup`** — Bootstraps or updates srid/agency in a project. Powers the [Quickstart](#quickstart) prompt; re-paste later to refresh — when `srid/agency` is already in `apm.yml`, the skill runs `apm deps update srid/agency` to pull the latest commit on the pinned ref before regenerating host folders.
 
 ### Hooks & Instructions
 
