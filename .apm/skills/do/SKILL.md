@@ -53,11 +53,15 @@ Every step is bookended by two `scripts/do-results` calls: `step-start <name>` b
 
 ## Progress tracking
 
-Drive Claude Code's native todo UI via the `TaskCreate` tool so the user sees a live checklist of the workflow. At the start of **sync** (or the chosen `--from` entry point), seed a task list with all 15 step names in order:
+Drive Claude Code's native todo UI via the `TaskCreate` tool so the user sees a live checklist of the workflow. At the start of **sync** (or the chosen `--from` entry point), seed a task list with the step names in order:
 
 ```
 sync, research, branch, implement, check, docs, fmt, commit, hickey+lowy, police, test, create-pr, ci, evidence, done
 ```
+
+**Under `--minimal`, omit the four steps the flag skips** (`docs`, `hickey+lowy`, `police`, `evidence`) from the seeded list — the user explicitly opted out of them, so they shouldn't clutter the human-facing checklist. The seeded list becomes 11 items in `--minimal` runs. (Run-inherent skips like `--no-git` and forge skips stay in the list — see the Skipped steps rule below.)
+
+The `scripts/do-results` lifecycle still records `--minimal`-skipped steps with `status="skipped"` and `reason="--minimal"` via back-to-back `step-start` / `step-end` calls — that's what keeps the final timing table and `completed`-status logic correct. The task UI is independent of that recording.
 
 At each step boundary, update task state **alongside** the `scripts/do-results` script call — they are not redundant. The script's state drives the stop hook; the task list is the human-facing UI. Miss either and the workflow is inconsistent.
 
@@ -65,8 +69,8 @@ Rules:
 
 - **Flip to `in_progress` when a step starts, `completed` when it verifies.** One step `in_progress` at a time.
 - **Retries stay `in_progress`.** If `check`, `test`, or `ci` loop through their retry budget, do **not** bounce the task state back to `pending` or flicker it — leave it `in_progress` until the step finally verifies (or the retries exhaust and the workflow fails).
-- **`--from <step>` entry points**: still seed all 15 steps. Mark steps earlier than the entry point as `completed` immediately after seeding, so the checklist shows a consistent 15-item view regardless of entry point.
-- **Skipped steps** (e.g. `branch`/`commit`/`create-pr` under `--no-git`, or PR steps on non-GitHub forges) go straight to `completed`. Record the skip with a back-to-back `scripts/do-results step-start <name>` / `scripts/do-results step-end skipped ... "<reason>"`; the task list just shows the step as done.
+- **`--from <step>` entry points**: still seed the full list (minus any `--minimal` omissions). Mark steps earlier than the entry point as `completed` immediately after seeding, so the checklist shows a consistent view regardless of entry point.
+- **Skipped steps that stay in the list** (e.g. `branch`/`commit`/`create-pr` under `--no-git`, or PR steps on non-GitHub forges) go straight to `completed`. Record the skip with a back-to-back `scripts/do-results step-start <name>` / `scripts/do-results step-end skipped ... "<reason>"`; the task list just shows the step as done. `--minimal` skips are **not** in this category — they're omitted from the seeded list entirely (see above), so there's no task entry to flip.
 - **Failure**: if retries exhaust and the workflow halts, leave the failing step `in_progress`, mark `done` `completed` after the failure summary is written, and run `scripts/do-results set status failed`.
 
 ## Steps
