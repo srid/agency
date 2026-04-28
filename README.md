@@ -22,6 +22,7 @@ The agent will:
 
 - Run `apm` via `uvx` (no install needed; falls back to `nix shell nixpkgs#uv -c uvx` if you have Nix but not `uvx`)
 - Create or extend `apm.yml` and run `apm install` (plus `apm compile -t codex,opencode` when those hosts are declared, since they need a project-root `AGENTS.md`)
+- Migrate any pre-existing `AGENTS.md` / `CLAUDE.md` content into `.apm/instructions/` so `apm compile` doesn't overwrite hand-written instructions ([#132](https://github.com/srid/agency/issues/132))
 - Draft `.agency/do.md` from your project's existing scripts
 
 Review the staged changes before committing.
