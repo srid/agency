@@ -42,8 +42,8 @@ Pasting the same prompt again later acts as an **update** — it detects the exi
 
 #### Supporting skills
 
-- **`hickey`** — Structural simplicity evaluation using [Rich Hickey's "Simple Made Easy"](https://www.infoq.com/presentations/Simple-Made-Easy/) framework. Catches accidental complexity that tests can't. Ships as a sub-agent (`@agent-hickey`) so `do` can run it in parallel with `lowy` post-implement without serializing on the main conversation loop. Not auto-invoked from `talk` — complecting critique needs a concrete diff to bite.
-- **`lowy`** — Volatility-based decomposition review using [Juval Lowy's framework](https://www.informit.com/articles/article.aspx?p=2995357&seqNum=2) (from [*Righting Software*](https://rightingsoftware.org/), building on [Parnas 1972](https://www.win.tue.nl/~wstomv/edu/2ip30/references/criteria_for_modularization.pdf)). Checks that module boundaries encapsulate axes of change, not just functionality. Ships as a sub-agent (`@agent-lowy`). Auto-invoked from both `do` (post-implement, alongside hickey) and `talk` (where the design-level volatility lens is still useful on a sketch).
+- **`hickey`** — Structural simplicity evaluation using [Rich Hickey's "Simple Made Easy"](https://www.infoq.com/presentations/Simple-Made-Easy/) framework. Catches accidental complexity that tests can't. Declares `context: fork` so `do` can run it in parallel with `lowy` post-implement via two `Skill` calls without serializing on the main conversation loop. Not auto-invoked from `talk` — complecting critique needs a concrete diff to bite.
+- **`lowy`** — Volatility-based decomposition review using [Juval Lowy's framework](https://www.informit.com/articles/article.aspx?p=2995357&seqNum=2) (from [*Righting Software*](https://rightingsoftware.org/), building on [Parnas 1972](https://www.win.tue.nl/~wstomv/edu/2ip30/references/criteria_for_modularization.pdf)). Checks that module boundaries encapsulate axes of change, not just functionality. Declares `context: fork` so it runs in an isolated subagent. Auto-invoked from both `do` (post-implement, alongside hickey) and `talk` (where the design-level volatility lens is still useful on a sketch).
 - **`code-police`** — Three-pass quality gate: rule checklist, fact-check for logic errors, and an elegance pass (delegates to Claude Code's `/simplify` when available, otherwise runs an iterative refinement loop).
 - **`fact-check`** — Standalone correctness audit: finds silent error swallowing, unjustified fallbacks, wishful thinking, and logic errors. Prosecutor posture — no self-dismissals.
 - **`elegance`** — Iterative elegance pass: understand, research, apply, verify. Runs 3 iterations by default, each building on the last.
@@ -63,7 +63,7 @@ Type-checkers, tests, and CI catch correctness. They don't catch design. An LLM-
 - **`hickey`** — accidental complexity, after Rich Hickey's *Simple Made Easy*.
 - **`lowy`** — volatility-based decomposition, after Juval Lowy's *Righting Software*.
 
-Both default to Sonnet to keep the review cheap enough to run on every task. Pass **`--review-model=opus`** to `do` (or `talk`, which only runs Lowy) when the diff warrants a deeper pass — large or architecturally significant changes, cross-module refactors, anything you want extra-careful eyes on. `haiku` is also accepted for cheap scans.
+Both default to Sonnet (declared as `model: sonnet` in their skill frontmatter) to keep the review cheap enough to run on every task. To run them on a different model, edit the `model:` field in the skill's frontmatter — there's no per-invocation override since the `Skill` tool doesn't accept a `model` parameter.
 
 Read [**Hickey/Lowy on kolu.dev**](https://kolu.dev/blog/hickey-lowy/) for the full framing — what each lens looks for and why the pair catches what tests miss. Both can be extended with project-specific patterns by dropping `.agency/hickey.md` / `.agency/lowy.md` files (see [Project config](#project-config) below).
 
