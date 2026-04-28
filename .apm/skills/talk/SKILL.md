@@ -70,7 +70,9 @@ If you're about to emit "probably", "almost certainly", "I suspect", "my #1 susp
 
 ## Phased delivery for feature work
 
-For non-trivial **user-visible feature work**, propose splitting the implementation into phases where each phase is independently useful when merged — any prefix of phases is itself a shippable improvement. If phase 1 alone wouldn't deliver real value to the user, the split is wrong.
+For **user-visible feature work** large enough that an unphased PR would be painful for a human to review, propose splitting the implementation into phases where each phase is independently useful when merged — any prefix of phases is itself a shippable improvement. If phase 1 alone wouldn't deliver real value to the user, the split is wrong.
+
+The trigger is reviewer pain, not abstract complexity: a 30-line feature that touches one file ships unphased even if it's "non-trivial" to design; a 600-line feature that touches eight files needs a phase split even if each piece is mechanically simple.
 
 This applies only to user-visible feature work. Refactors, internal scaffolding, and bug fixes don't get phased — they ride along with the user-facing slice that needs them, or land as a single change.
 
