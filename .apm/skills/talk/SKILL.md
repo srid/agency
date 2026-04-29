@@ -1,6 +1,6 @@
 ---
 name: talk
-description: Enter talk mode — conversation and research, no repo changes
+description: Enter talk mode — conversation and research, no repo changes. ONLY invoke when the user explicitly types `/talk` or `$talk`; never auto-select from a natural-language question or design discussion.
 argument-hint: "[--no-laconic] [--review-model=<opus|sonnet|haiku>] <topic or question>"
 ---
 
