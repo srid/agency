@@ -1,6 +1,6 @@
 ---
 name: do
-description: Do a task end-to-end — implement, PR, CI loop, ship
+description: Do a task end-to-end — implement, PR, CI loop, ship. ONLY invoke when the user explicitly types `/do` or `$do`; never auto-select from a natural-language request, even one that sounds like an end-to-end task.
 argument-hint: "<issue-url | prompt> [--review] [--no-git] [--minimal] [--from <step>] [--review-model=<opus|sonnet|haiku>]"
 ---
 
