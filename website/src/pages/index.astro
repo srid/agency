@@ -36,7 +36,7 @@ const year = new Date().getFullYear();
       <span class="sec-num">01</span>
       <div>
         <p class="sec-label">the loop</p>
-        <h2 class="h2">two entry points, <span class="accent-magenta">never one.</span></h2>
+        <h2 class="h2"><span class="accent-cyan">/talk</span> to design, <span class="accent-magenta">/do</span> to ship.</h2>
       </div>
     </div>
 
@@ -75,7 +75,7 @@ const year = new Date().getFullYear();
       <span class="sec-num">02</span>
       <div>
         <p class="sec-label">feedback</p>
-        <h2 class="h2">the loop is only as <span class="accent-cyan">good as its signal.</span></h2>
+        <h2 class="h2">no e2e tests, <span class="accent-cyan">no autonomy.</span></h2>
       </div>
     </div>
 
@@ -115,65 +115,34 @@ const year = new Date().getFullYear();
     <div class="sec-head">
       <span class="sec-num">03</span>
       <div>
-        <p class="sec-label">state</p>
-        <h2 class="h2">one PR <span class="accent-lime">at a time.</span></h2>
-      </div>
-    </div>
-
-    <div class="pair">
-      <div class="pair-cell">
-        <p class="pair-marker is-lime">within a PR</p>
-        <p class="pair-headline">.do-results.json + stop-guard.</p>
-        <p class="pair-body">
-          Per-step lifecycle and timing. The Stop hook blocks bail-outs while a
-          run is <code>working</code>.
-        </p>
-      </div>
-      <div class="pair-cell">
-        <p class="pair-marker is-magenta">across PRs</p>
-        <p class="pair-headline">No memory. By design.</p>
-        <p class="pair-body">
-          Land each PR end-to-end in a day or two. For larger work,
-          <code class="cmd-cyan">/talk</code> produces a phased issue,
-          <code class="cmd-magenta">/do</code> consumes each phase.
-          <a href="https://github.com/juspay/kolu/issues/514" rel="noopener">kolu#514</a>.
-        </p>
-      </div>
-    </div>
-  </section>
-
-  <section class="sec wrap">
-    <div class="sec-head">
-      <span class="sec-num">04</span>
-      <div>
-        <p class="sec-label">structure</p>
-        <h2 class="h2">what tests <span class="accent-magenta">don't catch.</span></h2>
+        <p class="sec-label">structural review</p>
+        <h2 class="h2">tests catch correctness. <span class="accent-magenta">/do catches design.</span></h2>
       </div>
     </div>
 
     <div class="body" style="margin-bottom: 2rem;">
       <p>
-        Two structural-review passes run post-implement, in parallel. Each
-        finding lands as its own commit; the full ledger ships as a PR
-        comment.
+        After implementing, <code class="cmd-magenta">/do</code> runs two design
+        reviews in parallel against the actual diff. Each finding lands as its
+        own commit; the full ledger ships as a PR comment.
       </p>
     </div>
 
     <div class="pair">
       <div class="pair-cell">
         <p class="pair-marker is-magenta">/hickey</p>
-        <p class="pair-headline">Accidental complexity.</p>
+        <p class="pair-headline">Catches accidental complexity.</p>
         <p class="pair-body">
-          After Rich Hickey's <em>Simple Made Easy</em>. Catches the
-          complecting tests pass straight through.
+          After Rich Hickey's <em>Simple Made Easy</em>. Flags the
+          complecting that tests pass straight through.
         </p>
       </div>
       <div class="pair-cell">
         <p class="pair-marker is-cyan">/lowy</p>
-        <p class="pair-headline">Volatility-based decomposition.</p>
+        <p class="pair-headline">Checks where the seams sit.</p>
         <p class="pair-body">
           After Juval Lowy's <em>Righting Software</em>. Module boundaries
-          should encapsulate axes of change.
+          should encapsulate axes of change, not just functionality.
         </p>
       </div>
     </div>
@@ -183,6 +152,48 @@ const year = new Date().getFullYear();
         Full framing:
         <a href="https://kolu.dev/blog/hickey-lowy/" rel="noopener">Hickey/Lowy on kolu.dev</a>.
       </p>
+    </div>
+  </section>
+
+  <section class="sec wrap">
+    <div class="sec-head">
+      <span class="sec-num">04</span>
+      <div>
+        <p class="sec-label">scope</p>
+        <h2 class="h2">one PR, <span class="accent-lime">end to end.</span></h2>
+      </div>
+    </div>
+
+    <div class="body" style="margin-bottom: 2rem;">
+      <p>
+        Each <code class="cmd-magenta">/do</code> run lands a single PR — start
+        to finish in one sitting. No cross-PR memory by design. Larger work
+        gets broken into phases by <code class="cmd-cyan">/talk</code>, then
+        shipped one PR per phase.
+      </p>
+    </div>
+
+    <div class="pair">
+      <div class="pair-cell">
+        <p class="pair-marker is-lime">within the PR</p>
+        <p class="pair-headline">Step state lives in <code>.do-results.json</code>.</p>
+        <p class="pair-body">
+          Per-step lifecycle, status, and timing. The
+          <code>do-stop-guard</code> hook reads it so the agent can't bail
+          while a run is still <code>working</code>.
+        </p>
+      </div>
+      <div class="pair-cell">
+        <p class="pair-marker is-magenta">across PRs</p>
+        <p class="pair-headline">A phased issue is the cross-PR memory.</p>
+        <p class="pair-body">
+          Branches that linger past a day or two are a smell — break the work
+          smaller. For multi-phase work, <code class="cmd-cyan">/talk</code>
+          writes the phased issue, <code class="cmd-magenta">/do</code> consumes
+          one phase per PR.
+          <a href="https://github.com/juspay/kolu/issues/514" rel="noopener">kolu#514</a>.
+        </p>
+      </div>
     </div>
   </section>
 
