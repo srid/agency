@@ -136,21 +136,39 @@ a:hover {
   margin-right: 0.5rem;
 }
 
-.h1 {
+/* Wordmark — biggest thing on the page. Bricolage condensed extra-bold,
+   white with a saturated magenta period. */
+.hero-mark {
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 75, "opsz" 96;
+  font-weight: 800;
+  font-size: clamp(4rem, 14vw, 9rem);
+  line-height: 0.92;
+  letter-spacing: -0.05em;
+  color: var(--color-fg);
+  margin: 0 0 1.25rem;
+}
+
+.hero-mark .dot {
+  color: var(--color-magenta);
+}
+
+/* Slogan — sub-display, mono, now smaller than the wordmark. */
+.hero-slogan {
   font-family: var(--font-mono);
   font-weight: 700;
-  font-size: clamp(2.4rem, 8vw, 5.6rem);
-  line-height: 0.98;
-  letter-spacing: -0.045em;
+  font-size: clamp(1.7rem, 5vw, 3.4rem);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
   color: var(--color-fg);
   margin: 0 0 2rem;
 }
 
-.h1 .accent-magenta {
+.hero-slogan .accent-magenta {
   color: var(--color-magenta);
 }
 
-.h1 .accent-lime {
+.hero-slogan .accent-lime {
   color: var(--color-lime);
 }
 
@@ -171,64 +189,101 @@ a:hover {
   font-weight: 600;
 }
 
-/* --- Paste prompt --------------------------------------------------------- */
+/* --- Paste prompt ---------------------------------------------------------
+
+  The hero CTA. Label above ("↓ paste into ...") in lime mono so it's
+  obvious this is something to use; copy button as a bright lime block
+  fixed to the prompt's top-right corner so it can't be missed.
+-------------------------------------------------------------------------- */
 
 .prompt-frame {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
   max-width: 44rem;
   margin: 0 0 1rem;
+}
+
+.prompt-label {
+  font-family: var(--font-mono);
+  font-size: 0.84rem;
+  letter-spacing: 0.02em;
+  color: var(--color-lime);
+  margin: 0 0 0.7rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.prompt-arrow {
+  display: inline-block;
+  animation: prompt-bob 2.4s ease-in-out infinite;
+}
+
+@keyframes prompt-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(2px); }
+}
+
+.prompt-body {
+  position: relative;
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-rule-strong);
+  border-left: 3px solid var(--color-magenta);
+  border-radius: 0.3rem;
+  overflow: hidden;
+}
+
+.prompt-body:hover {
+  border-color: var(--color-fg-faint);
+  border-left-color: var(--color-magenta);
 }
 
 .prompt {
   font-family: var(--font-mono);
   font-size: 0.92rem;
-  line-height: 1.55;
+  line-height: 1.6;
   color: var(--color-fg);
   white-space: pre-wrap;
   word-break: break-word;
   margin: 0;
-  padding: 1.1rem 1.3rem;
-  background: var(--color-bg-raised);
-  border: 1px solid var(--color-rule-strong);
-  border-left: 3px solid var(--color-magenta);
-  border-radius: 0.25rem;
-}
-
-.prompt-meta {
-  display: flex;
-  gap: 1.25rem;
-  align-items: center;
-  font-family: var(--font-mono);
-  font-size: 0.74rem;
-  letter-spacing: 0.04em;
-  color: var(--color-fg-faint);
+  padding: 1.4rem 1.5rem 1.4rem 1.5rem;
+  padding-right: 5.5rem;
 }
 
 .prompt-copy {
-  background: none;
-  border: 1px solid var(--color-rule-strong);
-  color: var(--color-fg-dim);
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  background: var(--color-lime);
+  color: var(--color-bg);
+  border: none;
   font-family: var(--font-mono);
-  font-size: 0.74rem;
-  letter-spacing: 0.06em;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  padding: 0.4rem 0.75rem;
-  border-radius: 0.2rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 0.25rem;
   cursor: pointer;
-  transition: color 140ms, border-color 140ms, background 140ms;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  box-shadow: 0 0 0 1px var(--color-lime);
+  transition: background 140ms ease, color 140ms ease, transform 140ms ease;
 }
 
 .prompt-copy:hover {
-  color: var(--color-lime);
-  border-color: var(--color-lime);
+  background: var(--color-fg);
+  box-shadow: 0 0 0 1px var(--color-fg);
+  transform: translateY(-1px);
 }
 
 .prompt-copy[data-copied="true"] {
-  color: var(--color-bg);
-  background: var(--color-lime);
-  border-color: var(--color-lime);
+  background: var(--color-magenta);
+  color: var(--color-fg);
+  box-shadow: 0 0 0 1px var(--color-magenta);
+}
+
+.prompt-copy-arrow {
+  font-weight: 400;
 }
 
 /* --- Section -------------------------------------------------------------- */
@@ -440,34 +495,6 @@ code,
 
 .cmd-cyan {
   color: var(--color-cyan);
-}
-
-/* --- Video ---------------------------------------------------------------- */
-
-.video {
-  position: relative;
-  aspect-ratio: 16 / 9;
-  width: 100%;
-  max-width: 56rem;
-  margin: 0 0 1rem;
-  background: var(--color-bg-sunk);
-  border: 1px solid var(--color-rule-strong);
-  overflow: hidden;
-}
-
-.video iframe {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border: 0;
-}
-
-.video-caption {
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  color: var(--color-fg-dim);
-  margin: 0;
 }
 
 /* --- Footer / colophon --------------------------------------------------- */

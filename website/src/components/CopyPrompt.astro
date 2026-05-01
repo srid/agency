@@ -7,37 +7,43 @@ const { text, id = "agency-paste" } = Astro.props;
 ---
 
 <div class="prompt-frame">
-  <pre class="prompt" id={id}>{text}</pre>
-  <div class="prompt-meta">
+  <p class="prompt-label">
+    <span class="prompt-arrow">↓</span> paste into Claude Code, Codex, or opencode
+  </p>
+  <div class="prompt-body">
+    <pre class="prompt" id={id}>{text}</pre>
     <button
       type="button"
       class="prompt-copy"
       data-copy-source={id}
-      aria-label="Copy prompt to clipboard">copy</button
+      aria-label="Copy prompt to clipboard"
     >
-    <span>paste into your agent at the repo root</span>
+      <span class="prompt-copy-text">copy</span>
+      <span class="prompt-copy-arrow" aria-hidden="true">→</span>
+    </button>
   </div>
 </div>
 
 <script>
   document.querySelectorAll<HTMLButtonElement>(".prompt-copy").forEach((btn) => {
+    const text = btn.querySelector<HTMLElement>(".prompt-copy-text");
     btn.addEventListener("click", async () => {
       const sourceId = btn.dataset.copySource;
-      if (!sourceId) return;
+      if (!sourceId || !text) return;
       const source = document.getElementById(sourceId);
       if (!source) return;
       try {
         await navigator.clipboard.writeText(source.textContent ?? "");
         btn.dataset.copied = "true";
-        btn.textContent = "copied";
+        text.textContent = "copied";
         setTimeout(() => {
           delete btn.dataset.copied;
-          btn.textContent = "copy";
+          text.textContent = "copy";
         }, 1600);
       } catch {
-        btn.textContent = "press ⌘C";
+        text.textContent = "press ⌘C";
         setTimeout(() => {
-          btn.textContent = "copy";
+          text.textContent = "copy";
         }, 1800);
       }
     });
