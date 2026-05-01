@@ -202,6 +202,50 @@ const year = new Date().getFullYear();
     </div>
   </section>
 
+  <section class="sec wrap">
+    <div class="sec-head">
+      <span class="sec-num">05</span>
+      <div>
+        <p class="sec-label">project rules</p>
+        <h2 class="h2">your codebase. <span class="accent-magenta">your rules.</span></h2>
+      </div>
+    </div>
+
+    <div class="body" style="margin-bottom: 2rem;">
+      <p>
+        Drop a <code>.agency/&lt;skill&gt;.md</code> file at the repo root and
+        the matching skill picks it up — plain Markdown, opt-in, no APM
+        ceremony. Adopt skills à la carte; layer your own rules on top of the
+        built-ins.
+      </p>
+    </div>
+
+    <div class="pair">
+      <div class="pair-cell">
+        <p class="pair-marker is-magenta">/code-police</p>
+        <p class="pair-headline">Your quality gate, your rules.</p>
+        <p class="pair-body">
+          <code>.agency/code-police.md</code> layers project-specific rules
+          on top of the built-in checklist — &ldquo;never use
+          <code>as any</code>&rdquo;, &ldquo;always use TanStack Query for
+          fetches&rdquo;, whatever your codebase needs. Enforced on every
+          <code class="cmd-magenta">/do</code> diff.
+        </p>
+      </div>
+      <div class="pair-cell">
+        <p class="pair-marker is-cyan">/hickey, /lowy, /do</p>
+        <p class="pair-headline">Same pattern, opt-in.</p>
+        <p class="pair-body">
+          <code>.agency/hickey.md</code> + <code>.agency/lowy.md</code>
+          declare project-specific complecting patterns and axes of
+          volatility. <code>.agency/do.md</code> declares your
+          <code>check</code> / <code>test</code> / <code>ci</code> commands and
+          an opt-in <code>## PR evidence</code> step.
+        </p>
+      </div>
+    </div>
+  </section>
+
   <footer class="foot wrap">
     <p class="colophon">
       <a href="https://github.com/srid/agency" rel="noopener"
