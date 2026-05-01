@@ -76,15 +76,14 @@ const year = new Date().getFullYear();
       <span class="sec-num">02</span>
       <div>
         <p class="sec-label">feedback</p>
-        <h2 class="h2">no e2e tests, <span class="accent-cyan">no autonomy.</span></h2>
+        <h2 class="h2">no signal, <span class="accent-cyan">no loop.</span></h2>
       </div>
     </div>
 
     <div class="body" style="margin-bottom: 2rem;">
       <p>
-        E2e tests are a prerequisite, not a nice-to-have. Unit tests and
-        type-checks alone don't tell the agent whether its change actually
-        worked.
+        The agent needs a signal that its change actually worked. Unit tests
+        and type-checks alone don't give it; what does depends on the surface.
       </p>
     </div>
 
@@ -120,7 +119,7 @@ const year = new Date().getFullYear();
       <span class="sec-num">03</span>
       <div>
         <p class="sec-label">structural review</p>
-        <h2 class="h2">tests catch correctness. <span class="accent-magenta">/do catches design.</span></h2>
+        <h2 class="h2">complexity hides in space <span class="accent-magenta">and in time.</span></h2>
       </div>
     </div>
 
@@ -135,19 +134,21 @@ const year = new Date().getFullYear();
 
     <div class="pair">
       <div class="pair-cell">
-        <p class="pair-marker is-magenta">/hickey</p>
-        <p class="pair-headline">Catches accidental complexity.</p>
+        <p class="pair-marker is-magenta">/hickey · the space lens</p>
+        <p class="pair-headline">Is anything complected here?</p>
         <p class="pair-body">
-          After Rich Hickey's <em>Simple Made Easy</em>. Flags the
-          complecting that tests pass straight through.
+          After Rich Hickey's <em>Simple Made Easy</em>. Flags two ideas
+          braided into one construct — the kind of complecting that tests
+          pass straight through.
         </p>
       </div>
       <div class="pair-cell">
-        <p class="pair-marker is-cyan">/lowy</p>
-        <p class="pair-headline">Checks where the seams sit.</p>
+        <p class="pair-marker is-cyan">/lowy · the time lens</p>
+        <p class="pair-headline">What changes at a different rate?</p>
         <p class="pair-body">
-          After Juval Lowy's <em>Righting Software</em>. Module boundaries
-          should encapsulate axes of change, not just functionality.
+          After Juval Lowy's <em>Righting Software</em>. Flags modules
+          coupled to neighbours that drift on a different schedule —
+          volatility time-bombs that won't surface until later.
         </p>
       </div>
     </div>
