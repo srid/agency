@@ -1,271 +1,331 @@
 @import "tailwindcss";
 
-/* Self-hosted variable fonts (via fontsource, npm-installed, Nix-reproducible). */
-@import "@fontsource-variable/fraunces";
-@import "@fontsource-variable/jetbrains-mono";
+/* One serif (EB Garamond Variable) carries body, italic, and display.
+   One mono (IBM Plex Mono) is used only for the paste prompt — the single
+   place where letterforms stand for a literal command. */
+@import "@fontsource-variable/eb-garamond";
+@import "@fontsource/ibm-plex-mono/400.css";
 
 /* --- Design tokens --------------------------------------------------------
 
-  Literary register: warm paper / deep ink, a single warm-amber accent that
-  reads as the "golden thread" running through the page. The full pure-intent
-  passage lives in the footer; everywhere else, restraint.
-
-  Sister to kolu.dev's palette family but pushed warmer and quieter — kolu
-  is a terminal-with-editorial-soul; agency is methodology-as-essay.
+  Cream paper. Deep ink. A single warm gold accent — the golden thread of
+  the pure-intent passage, made structural rather than ornamental. One mode.
+  No theme toggle. Stillness, not options.
 -------------------------------------------------------------------------- */
 
 @theme {
-  --color-void: #0d0c0a;
-  --color-void-raised: #161412;
-  --color-void-sunk: #060504;
-  --color-ink: #ece8de;
-  --color-ink-dim: #aaa597;
-  --color-ink-muted: #6e695e;
-  --color-ink-faint: #383530;
-  --color-rule: #1c1a16;
-  --color-rule-strong: #2c2823;
+  --color-paper: #f5efde;
+  --color-ink: #1a1611;
+  --color-ink-soft: #4a4338;
+  --color-ink-faint: #8a8174;
+  --color-rule: #d8cfb8;
+  --color-gold: #a86b1a;
+  --color-gold-soft: #c08a4a;
 
-  --color-amber: #e7b87a;
-  --color-amber-bright: #f4cf97;
-  --color-amber-dim: #a08256;
-
-  --font-serif: "Fraunces Variable", ui-serif, Georgia, serif;
-  --font-mono:
-    "JetBrains Mono Variable", ui-monospace, "SF Mono", Menlo, Consolas,
-    monospace;
-  --font-sans: "Fraunces Variable", ui-serif, Georgia, serif;
-}
-
-/* --- Theme switch ---------------------------------------------------------
-
-  Dark is the default; an inline script in BaseLayout sets
-  <html data-theme="light|dark"> before first paint (no FOUC).
--------------------------------------------------------------------------- */
-
-[data-theme="light"] {
-  --color-void: #f6f1e1;
-  --color-void-raised: #ece5cf;
-  --color-void-sunk: #e3dbc1;
-  --color-ink: #1f1b13;
-  --color-ink-dim: #514a3c;
-  --color-ink-muted: #847d6c;
-  --color-ink-faint: #c2bba6;
-  --color-rule: #ddd5be;
-  --color-rule-strong: #c5bda4;
-  --color-amber: #9a5e1e;
-  --color-amber-bright: #7d4a14;
-  --color-amber-dim: #c2956a;
-}
-
-[data-theme="dark"] {
-  color-scheme: dark;
-}
-
-[data-theme="light"] {
-  color-scheme: light;
+  --font-serif:
+    "EB Garamond Variable", "EB Garamond", ui-serif, Georgia, "Times New Roman",
+    serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-sans: var(--font-serif);
 }
 
 /* --- Base ------------------------------------------------------------------ */
 
-html {
-  background: var(--color-void);
+html,
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
 }
 
 body {
   font-family: var(--font-serif);
-  font-variation-settings:
-    "opsz" 14,
-    "SOFT" 50,
-    "WONK" 0;
-  color: var(--color-ink);
+  font-size: 1.18rem;
+  line-height: 1.62;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  font-feature-settings: "kern", "liga", "calt", "onum";
 }
 
 ::selection {
-  background: var(--color-amber);
-  color: var(--color-void);
+  background: var(--color-gold);
+  color: var(--color-paper);
 }
 
-/* --- Typography utilities -------------------------------------------------- */
-
-.display {
-  font-family: var(--font-serif);
-  font-variation-settings:
-    "opsz" 144,
-    "SOFT" 20,
-    "WONK" 1;
-  letter-spacing: -0.035em;
-  line-height: 0.95;
+a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-gold-soft);
+  transition: border-color 160ms ease;
 }
 
-.display-sm {
-  font-family: var(--font-serif);
-  font-variation-settings:
-    "opsz" 72,
-    "SOFT" 30,
-    "WONK" 0;
-  letter-spacing: -0.02em;
-  line-height: 1.05;
+a:hover {
+  border-bottom-color: var(--color-gold);
 }
 
-.eyebrow {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--color-ink-muted);
+em,
+i {
+  font-style: italic;
 }
 
-.mono {
-  font-family: var(--font-mono);
-  font-variant-ligatures: none;
-  font-feature-settings: "zero", "ss01";
-}
+/* --- Essay column ---------------------------------------------------------
 
-.lede {
-  font-family: var(--font-serif);
-  font-variation-settings:
-    "opsz" 16,
-    "SOFT" 60,
-    "WONK" 0;
-  font-size: 1.18rem;
-  line-height: 1.6;
-  color: var(--color-ink-dim);
-}
-
-/* --- Inline code ----------------------------------------------------------- */
-
-:not(pre) > code {
-  font-family: var(--font-mono);
-  font-size: 0.88em;
-  color: var(--color-amber-bright);
-  font-weight: 500;
-}
-
-/* --- Theme toggle icons --------------------------------------------------- */
-
-.theme-icon-sun,
-.theme-icon-moon {
-  opacity: 0;
-  transform: rotate(-90deg) scale(0.7);
-  pointer-events: none;
-  transition: opacity 200ms ease, transform 200ms ease;
-}
-
-[data-theme="dark"] .theme-icon-sun,
-[data-theme="light"] .theme-icon-moon {
-  opacity: 1;
-  transform: rotate(0deg) scale(1);
-  pointer-events: auto;
-}
-
-/* --- Thread stitch --------------------------------------------------------
-
-  The single decorative element: a short vertical golden hairline that sits
-  between sections, fading at both ends. Reads as a stitch — the "golden
-  thread" of the pure-intent passage, made structural rather than ornamental.
+  ~38rem reading measure, centered. The thread runs along the column's left
+  edge as a fading gold hairline — the entire decorative system of the page.
 -------------------------------------------------------------------------- */
 
-.thread-stitch {
-  display: block;
-  height: 4rem;
+.essay {
+  max-width: 38rem;
+  margin: 0 auto;
+  padding: 5rem 1.75rem 4rem 2.75rem;
+  position: relative;
+}
+
+.essay::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 1rem;
   width: 1px;
   background: linear-gradient(
     to bottom,
     transparent 0%,
-    var(--color-amber-dim) 50%,
+    var(--color-gold-soft) 5%,
+    var(--color-gold-soft) 95%,
     transparent 100%
   );
-  margin: 0.5rem auto;
-  opacity: 0.55;
 }
 
-[data-theme="light"] .thread-stitch {
-  opacity: 0.6;
-}
-
-/* --- Copy-prompt button --------------------------------------------------- */
-
-.copy-prompt {
-  font-family: var(--font-mono);
-  font-variant-ligatures: none;
-  background: var(--color-void-raised);
-  border: 1px solid var(--color-rule);
-  border-radius: 0.5rem;
-  position: relative;
-  overflow: hidden;
-}
-
-.copy-prompt:hover {
-  border-color: var(--color-amber-dim);
-}
-
-.copy-prompt pre {
-  font-family: inherit;
-  font-size: 0.86rem;
-  line-height: 1.65;
-  padding: 1.4rem 1.6rem;
-  padding-right: 4rem;
-  color: var(--color-ink);
-  white-space: pre-wrap;
-  word-break: break-word;
-  margin: 0;
-}
-
-.copy-prompt-btn {
-  position: absolute;
-  top: 0.65rem;
-  right: 0.65rem;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  background: var(--color-void);
-  color: var(--color-ink-dim);
-  border: 1px solid var(--color-rule);
-  border-radius: 0.25rem;
-  padding: 0.35rem 0.6rem;
-  cursor: pointer;
-  transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
-}
-
-.copy-prompt-btn:hover {
-  color: var(--color-amber);
-  border-color: var(--color-amber-dim);
-}
-
-.copy-prompt-btn[data-copied="true"] {
-  color: var(--color-amber);
-  border-color: var(--color-amber);
-}
-
-/* --- Staggered reveal ------------------------------------------------------ */
-
-.reveal {
-  opacity: 0;
-  transform: translateY(6px);
-  animation: reveal 800ms cubic-bezier(0.16, 0.84, 0.34, 1) forwards;
-}
-
-.reveal-1 { animation-delay: 80ms; }
-.reveal-2 { animation-delay: 200ms; }
-.reveal-3 { animation-delay: 340ms; }
-.reveal-4 { animation-delay: 480ms; }
-.reveal-5 { animation-delay: 620ms; }
-
-@keyframes reveal {
-  to {
-    opacity: 1;
-    transform: translateY(0);
+@media (min-width: 30rem) {
+  .essay {
+    padding-left: 3.5rem;
+  }
+  .essay::before {
+    left: 1.75rem;
   }
 }
 
+/* --- The wordmark ---------------------------------------------------------
+
+  The only thing at the top of the page besides the thread.
+-------------------------------------------------------------------------- */
+
+.wordmark {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 0.95rem;
+  color: var(--color-ink-soft);
+  letter-spacing: 0.02em;
+  margin-bottom: 6rem;
+}
+
+/* --- The display heading -------------------------------------------------- */
+
+.display {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(2.6rem, 7vw, 4.4rem);
+  line-height: 1.04;
+  letter-spacing: -0.012em;
+  color: var(--color-ink);
+  margin: 0 0 2.5rem;
+  font-feature-settings: "kern", "liga", "dlig", "swsh";
+}
+
+.display .gold {
+  color: var(--color-gold);
+}
+
+/* --- Lede ------------------------------------------------------------------ */
+
+.lede {
+  font-size: 1.32rem;
+  line-height: 1.55;
+  color: var(--color-ink-soft);
+  margin: 0 0 2.5rem;
+}
+
+/* --- Section heading ------------------------------------------------------
+
+  A small italic phrase floating above each section, with a generous gap
+  above. No bold, no rules, no labels. The italic is the change in voice.
+-------------------------------------------------------------------------- */
+
+.section {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.4rem;
+  line-height: 1.3;
+  color: var(--color-ink);
+  margin: 5.5rem 0 1.75rem;
+  letter-spacing: -0.005em;
+}
+
+/* --- Body paragraphs ------------------------------------------------------ */
+
+.essay p {
+  margin: 0 0 1.35rem;
+}
+
+.essay p + p {
+  margin-top: 0;
+}
+
+/* --- Paste prompt ---------------------------------------------------------
+
+  Indented, mono, no border, no button — a small "copy" link sits beneath.
+  The prompt reads as a quoted command, not a CTA card.
+-------------------------------------------------------------------------- */
+
+.prompt {
+  font-family: var(--font-mono);
+  font-size: 0.94rem;
+  line-height: 1.55;
+  color: var(--color-ink);
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 1.5rem 0 0.5rem;
+  padding-left: 1.25rem;
+  border-left: 2px solid var(--color-gold);
+}
+
+.prompt-copy {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--color-ink-faint);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-bottom: 1px dotted var(--color-ink-faint);
+  transition: color 160ms ease, border-color 160ms ease;
+}
+
+.prompt-copy:hover {
+  color: var(--color-gold);
+  border-bottom-color: var(--color-gold);
+}
+
+.prompt-copy[data-copied="true"] {
+  color: var(--color-gold);
+  border-bottom-color: var(--color-gold);
+}
+
+.prompt-note {
+  font-style: italic;
+  color: var(--color-ink-soft);
+  font-size: 1.02rem;
+  margin: 1rem 0 2.5rem;
+}
+
+/* --- Inline references ----------------------------------------------------
+
+  Slash-commands and filenames stay in italic Garamond rather than mono —
+  they're part of the prose, not foreign artefacts.
+-------------------------------------------------------------------------- */
+
+.essay code,
+.essay :not(pre) > code {
+  font-family: var(--font-serif);
+  font-style: italic;
+  background: none;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* --- Video embed ---------------------------------------------------------- */
+
+.video {
+  margin: 1.5rem 0 0.6rem;
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: transparent;
+}
+
+.video iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--color-rule);
+}
+
+.caption {
+  font-style: italic;
+  color: var(--color-ink-soft);
+  font-size: 1rem;
+  margin: 0 0 2rem;
+}
+
+/* --- Coda (the pure-intent passage) --------------------------------------
+
+  The whole essay leads here. Italic body, slightly smaller, attribution
+  beneath in the smallest type on the page.
+-------------------------------------------------------------------------- */
+
+.coda-rule {
+  border: none;
+  border-top: 1px solid var(--color-rule);
+  margin: 6rem 0 3rem;
+}
+
+.coda {
+  margin: 0 0 1.5rem;
+  padding: 0;
+  border: none;
+  font-style: italic;
+  font-size: 1.12rem;
+  line-height: 1.65;
+  color: var(--color-ink-soft);
+}
+
+.coda p {
+  margin: 0;
+}
+
+.coda .gold {
+  color: var(--color-gold);
+  font-style: italic;
+}
+
+.coda-attrib {
+  font-style: italic;
+  font-size: 0.95rem;
+  color: var(--color-ink-faint);
+  margin: 1rem 0 5rem;
+}
+
+/* --- Tiny final line ------------------------------------------------------ */
+
+.colophon {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+  color: var(--color-ink-faint);
+  margin: 0;
+}
+
+.colophon a {
+  border-bottom-color: var(--color-rule);
+}
+
+.colophon a:hover {
+  border-bottom-color: var(--color-gold-soft);
+}
+
+/* --- Reduced motion -------------------------------------------------------
+
+  The page has no motion to reduce, but reset the fade-in just in case.
+-------------------------------------------------------------------------- */
+
 @media (prefers-reduced-motion: reduce) {
-  .reveal {
-    opacity: 1;
-    transform: none;
-    animation: none;
+  * {
+    animation: none !important;
+    transition: none !important;
   }
 }
