@@ -164,48 +164,6 @@ const year = new Date().getFullYear();
     <div class="sec-head">
       <span class="sec-num">04</span>
       <div>
-        <p class="sec-label">scope</p>
-        <h2 class="h2">one PR, <span class="accent-lime">end to end.</span></h2>
-      </div>
-    </div>
-
-    <div class="body" style="margin-bottom: 2rem;">
-      <p>
-        Each <code class="cmd-magenta">/do</code> run lands a single PR — start
-        to finish in one sitting. No cross-PR memory by design. Larger work
-        gets broken into phases by <code class="cmd-cyan">/talk</code>, then
-        shipped one PR per phase.
-      </p>
-    </div>
-
-    <div class="pair">
-      <div class="pair-cell">
-        <p class="pair-marker is-lime">within the PR</p>
-        <p class="pair-headline">Step state lives in <code>.do-results.json</code>.</p>
-        <p class="pair-body">
-          Per-step lifecycle, status, and timing. The
-          <code>do-stop-guard</code> hook reads it so the agent can't bail
-          while a run is still <code>working</code>.
-        </p>
-      </div>
-      <div class="pair-cell">
-        <p class="pair-marker is-magenta">across PRs</p>
-        <p class="pair-headline">A phased issue is the cross-PR memory.</p>
-        <p class="pair-body">
-          Branches that linger past a day or two are a smell — break the work
-          smaller. For multi-phase work, <code class="cmd-cyan">/talk</code>
-          writes the phased issue, <code class="cmd-magenta">/do</code> consumes
-          one phase per PR.
-          <a href="https://github.com/juspay/kolu/issues/514" rel="noopener">kolu#514</a>.
-        </p>
-      </div>
-    </div>
-  </section>
-
-  <section class="sec wrap">
-    <div class="sec-head">
-      <span class="sec-num">05</span>
-      <div>
         <p class="sec-label">project rules</p>
         <h2 class="h2">your codebase. <span class="accent-magenta">your rules.</span></h2>
       </div>
