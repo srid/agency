@@ -20,7 +20,7 @@ Landing page: <https://srid.github.io/agency/>. Source under [`website/`](./webs
 
 The autonomous loop is only as good as the feedback signal it gets. If the agent can't tell whether its change actually worked, no amount of model capability papers over that gap. End-to-end tests are a prerequisite, not a nice-to-have — unit tests and type-checks alone aren't enough. What "e2e" means depends on the surface:
 
-- **Frontend** → screenshot evidence in PRs ([example](https://github.com/juspay/kolu/pull/702#issuecomment-4315162808)). First-class evidence as a workflow step is tracked in [#106](https://github.com/srid/agency/issues/106).
+- **Frontend** → screenshot evidence in PRs ([example](https://github.com/juspay/kolu/pull/791#issuecomment-4352641175)). First-class evidence as a workflow step is tracked in [#106](https://github.com/srid/agency/issues/106).
 - **Nix-based infra** → NixOS VM tests. Honest tradeoff: a VM isn't a live environment, mocking is often required, and reaching real fidelity for non-trivial infra takes effort — but it's still the closest thing to an executable spec the agent can drive.
 - **Backend / library** → fast, deterministic e2e suites the agent can run in a tight loop. Slow or flaky suites destroy the loop; a 30-second deterministic run beats a 10-minute thorough one.
 
