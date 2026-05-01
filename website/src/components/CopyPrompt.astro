@@ -3,22 +3,24 @@ interface Props {
   text: string;
   id?: string;
 }
-const { text, id = "agency-paste-prompt" } = Astro.props;
+const { text, id = "agency-paste" } = Astro.props;
 ---
 
-<pre class="prompt" id={id}>{text}</pre>
-<button
-  type="button"
-  class="prompt-copy"
-  data-copy-source={id}
-  aria-label="Copy prompt to clipboard"
->
-  copy
-</button>
+<div class="prompt-frame">
+  <pre class="prompt" id={id}>{text}</pre>
+  <div class="prompt-meta">
+    <button
+      type="button"
+      class="prompt-copy"
+      data-copy-source={id}
+      aria-label="Copy prompt to clipboard">copy</button
+    >
+    <span>paste into your agent at the repo root</span>
+  </div>
+</div>
 
 <script>
-  const buttons = document.querySelectorAll<HTMLButtonElement>(".prompt-copy");
-  buttons.forEach((btn) => {
+  document.querySelectorAll<HTMLButtonElement>(".prompt-copy").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const sourceId = btn.dataset.copySource;
       if (!sourceId) return;

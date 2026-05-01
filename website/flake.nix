@@ -40,7 +40,7 @@
             # mismatch; paste it back here.
             pnpmDeps = pkgs.fetchPnpmDeps {
               inherit pname version src;
-              hash = "sha256-6ki82ytirluU7S81G0oDhTV+ekDESxpD+5Sg3Bbpklc=";
+              hash = "sha256-2VzdzXjjCjc6Yg1Dt8k5XT9qH49BleK3K4Voo+akWoE=";
               fetcherVersion = 3;
             };
 

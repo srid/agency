@@ -9,138 +9,187 @@ const year = new Date().getFullYear();
 ---
 
 <BaseLayout title="agency">
-  <article class="essay">
-    <p class="wordmark">agency</p>
+  <header class="topbar">
+    <span class="topbar-mark"><span class="slash">/</span>agency</span>
+    <a href="https://github.com/srid/agency" rel="noopener">github ↗</a>
+  </header>
 
-    <h1 class="display">
-      <em>A loop you can leave alone.</em>
+  <section class="hero wrap">
+    <p class="hero-eyebrow">a workflow for coding agents</p>
+
+    <h1 class="h1">
+      a loop you can<br />
+      <span class="accent-magenta">leave alone.</span>
     </h1>
 
-    <p class="lede">
-      Two skills — <em>talk</em> for design and code exploration,
-      <em>do</em> for shipping end&#8209;to&#8209;end. Drop them into Claude
-      Code, Codex, or opencode, and the loop runs from research through
-      structural review, CI, and merge — on every diff.
+    <p class="hero-tag">
+      Two skills. <em>talk</em> for design. <em>do</em> for shipping.
+      End-to-end, every diff.
     </p>
 
     <CopyPrompt text={setupPrompt} />
-    <p class="prompt-note">
-      Run at the root of any repo. Detects an existing install and updates
-      in place if you paste it again later. The whole workflow is on
-      <a href="https://github.com/srid/agency" rel="noopener">GitHub</a>.
-    </p>
+  </section>
 
-    <h2 class="section"><em>Two entry points, never one.</em></h2>
+  <section class="sec wrap">
+    <div class="sec-head">
+      <span class="sec-num">01</span>
+      <div>
+        <p class="sec-label">the loop</p>
+        <h2 class="h2">two entry points, <span class="accent-magenta">never one.</span></h2>
+      </div>
+    </div>
 
-    <p>
-      <em>talk</em> and <em>do</em> are separate entry points, not steps in
-      a single flow. Pick based on whether the spec is already clear.
-    </p>
+    <div class="pair">
+      <div class="pair-cell">
+        <p class="pair-marker is-cyan">/talk &nbsp;·&nbsp; spec isn't obvious</p>
+        <p class="pair-headline">Sketch first. Ship later.</p>
+        <p class="pair-body">
+          Discuss, read, sketch. Run <code>hickey</code> + <code>lowy</code> on
+          the sketch. Read-only. Hand the converged plan to <code>do</code>.
+        </p>
+      </div>
+      <div class="pair-cell">
+        <p class="pair-marker is-magenta">/do &nbsp;·&nbsp; "done" is concrete</p>
+        <p class="pair-headline">Research → review → ship.</p>
+        <p class="pair-body">
+          Implement, structural review, quality gate, CI, merge. Each fix lands
+          as its own commit.
+        </p>
+      </div>
+    </div>
 
-    <p>
-      When the spec isn't obvious, reach for <em>talk</em> first. Discuss
-      the approach, read code, sketch an interface, let <em>hickey</em> and
-      <em>lowy</em> chew on the sketch. Read-only — no repo changes. Once
-      you both converge on a plan, hand it to <em>do</em>.
-    </p>
+    <div class="body" style="margin-top: 2.25rem;">
+      <p>
+        <strong><code>/do</code> has no design phase.</strong> Pasting a thin
+        plan into <code>/do</code> produces a thin implementation. The fix is
+        to do the design work in <code class="cmd-cyan">/talk</code> first.
+      </p>
+    </div>
+  </section>
 
-    <p>
-      When <em>done</em> is concrete, reach for <em>do</em> directly:
-      research, implement, structural review, quality gate, CI, ship. Each
-      &ldquo;Fix in this PR&rdquo; finding lands as its own commit, so the
-      history reads as a progression from primary implementation through
-      each refinement.
-    </p>
+  <section class="sec wrap">
+    <div class="sec-head">
+      <span class="sec-num">02</span>
+      <div>
+        <p class="sec-label">feedback</p>
+        <h2 class="h2">the loop is only as <span class="accent-cyan">good as its signal.</span></h2>
+      </div>
+    </div>
 
-    <p>
-      What <em>do</em> doesn't include is a design-exploration phase. Pasting
-      a thin plan straight into <em>do</em> produces a thin implementation;
-      the fix isn't to make <em>do</em> smarter, it's to do the design work
-      in <em>talk</em> first.
-    </p>
+    <div class="body" style="margin-bottom: 2rem;">
+      <p>
+        E2e tests are a prerequisite, not a nice-to-have. Unit tests and
+        type-checks alone don't tell the agent whether its change actually
+        worked.
+      </p>
+    </div>
 
-    <h2 class="section"><em>Feedback is the bottleneck.</em></h2>
+    <ul class="triple" style="list-style: none; padding: 0;">
+      <li class="triple-cell is-magenta">
+        <p class="triple-label">frontend</p>
+        <p class="triple-body">
+          Screenshot evidence on every PR.
+          <a href="https://github.com/srid/agency/issues/106" rel="noopener">#106</a>.
+        </p>
+      </li>
+      <li class="triple-cell is-cyan">
+        <p class="triple-label">nix infra</p>
+        <p class="triple-body">
+          NixOS VM tests. Closest thing to an executable spec the agent can
+          drive.
+        </p>
+      </li>
+      <li class="triple-cell is-lime">
+        <p class="triple-label">backend / library</p>
+        <p class="triple-body">
+          Fast, deterministic e2e. 30s deterministic beats 10min thorough.
+        </p>
+      </li>
+    </ul>
+  </section>
 
-    <p>
-      The loop is only as good as its signal. If the agent can't tell whether
-      its change actually worked, no amount of model capability papers over
-      that gap. End-to-end tests are a prerequisite, not a nice-to-have —
-      unit tests and type-checks alone aren't enough. What &ldquo;e2e&rdquo;
-      means depends on the surface.
-    </p>
+  <section class="sec wrap">
+    <div class="sec-head">
+      <span class="sec-num">03</span>
+      <div>
+        <p class="sec-label">state</p>
+        <h2 class="h2">one PR <span class="accent-lime">at a time.</span></h2>
+      </div>
+    </div>
 
-    <p>
-      For frontend work, screenshot evidence on every PR. First-class
-      evidence as a workflow step is tracked in
-      <a href="https://github.com/srid/agency/issues/106" rel="noopener">#106</a>.
-    </p>
+    <div class="pair">
+      <div class="pair-cell">
+        <p class="pair-marker is-lime">within a PR</p>
+        <p class="pair-headline">.do-results.json + stop-guard.</p>
+        <p class="pair-body">
+          Per-step lifecycle and timing. The Stop hook blocks bail-outs while a
+          run is <code>working</code>.
+        </p>
+      </div>
+      <div class="pair-cell">
+        <p class="pair-marker is-magenta">across PRs</p>
+        <p class="pair-headline">No memory. By design.</p>
+        <p class="pair-body">
+          Land each PR end-to-end in a day or two. For larger work, <code class="cmd-cyan">/talk</code>
+          produces a phased issue, <code>/do</code> consumes each phase.
+          <a href="https://github.com/juspay/kolu/issues/514" rel="noopener">kolu#514</a>.
+        </p>
+      </div>
+    </div>
+  </section>
 
-    <p>
-      For Nix-based infrastructure, NixOS VM tests. Honest tradeoff: a VM
-      isn't a live environment, mocking is often required, and reaching real
-      fidelity for non-trivial infra takes effort — but it's still the
-      closest thing to an executable spec the agent can drive.
-    </p>
+  <section class="sec wrap">
+    <div class="sec-head">
+      <span class="sec-num">04</span>
+      <div>
+        <p class="sec-label">structure</p>
+        <h2 class="h2">what tests <span class="accent-magenta">don't catch.</span></h2>
+      </div>
+    </div>
 
-    <p>
-      For backend and library code, fast and deterministic e2e suites the
-      agent can run in a tight loop. Slow or flaky suites destroy the loop;
-      a thirty-second deterministic run beats a ten-minute thorough one.
-    </p>
+    <div class="body" style="margin-bottom: 2rem;">
+      <p>
+        Two structural-review passes run post-implement, in parallel. Each
+        finding lands as its own commit; the full ledger ships as a PR
+        comment.
+      </p>
+    </div>
 
-    <h2 class="section"><em>State, within and across.</em></h2>
+    <div class="pair">
+      <div class="pair-cell">
+        <p class="pair-marker is-magenta">hickey</p>
+        <p class="pair-headline">Accidental complexity.</p>
+        <p class="pair-body">
+          After Rich Hickey's <em>Simple Made Easy</em>. Catches the
+          complecting tests pass straight through.
+        </p>
+      </div>
+      <div class="pair-cell">
+        <p class="pair-marker is-cyan">lowy</p>
+        <p class="pair-headline">Volatility-based decomposition.</p>
+        <p class="pair-body">
+          After Juval Lowy's <em>Righting Software</em>. Module boundaries
+          should encapsulate axes of change.
+        </p>
+      </div>
+    </div>
 
-    <p>
-      Within a single PR, <em>do</em> writes per-step lifecycle, status, and
-      timing to <em>.do-results.json</em> at the repo root. The
-      <em>do-stop-guard</em> Stop hook reads this so the agent can't bail
-      mid-workflow — if a run is still <em>working</em>, stops are blocked
-      until it reaches <em>done</em> or is explicitly marked <em>failed</em>.
-    </p>
+    <div class="body" style="margin-top: 2.25rem;">
+      <p>
+        Full framing:
+        <a href="https://kolu.dev/blog/hickey-lowy/" rel="noopener">Hickey/Lowy on kolu.dev</a>.
+      </p>
+    </div>
+  </section>
 
-    <p>
-      Across PRs, no built-in memory, by design. Scope each PR small enough
-      to land end-to-end in a day or two. Branches that linger longer are a
-      smell — break the work down further.
-    </p>
-
-    <p>
-      When work genuinely doesn't fit in one PR, have <em>talk</em> produce
-      a GitHub issue with explicit phases, then run <em>do</em> against each
-      phase as its own PR. The issue is the cross-PR memory.
-      <a href="https://github.com/juspay/kolu/issues/514" rel="noopener"
-        >juspay/kolu#514</a
-      > is the worked example.
-    </p>
-
-    <h2 class="section"><em>On reviews of structure.</em></h2>
-
-    <p>
-      Type-checkers, tests, and CI catch correctness; they don't catch
-      design. An LLM-generated diff can pass every automated gate and still
-      complect two roles into one construct, or draw a module boundary along
-      the wrong axis of change.
-    </p>
-
-    <p>
-      <em>do</em> closes that gap with two structural-review passes that run
-      post-implement on the concrete diff, in parallel:
-      <em>hickey</em> for accidental complexity, after Rich Hickey's
-      <em>Simple Made Easy</em>; <em>lowy</em> for volatility-based
-      decomposition, after Juval Lowy's
-      <em>Righting Software</em> (building on Parnas, 1972). Each finding
-      lands as its own commit. The full ledger is posted as a PR comment.
-    </p>
-
-    <p>
-      Read
-      <a href="https://kolu.dev/blog/hickey-lowy/" rel="noopener"
-        >Hickey/Lowy on kolu.dev</a
-      > for the full framing — what each lens looks for and why the pair
-      catches what tests miss.
-    </p>
-
-    <h2 class="section"><em>In motion.</em></h2>
+  <section class="sec wrap">
+    <div class="sec-head">
+      <span class="sec-num">05</span>
+      <div>
+        <p class="sec-label">in motion</p>
+        <h2 class="h2">a <span class="accent-lime">walkthrough.</span></h2>
+      </div>
+    </div>
 
     <div class="video">
       <iframe
@@ -151,48 +200,37 @@ const year = new Date().getFullYear();
         referrerpolicy="strict-origin-when-cross-origin"
         allowfullscreen></iframe>
     </div>
-    <p class="caption">Adding a <em>/code-police</em> rule, in real time.</p>
-
-    <h2 class="section"><em>In the wild.</em></h2>
-
-    <p>
-      <a href="https://kolu.dev" rel="noopener">Kolu</a> — a terminal-native
-      cockpit for coding agents — is the canonical adopter. See its
-      <a
-        href="https://github.com/juspay/kolu/blob/master/apm.yml"
-        rel="noopener">apm.yml</a
-      > and
-      <a href="https://github.com/juspay/kolu/tree/master/.apm" rel="noopener"
-        >.apm/</a
-      > for how project-specific instructions layer on top of the generic
-      workflow.
+    <p class="video-caption">
+      adding a <code>/code-police</code> rule, in real time.
     </p>
+  </section>
 
-    <hr class="coda-rule" />
-
-    <blockquote class="coda">
-      <p>
-        Pure intent is a palpable life-force; an actually occurring stream of
-        benevolence and benignity that originates in the vast and utter
-        stillness that is the essential character of the universe itself.
-        With pure intent running as a <span class="gold">golden thread</span>
-        through one's life, reflective contemplation about being here doing
-        this business called being alive rapidly becomes more and more
-        fascinating.
-      </p>
+  <section class="coda wrap">
+    <blockquote class="coda-quote">
+      <strong>Pure intent</strong> is a palpable life-force; an actually
+      occurring stream of benevolence and benignity that originates in the
+      vast and utter stillness that is the essential character of the
+      universe itself&hellip; with pure intent running as a
+      <span class="gold">golden thread</span> through one's life, reflective
+      contemplation about being here doing this business called being alive
+      rapidly becomes more and more fascinating.
     </blockquote>
     <p class="coda-attrib">
-      — Richard,
+      —&nbsp;Richard,
       <a
         href="https://actualfreedom.com.au/richard/abditorium/pureintent.htm"
         rel="noopener">on pure intent</a
-      >.
+      >
     </p>
 
     <p class="colophon">
       <a href="https://github.com/srid/agency" rel="noopener"
         >github.com/srid/agency</a
-      > · mit · {year}
+      >
+      <span>·</span>
+      <a href="https://kolu.dev" rel="noopener">sister · kolu.dev</a>
+      <span>·</span>
+      <span>mit · {year}</span>
     </p>
-  </article>
+  </section>
 </BaseLayout>
