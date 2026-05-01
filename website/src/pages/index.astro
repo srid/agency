@@ -24,8 +24,8 @@ const year = new Date().getFullYear();
     </p>
 
     <p class="hero-tag">
-      Two skills. <em>talk</em> for design. <em>do</em> for shipping.
-      End-to-end, every diff.
+      Two skills. <code class="cmd-cyan">/talk</code> for design.
+      <code class="cmd-magenta">/do</code> for shipping. End-to-end, every diff.
     </p>
 
     <CopyPrompt text={setupPrompt} />
@@ -45,8 +45,9 @@ const year = new Date().getFullYear();
         <p class="pair-marker is-cyan">/talk &nbsp;·&nbsp; spec isn't obvious</p>
         <p class="pair-headline">Sketch first. Ship later.</p>
         <p class="pair-body">
-          Discuss, read, sketch. Run <code>hickey</code> + <code>lowy</code> on
-          the sketch. Read-only. Hand the converged plan to <code>do</code>.
+          Discuss, read, sketch. Run <code>/hickey</code> + <code>/lowy</code> on
+          the sketch. Read-only. Hand the converged plan to
+          <code class="cmd-magenta">/do</code>.
         </p>
       </div>
       <div class="pair-cell">
@@ -61,9 +62,10 @@ const year = new Date().getFullYear();
 
     <div class="body" style="margin-top: 2.25rem;">
       <p>
-        <strong><code>/do</code> has no design phase.</strong> Pasting a thin
-        plan into <code>/do</code> produces a thin implementation. The fix is
-        to do the design work in <code class="cmd-cyan">/talk</code> first.
+        <strong><code class="cmd-magenta">/do</code> has no design phase.</strong>
+        Pasting a thin plan into <code class="cmd-magenta">/do</code> produces a
+        thin implementation. The fix is to do the design work in
+        <code class="cmd-cyan">/talk</code> first.
       </p>
     </div>
   </section>
@@ -131,8 +133,9 @@ const year = new Date().getFullYear();
         <p class="pair-marker is-magenta">across PRs</p>
         <p class="pair-headline">No memory. By design.</p>
         <p class="pair-body">
-          Land each PR end-to-end in a day or two. For larger work, <code class="cmd-cyan">/talk</code>
-          produces a phased issue, <code>/do</code> consumes each phase.
+          Land each PR end-to-end in a day or two. For larger work,
+          <code class="cmd-cyan">/talk</code> produces a phased issue,
+          <code class="cmd-magenta">/do</code> consumes each phase.
           <a href="https://github.com/juspay/kolu/issues/514" rel="noopener">kolu#514</a>.
         </p>
       </div>
@@ -158,7 +161,7 @@ const year = new Date().getFullYear();
 
     <div class="pair">
       <div class="pair-cell">
-        <p class="pair-marker is-magenta">hickey</p>
+        <p class="pair-marker is-magenta">/hickey</p>
         <p class="pair-headline">Accidental complexity.</p>
         <p class="pair-body">
           After Rich Hickey's <em>Simple Made Easy</em>. Catches the
@@ -166,7 +169,7 @@ const year = new Date().getFullYear();
         </p>
       </div>
       <div class="pair-cell">
-        <p class="pair-marker is-cyan">lowy</p>
+        <p class="pair-marker is-cyan">/lowy</p>
         <p class="pair-headline">Volatility-based decomposition.</p>
         <p class="pair-body">
           After Juval Lowy's <em>Righting Software</em>. Module boundaries

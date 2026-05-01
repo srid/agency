@@ -191,25 +191,50 @@ a:hover {
 
 /* --- Paste prompt ---------------------------------------------------------
 
-  The hero CTA. Label above ("↓ paste into ...") in lime mono so it's
-  obvious this is something to use; copy button as a bright lime block
-  fixed to the prompt's top-right corner so it can't be missed.
+  Title bar carries the instruction + copy button; body holds the prompt at
+  full width with no copy-button intrusion. Magenta left border across the
+  whole block reads as a subtle "this is special" accent without shouting.
 -------------------------------------------------------------------------- */
 
-.prompt-frame {
+.prompt-body {
   max-width: 44rem;
-  margin: 0 0 1rem;
+  margin: 0;
+  background: var(--color-bg-raised);
+  border: 1px solid var(--color-rule-strong);
+  border-left: 3px solid var(--color-magenta);
+  border-radius: 0.45rem;
+  overflow: hidden;
+  transition: border-color 160ms ease;
 }
 
-.prompt-label {
+.prompt-body:hover {
+  border-color: var(--color-fg-faint);
+  border-left-color: var(--color-magenta);
+}
+
+.prompt-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.55rem 0.55rem 0.55rem 1.1rem;
+  background: var(--color-bg-sunk);
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.prompt-head-label {
   font-family: var(--font-mono);
-  font-size: 0.84rem;
+  font-size: 0.78rem;
   letter-spacing: 0.02em;
   color: var(--color-lime);
-  margin: 0 0 0.7rem;
-  display: flex;
+  display: inline-flex;
   align-items: baseline;
   gap: 0.5rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .prompt-arrow {
@@ -222,58 +247,46 @@ a:hover {
   50%      { transform: translateY(2px); }
 }
 
-.prompt-body {
-  position: relative;
-  background: var(--color-bg-raised);
-  border: 1px solid var(--color-rule-strong);
-  border-left: 3px solid var(--color-magenta);
-  border-radius: 0.3rem;
-  overflow: hidden;
-}
-
-.prompt-body:hover {
-  border-color: var(--color-fg-faint);
-  border-left-color: var(--color-magenta);
-}
-
 .prompt {
   font-family: var(--font-mono);
-  font-size: 0.92rem;
+  font-size: 0.94rem;
   line-height: 1.6;
   color: var(--color-fg);
   white-space: pre-wrap;
   word-break: break-word;
   margin: 0;
-  padding: 1.4rem 1.5rem 1.4rem 1.5rem;
-  padding-right: 5.5rem;
+  padding: 1.25rem 1.5rem;
 }
 
 .prompt-copy {
-  position: absolute;
-  top: 0.7rem;
-  right: 0.7rem;
+  position: relative;
+  flex: 0 0 auto;
   background: var(--color-lime);
   color: var(--color-bg);
   border: none;
   font-family: var(--font-mono);
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  padding: 0.5rem 0.85rem;
-  border-radius: 0.25rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 0.3rem;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.4rem;
   box-shadow: 0 0 0 1px var(--color-lime);
-  transition: background 140ms ease, color 140ms ease, transform 140ms ease;
+  transition: background 140ms ease, color 140ms ease, transform 140ms ease, box-shadow 140ms ease;
 }
 
 .prompt-copy:hover {
   background: var(--color-fg);
   box-shadow: 0 0 0 1px var(--color-fg);
   transform: translateY(-1px);
+}
+
+.prompt-copy:active {
+  transform: translateY(0);
 }
 
 .prompt-copy[data-copied="true"] {
@@ -284,6 +297,16 @@ a:hover {
 
 .prompt-copy-arrow {
   font-weight: 400;
+}
+
+@media (max-width: 28rem) {
+  .prompt-head-label {
+    font-size: 0.7rem;
+  }
+  .prompt-copy {
+    font-size: 0.7rem;
+    padding: 0.4rem 0.65rem;
+  }
 }
 
 /* --- Section -------------------------------------------------------------- */
