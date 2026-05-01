@@ -1,0 +1,348 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import CopyPrompt from "../components/CopyPrompt.astro";
+
+const setupPrompt = `Set up this repo to use srid/agency by following the instructions at
+https://github.com/srid/agency/blob/master/docs/agency-setup.md`;
+
+// Three-column feedback section. Frontmatter keeps content out of the JSX.
+const surfaces = [
+  {
+    label: "Frontend",
+    body: "Screenshot evidence in PRs. First-class evidence as a workflow step is tracked in",
+    linkText: "#106",
+    linkHref: "https://github.com/srid/agency/issues/106",
+    bodyTail: ".",
+  },
+  {
+    label: "Nix-based infra",
+    body: "NixOS VM tests. Honest tradeoff: a VM isn't a live environment, mocking is often required, and reaching real fidelity for non-trivial infra takes effort — but it's still the closest thing to an executable spec the agent can drive.",
+  },
+  {
+    label: "Backend / library",
+    body: "Fast, deterministic e2e suites the agent can run in a tight loop. Slow or flaky suites destroy the loop; a 30-second deterministic run beats a 10-minute thorough one.",
+  },
+];
+---
+
+<BaseLayout title="agency">
+  {/* ── HERO ────────────────────────────────────────────────────────── */}
+  <section class="mx-auto max-w-[64rem] px-6 pt-20 pb-16 md:pt-32 md:pb-24">
+    <p class="eyebrow reveal reveal-1">a workflow for coding agents</p>
+
+    <h1
+      class="display reveal reveal-2 mt-5 text-[3rem] sm:text-[4.2rem] md:text-[5.4rem] max-w-3xl"
+    >
+      A loop you can <span class="text-amber">leave alone.</span>
+    </h1>
+
+    <p class="lede reveal reveal-3 mt-8 max-w-2xl">
+      Two skills — <code>talk</code> for design and code exploration, <code>do</code> for shipping end-to-end. Drop them into Claude Code, Codex, or
+      opencode, and the loop runs from research through structural review,
+      CI, and merge — on every diff.
+    </p>
+
+    <div class="reveal reveal-4 mt-10 max-w-2xl">
+      <p class="eyebrow mb-3">paste this into your agent</p>
+      <CopyPrompt text={setupPrompt} id="hero-paste" />
+      <p class="mt-3 mono text-[0.72rem] text-ink-muted leading-relaxed">
+        Run at the root of any repo. Detects an existing install and updates
+        in place if you paste it again later.
+      </p>
+    </div>
+
+    <div class="reveal reveal-5 mt-8">
+      <a
+        href="https://github.com/srid/agency"
+        rel="noopener"
+        class="inline-flex items-center gap-2 rounded-sm border border-rule-strong px-4 py-2 mono text-[0.78rem] text-ink-dim hover:text-amber hover:border-amber-dim transition-colors"
+      >
+        <svg viewBox="0 0 16 16" class="size-3.5 fill-current" aria-hidden="true">
+          <path
+            d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.34c-2.22.48-2.69-1.07-2.69-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.05-.49.05-.49.8.06 1.23.82 1.23.82.72 1.23 1.88.87 2.34.67.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.58.82-2.14-.08-.2-.36-1.01.08-2.11 0 0 .67-.21 2.2.82a7.63 7.63 0 0 1 4 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.91.08 2.11.51.56.82 1.27.82 2.14 0 3.06-1.86 3.75-3.64 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 8 0Z"
+          ></path>
+        </svg>
+        srid/agency on GitHub
+      </a>
+    </div>
+  </section>
+
+  <span class="thread-stitch" aria-hidden="true"></span>
+
+  {/* ── THE LOOP ─────────────────────────────────────────────────────── */}
+  <section class="mx-auto max-w-[64rem] px-6 py-20">
+    <p class="eyebrow mb-4">the loop</p>
+    <h2 class="display-sm text-[2.2rem] md:text-[2.7rem] text-ink mb-6 max-w-2xl">
+      Two entry points, never one.
+    </h2>
+    <p class="lede max-w-2xl mb-12">
+      <code>talk</code> and <code>do</code> are separate entry points, not steps
+      in a single flow. Pick based on whether the spec is already clear.
+    </p>
+
+    <div class="grid md:grid-cols-2 gap-px bg-rule mt-2">
+      <div class="bg-void p-7 md:p-9 relative">
+        <div class="flex items-baseline gap-4 mb-4">
+          <span class="mono text-[0.72rem] text-amber-dim tracking-widest">01</span>
+          <span class="mono text-[0.72rem] text-ink-faint tracking-widest">when the spec isn't obvious</span>
+        </div>
+        <h3 class="display-sm text-[1.7rem] md:text-[1.9rem] mb-3 text-ink">
+          <code>/talk</code> first
+        </h3>
+        <p class="text-ink-dim leading-relaxed">
+          Discuss the approach. Read code. Sketch an interface. Let
+          <code>hickey</code> and <code>lowy</code> chew on the sketch. Read-only
+          — no repo changes. Once you both converge on a plan, hand it to
+          <code>/do</code>.
+        </p>
+      </div>
+
+      <div class="bg-void p-7 md:p-9 relative">
+        <div class="flex items-baseline gap-4 mb-4">
+          <span class="mono text-[0.72rem] text-amber-dim tracking-widest">02</span>
+          <span class="mono text-[0.72rem] text-ink-faint tracking-widest">when "done" is concrete</span>
+        </div>
+        <h3 class="display-sm text-[1.7rem] md:text-[1.9rem] mb-3 text-ink">
+          <code>/do</code> directly
+        </h3>
+        <p class="text-ink-dim leading-relaxed">
+          Research → implement → structural review → quality gate → CI →
+          ship. Each "Fix in this PR" finding lands as its own commit, so the
+          PR history reads as a progression from primary implementation
+          through each refinement.
+        </p>
+      </div>
+    </div>
+
+    <p class="mt-10 max-w-2xl text-ink-dim leading-relaxed">
+      <code>/do</code> does not include a design-exploration phase. Pasting a
+      thin plan straight into <code>/do</code> produces a thin implementation;
+      the fix isn't to make <code>/do</code> smarter, it's to do the design
+      work in <code>/talk</code> first.
+    </p>
+  </section>
+
+  <span class="thread-stitch" aria-hidden="true"></span>
+
+  {/* ── FEEDBACK ─────────────────────────────────────────────────────── */}
+  <section class="mx-auto max-w-[64rem] px-6 py-20">
+    <p class="eyebrow mb-4">feedback is the bottleneck</p>
+    <h2 class="display-sm text-[2.2rem] md:text-[2.7rem] text-ink mb-6 max-w-2xl">
+      The loop is only as good as its signal.
+    </h2>
+    <p class="lede max-w-2xl mb-12">
+      If the agent can't tell whether its change actually worked, no amount
+      of model capability papers over that gap. End-to-end tests are a
+      prerequisite, not a nice-to-have — unit tests and type-checks alone
+      aren't enough.
+    </p>
+
+    <ul class="grid md:grid-cols-3 gap-px bg-rule">
+      {surfaces.map((s) => (
+        <li class="bg-void p-7 md:p-8">
+          <p class="mono text-[0.72rem] text-amber-dim tracking-widest mb-3">
+            {s.label}
+          </p>
+          <p class="text-ink-dim leading-relaxed text-[0.97rem]">
+            {s.body}
+            {s.linkText && (
+              <>
+                {" "}
+                <a
+                  href={s.linkHref}
+                  rel="noopener"
+                  class="text-ink border-b border-amber-dim hover:border-amber transition-colors"
+                >
+                  {s.linkText}
+                </a>
+                {s.bodyTail}
+              </>
+            )}
+          </p>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <span class="thread-stitch" aria-hidden="true"></span>
+
+  {/* ── STATE ────────────────────────────────────────────────────────── */}
+  <section class="mx-auto max-w-[64rem] px-6 py-20">
+    <p class="eyebrow mb-4">state</p>
+    <h2 class="display-sm text-[2.2rem] md:text-[2.7rem] text-ink mb-12 max-w-2xl">
+      One PR at a time.
+    </h2>
+
+    <div class="grid md:grid-cols-2 gap-12 md:gap-16">
+      <div>
+        <p class="mono text-[0.72rem] text-amber-dim tracking-widest mb-4">
+          within a PR
+        </p>
+        <p class="text-ink-dim leading-relaxed">
+          <code>/do</code> writes per-step lifecycle, status, and timing to
+          <code>.do-results.json</code> at the repo root. The
+          <code>do-stop-guard</code> Stop hook reads this so the agent can't
+          bail mid-workflow — if a run is still <code>working</code>, stops are
+          blocked until it reaches <code>done</code> or is explicitly marked
+          <code>failed</code>.
+        </p>
+      </div>
+
+      <div>
+        <p class="mono text-[0.72rem] text-amber-dim tracking-widest mb-4">
+          across PRs
+        </p>
+        <p class="text-ink-dim leading-relaxed">
+          No built-in memory, by design. Scope each PR small enough to land
+          end-to-end in a day or two. Branches that linger longer are a smell
+          — break the work down further.
+        </p>
+      </div>
+    </div>
+
+    <div class="mt-14 pt-10 border-t border-rule max-w-3xl">
+      <p class="mono text-[0.72rem] text-amber-dim tracking-widest mb-3">
+        multi-phase projects
+      </p>
+      <p class="text-ink-dim leading-relaxed">
+        When work genuinely doesn't fit in one PR, have <code>/talk</code> produce
+        a GitHub issue with explicit phases, then run <code>/do</code> against
+        each phase as its own PR. The issue is the cross-PR memory.
+        <a
+          href="https://github.com/juspay/kolu/issues/514"
+          rel="noopener"
+          class="text-ink border-b border-amber-dim hover:border-amber transition-colors"
+        >
+          juspay/kolu#514
+        </a>
+        is the worked example.
+      </p>
+    </div>
+  </section>
+
+  <span class="thread-stitch" aria-hidden="true"></span>
+
+  {/* ── STRUCTURAL REVIEW ────────────────────────────────────────────── */}
+  <section class="mx-auto max-w-[64rem] px-6 py-20">
+    <p class="eyebrow mb-4">structural review</p>
+    <h2 class="display-sm text-[2.2rem] md:text-[2.7rem] text-ink mb-6 max-w-2xl">
+      What tests don't catch.
+    </h2>
+    <p class="lede max-w-2xl mb-12">
+      Type-checkers, tests, and CI catch correctness; they don't catch design.
+      An LLM-generated diff can pass every automated gate and still complect
+      two roles into one construct, or draw a module boundary along the wrong
+      axis of change.
+      <code>/do</code> closes that gap with two structural-review passes that
+      run post-implement on the concrete diff, in parallel.
+    </p>
+
+    <div class="grid md:grid-cols-2 gap-px bg-rule">
+      <div class="bg-void p-7 md:p-9">
+        <p class="mono text-[0.72rem] text-amber-dim tracking-widest mb-3">
+          hickey
+        </p>
+        <h3 class="display-sm text-[1.55rem] mb-3 text-ink">
+          Accidental complexity.
+        </h3>
+        <p class="text-ink-dim leading-relaxed">
+          After Rich Hickey's <em>Simple Made Easy</em>. Catches the
+          complecting that tests pass straight through.
+        </p>
+      </div>
+
+      <div class="bg-void p-7 md:p-9">
+        <p class="mono text-[0.72rem] text-amber-dim tracking-widest mb-3">
+          lowy
+        </p>
+        <h3 class="display-sm text-[1.55rem] mb-3 text-ink">
+          Volatility-based decomposition.
+        </h3>
+        <p class="text-ink-dim leading-relaxed">
+          After Juval Lowy's <em>Righting Software</em> (building on Parnas
+          1972). Checks that module boundaries encapsulate axes of change, not
+          just functionality.
+        </p>
+      </div>
+    </div>
+
+    <p class="mt-10 max-w-2xl text-ink-dim leading-relaxed">
+      Each finding lands as its own commit. The full ledger is posted as a
+      PR comment. Read
+      <a
+        href="https://kolu.dev/blog/hickey-lowy/"
+        rel="noopener"
+        class="text-ink border-b border-amber-dim hover:border-amber transition-colors"
+      >
+        Hickey/Lowy on kolu.dev
+      </a>
+      for the full framing — what each lens looks for and why the pair catches
+      what tests miss.
+    </p>
+  </section>
+
+  <span class="thread-stitch" aria-hidden="true"></span>
+
+  {/* ── VIDEO ────────────────────────────────────────────────────────── */}
+  <section class="mx-auto max-w-[64rem] px-6 py-20">
+    <p class="eyebrow mb-4">see it in motion</p>
+    <h2 class="display-sm text-[2.2rem] md:text-[2.7rem] text-ink mb-10 max-w-2xl">
+      A walkthrough.
+    </h2>
+
+    <div
+      class="relative w-full overflow-hidden rounded-md border border-rule-strong bg-void-sunk"
+      style="aspect-ratio: 16 / 9;"
+    >
+      <iframe
+        class="absolute inset-0 w-full h-full"
+        src="https://www.youtube-nocookie.com/embed/IFp0bb2D0ZE?start=426&rel=0"
+        title="agency walkthrough — adding a /code-police rule"
+        loading="lazy"
+        allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        referrerpolicy="strict-origin-when-cross-origin"
+        allowfullscreen></iframe>
+    </div>
+    <p class="mt-4 mono text-[0.72rem] text-ink-muted">
+      Adding a <code>/code-police</code> rule, in real time.
+    </p>
+  </section>
+
+  <span class="thread-stitch" aria-hidden="true"></span>
+
+  {/* ── IN THE WILD ──────────────────────────────────────────────────── */}
+  <section class="mx-auto max-w-[64rem] px-6 py-20 pb-28">
+    <p class="eyebrow mb-4">in the wild</p>
+    <h2 class="display-sm text-[2.2rem] md:text-[2.7rem] text-ink mb-6 max-w-2xl">
+      Adopters.
+    </h2>
+    <p class="text-ink-dim leading-relaxed max-w-2xl">
+      <a
+        href="https://kolu.dev"
+        rel="noopener"
+        class="text-ink border-b border-amber-dim hover:border-amber transition-colors"
+      >
+        Kolu
+      </a>
+      — a terminal-native cockpit for coding agents — is the canonical adopter.
+      See its
+      <a
+        href="https://github.com/juspay/kolu/blob/master/apm.yml"
+        rel="noopener"
+        class="text-ink border-b border-amber-dim hover:border-amber transition-colors"
+      >
+        <code>apm.yml</code>
+      </a>
+      and
+      <a
+        href="https://github.com/juspay/kolu/tree/master/.apm"
+        rel="noopener"
+        class="text-ink border-b border-amber-dim hover:border-amber transition-colors"
+      >
+        <code>.apm/</code>
+      </a>
+      for how project-specific instructions layer on top of the generic
+      workflow.
+    </p>
+  </section>
+</BaseLayout>

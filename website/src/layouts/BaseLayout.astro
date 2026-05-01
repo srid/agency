@@ -1,0 +1,58 @@
+---
+import "../styles/global.css";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const {
+  title,
+  description = "A near-autonomous workflow for coding agents. Two skills — talk for design, do for shipping. Drop them into Claude Code, Codex, or opencode and run the loop.",
+} = Astro.props;
+
+const fullTitle =
+  title === "agency"
+    ? "agency — a near-autonomous workflow for coding agents"
+    : `${title} · agency`;
+
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="canonical" href={canonical.toString()} />
+    <link rel="icon" type="image/svg+xml" href={import.meta.env.BASE_URL + "favicon.svg"} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical.toString()} />
+    <meta name="twitter:card" content="summary" />
+    <meta name="color-scheme" content="dark light" />
+
+    {/* FOUC-safe theme bootstrap — runs before any CSS/body paint. */}
+    <script is:inline>
+      (() => {
+        const stored = localStorage.getItem("theme");
+        const prefersDark = matchMedia("(prefers-color-scheme: dark)").matches;
+        const theme = stored ?? (prefersDark ? "dark" : "light");
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
+  </head>
+  <body class="min-h-screen flex flex-col selection:bg-amber selection:text-void">
+    <Header />
+    <main class="flex-1 relative">
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>

@@ -1,0 +1,47 @@
+---
+interface Props {
+  text: string;
+  id?: string;
+}
+const { text, id = "copy-prompt-default" } = Astro.props;
+---
+
+<div class="copy-prompt" data-copy-target={id}>
+  <pre id={id}>{text}</pre>
+  <button
+    type="button"
+    class="copy-prompt-btn"
+    data-copy-button
+    data-copy-source={id}
+    aria-label="Copy prompt to clipboard"
+  >
+    copy
+  </button>
+</div>
+
+<script>
+  const buttons = document.querySelectorAll<HTMLButtonElement>("[data-copy-button]");
+  buttons.forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const sourceId = btn.dataset.copySource;
+      if (!sourceId) return;
+      const source = document.getElementById(sourceId);
+      if (!source) return;
+      try {
+        await navigator.clipboard.writeText(source.textContent ?? "");
+        btn.dataset.copied = "true";
+        const original = btn.textContent;
+        btn.textContent = "copied";
+        setTimeout(() => {
+          btn.dataset.copied = "false";
+          btn.textContent = original ?? "copy";
+        }, 1600);
+      } catch {
+        btn.textContent = "press ⌘C";
+        setTimeout(() => {
+          btn.textContent = "copy";
+        }, 1800);
+      }
+    });
+  });
+</script>
