@@ -2,14 +2,32 @@
 import { SKILLS, type SkillName } from "../data/skills";
 
 interface Props {
-  name: SkillName;
+  name?: SkillName;
   suffix?: string;
 }
 
 const { name, suffix } = Astro.props;
-const { color } = SKILLS[name];
+const color = name ? SKILLS[name].color : undefined;
 ---
 
-<p class="pair-marker" style={`color: ${color}`}>
-  /{name}{suffix ? ` · ${suffix}` : ""}
+<p class="pair-marker" style={color ? `color: ${color}` : undefined}>
+  {
+    name ? (
+      <>/{name}{suffix ? ` · ${suffix}` : ""}</>
+    ) : (
+      <slot />
+    )
+  }
 </p>
+
+<style>
+  .pair-marker {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 0.85rem;
+    color: var(--color-fg-dim);
+    /* Skill-tied markers (name prop set) override colour inline. */
+  }
+</style>

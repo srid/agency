@@ -325,15 +325,6 @@ a:hover {
   }
 }
 
-.pair-marker {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  margin-bottom: 0.85rem;
-  color: var(--color-fg-dim);
-  /* Skill-tied markers override colour inline via the PairMarker component. */
-}
 
 .pair-headline {
   font-family: var(--font-display);
