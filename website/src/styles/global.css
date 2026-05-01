@@ -216,85 +216,166 @@ a:hover {
   whole block reads as a subtle "this is special" accent without shouting.
 -------------------------------------------------------------------------- */
 
-.prompt-body {
+/* Terminal — fake Claude Code session as the hero CTA. macOS-style title
+   bar with traffic-light dots, the user's paste prompt prefixed with `>`,
+   and three simulated `✻` progress lines (matching what the agent
+   actually does on agency-setup) ending with a blinking cursor. */
+
+.terminal {
   max-width: 44rem;
   margin: 0;
   background: var(--color-bg-raised);
   border: 1px solid var(--color-rule-strong);
-  border-left: 3px solid var(--color-magenta);
-  border-radius: 0.45rem;
+  border-radius: 0.55rem;
   overflow: hidden;
-  transition: border-color 160ms ease;
+  box-shadow: 0 0 80px -20px rgba(255, 61, 138, 0.28),
+    0 18px 40px -28px rgba(0, 0, 0, 0.7);
 }
 
-.prompt-body:hover {
-  border-color: var(--color-fg-faint);
-  border-left-color: var(--color-magenta);
-}
-
-.prompt-head {
+.terminal-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.55rem 0.55rem 0.55rem 1.1rem;
-  background: var(--color-bg-sunk);
-  border-bottom: 1px solid var(--color-rule);
+  gap: 0.85rem;
+  padding: 0.55rem 0.65rem;
+  background: linear-gradient(to bottom, #1d1d22, #15151a);
+  border-bottom: 1px solid var(--color-rule-strong);
 }
 
-.prompt-head-label {
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  line-height: 1.35;
-  letter-spacing: 0.02em;
-  color: var(--color-fg-dim);
+.terminal-dots {
   display: inline-flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  flex: 1 1 auto;
-  min-width: 0;
+  gap: 0.4rem;
+  align-items: center;
+  flex: 0 0 auto;
 }
 
-.prompt-arrow {
+.terminal-dot {
   display: inline-block;
-  animation: prompt-bob 2.4s ease-in-out infinite;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
 }
 
-@keyframes prompt-bob {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(2px); }
+.terminal-dot--r { background: #ff5f56; }
+.terminal-dot--y { background: #ffbd2e; }
+.terminal-dot--g { background: #27c93f; }
+
+.terminal-title {
+  flex: 1 1 auto;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  color: var(--color-fg-dim);
 }
 
-.prompt {
+.terminal-body {
+  padding: 1.25rem 1.5rem 1.4rem;
   font-family: var(--font-mono);
   font-size: 0.94rem;
-  line-height: 1.6;
+  line-height: 1.65;
   color: var(--color-fg);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  margin: 0;
-  padding: 1.25rem 1.5rem;
 }
 
-.prompt-copy {
+.terminal-input {
   position: relative;
+  margin: 0 0 1.1rem;
+  padding-left: 1.4rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.terminal-input::before {
+  content: ">";
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--color-magenta);
+  font-weight: 700;
+}
+
+.terminal-out {
+  border-top: 1px dashed var(--color-rule);
+  padding-top: 1rem;
+  font-size: 0.88rem;
+  color: var(--color-fg-dim);
+}
+
+.terminal-line {
+  margin: 0 0 0.35rem;
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+}
+
+.terminal-line:last-child {
+  margin-bottom: 0;
+}
+
+.terminal-line code {
+  color: var(--color-fg);
+  font-size: inherit;
+}
+
+.terminal-glyph {
+  flex-shrink: 0;
+  color: var(--color-fg);
+  animation: terminal-pulse 1.4s ease-in-out infinite;
+}
+
+.terminal-line:nth-child(2) .terminal-glyph { animation-delay: 0.25s; }
+.terminal-line:nth-child(3) .terminal-glyph { animation-delay: 0.5s; }
+
+@keyframes terminal-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.terminal-cursor {
+  display: inline-block;
+  width: 0.55em;
+  height: 1.05em;
+  margin-left: 0.2em;
+  vertical-align: -0.18em;
+  background: var(--color-fg);
+  animation: terminal-blink 1.05s step-end infinite;
+}
+
+@keyframes terminal-blink {
+  50% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .terminal-glyph,
+  .terminal-cursor {
+    animation: none;
+  }
+}
+
+/* --- Copy button (lives in the terminal bar) ------------------------------ */
+
+.prompt-copy {
   flex: 0 0 auto;
   background: var(--color-lime);
   color: var(--color-bg);
   border: none;
   font-family: var(--font-mono);
-  font-size: 0.76rem;
+  font-size: 0.74rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  padding: 0.45rem 0.8rem;
+  padding: 0.4rem 0.75rem;
   border-radius: 0.3rem;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.35rem;
   box-shadow: 0 0 0 1px var(--color-lime);
-  transition: background 140ms ease, color 140ms ease, transform 140ms ease, box-shadow 140ms ease;
+  transition:
+    background 140ms ease,
+    color 140ms ease,
+    transform 140ms ease,
+    box-shadow 140ms ease;
 }
 
 .prompt-copy:hover {
@@ -318,24 +399,28 @@ a:hover {
 }
 
 @media (max-width: 32rem) {
-  .prompt-head {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.7rem;
-    padding: 0.85rem 0.85rem 0.85rem 1.1rem;
+  .terminal-bar {
+    gap: 0.6rem;
+    padding: 0.5rem 0.55rem;
   }
-  .prompt-head-label {
-    font-size: 0.74rem;
+  .terminal-title {
+    /* On narrow viewports the title would compete with the COPY button —
+       hide it and let the dots + button breathe. */
+    display: none;
+  }
+  .terminal-body {
+    padding: 1rem 1.15rem 1.15rem;
+    font-size: 0.86rem;
+  }
+  .terminal-input {
+    padding-left: 1.2rem;
+  }
+  .terminal-out {
+    font-size: 0.8rem;
   }
   .prompt-copy {
-    align-self: stretch;
-    justify-content: center;
-    font-size: 0.74rem;
-    padding: 0.55rem 0.85rem;
-  }
-  .prompt {
-    font-size: 0.86rem;
-    padding: 1rem 1.1rem;
+    font-size: 0.7rem;
+    padding: 0.4rem 0.7rem;
   }
 }
 

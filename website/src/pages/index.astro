@@ -1,6 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import CopyPrompt from "../components/CopyPrompt.astro";
+import Terminal from "../components/Terminal.astro";
 import Skill from "../components/Skill.astro";
 import PairMarker from "../components/PairMarker.astro";
 import { SKILLS } from "../data/skills";
@@ -31,7 +31,7 @@ const year = new Date().getFullYear();
       shipping. End-to-end, every diff.
     </p>
 
-    <CopyPrompt text={setupPrompt} />
+    <Terminal text={setupPrompt} />
   </section>
 
   <section class="sec wrap">

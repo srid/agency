@@ -6,12 +6,14 @@ interface Props {
 const { text, id = "agency-paste" } = Astro.props;
 ---
 
-<div class="prompt-body">
-  <header class="prompt-head">
-    <span class="prompt-head-label">
-      <span class="prompt-arrow" aria-hidden="true">↓</span>
-      paste into Claude Code, Codex, or opencode
+<div class="terminal" role="figure" aria-label="Claude Code session preview">
+  <header class="terminal-bar">
+    <span class="terminal-dots" aria-hidden="true">
+      <span class="terminal-dot terminal-dot--r"></span>
+      <span class="terminal-dot terminal-dot--y"></span>
+      <span class="terminal-dot terminal-dot--g"></span>
     </span>
+    <span class="terminal-title" aria-hidden="true">claude</span>
     <button
       type="button"
       class="prompt-copy"
@@ -22,7 +24,22 @@ const { text, id = "agency-paste" } = Astro.props;
       <span class="prompt-copy-arrow" aria-hidden="true">→</span>
     </button>
   </header>
-  <pre class="prompt" id={id}>{text}</pre>
+
+  <div class="terminal-body">
+    <pre class="terminal-input" id={id}>{text}</pre>
+
+    <div class="terminal-out" aria-hidden="true">
+      <p class="terminal-line">
+        <span class="terminal-glyph">✻</span> Reading <code>agency-setup.md</code>…
+      </p>
+      <p class="terminal-line">
+        <span class="terminal-glyph">✻</span> Running <code>apm install</code>…
+      </p>
+      <p class="terminal-line">
+        <span class="terminal-glyph">✻</span> Drafting <code>.agency/do.md</code> from your scripts<span class="terminal-cursor"></span>
+      </p>
+    </div>
+  </div>
 </div>
 
 <script>
