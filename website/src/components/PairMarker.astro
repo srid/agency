@@ -1,0 +1,15 @@
+---
+import { SKILLS, type SkillName } from "../data/skills";
+
+interface Props {
+  name: SkillName;
+  suffix?: string;
+}
+
+const { name, suffix } = Astro.props;
+const { color } = SKILLS[name];
+---
+
+<p class="pair-marker" style={`color: ${color}`}>
+  /{name}{suffix ? ` · ${suffix}` : ""}
+</p>

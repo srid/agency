@@ -1,6 +1,8 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import CopyPrompt from "../components/CopyPrompt.astro";
+import Skill from "../components/Skill.astro";
+import PairMarker from "../components/PairMarker.astro";
 
 const setupPrompt = `Set up this repo to use srid/agency by following the instructions at
 https://github.com/srid/agency/blob/master/docs/agency-setup.md`;
@@ -24,8 +26,8 @@ const year = new Date().getFullYear();
     </p>
 
     <p class="hero-tag">
-      Two skills. <code class="cmd-cyan">/talk</code> for design.
-      <code class="cmd-magenta">/do</code> for shipping. End-to-end, every diff.
+      Two skills. <Skill name="talk" /> for design. <Skill name="do" /> for
+      shipping. End-to-end, every diff.
     </p>
 
     <CopyPrompt text={setupPrompt} />
@@ -36,37 +38,39 @@ const year = new Date().getFullYear();
       <span class="sec-num">01</span>
       <div>
         <p class="sec-label">the loop</p>
-        <h2 class="h2"><span class="accent-cyan">/talk</span> to design, <span class="accent-magenta">/do</span> to ship.</h2>
+        <h2 class="h2">
+          <Skill name="talk" as="span" /> to design,
+          <Skill name="do" as="span" /> to ship.
+        </h2>
       </div>
     </div>
 
     <div class="pair">
       <div class="pair-cell">
-        <p class="pair-marker is-cyan">/talk &nbsp;·&nbsp; spec isn't obvious</p>
+        <PairMarker name="talk" suffix="spec isn't obvious" />
         <p class="pair-headline">Sketch first. Ship later.</p>
         <p class="pair-body">
-          Discuss, read, sketch. Run <code>/hickey</code> + <code>/lowy</code> on
-          the sketch. Read-only. Hand the converged plan to
-          <code class="cmd-magenta">/do</code>.
+          Discuss, read, sketch. Run <Skill name="hickey" /> +
+          <Skill name="lowy" /> on the sketch. Read-only. Hand the converged
+          plan to <Skill name="do" />.
         </p>
       </div>
       <div class="pair-cell">
-        <p class="pair-marker is-magenta">/do &nbsp;·&nbsp; "done" is concrete</p>
+        <PairMarker name="do" suffix={'"done" is concrete'} />
         <p class="pair-headline">Research → review → ship.</p>
         <p class="pair-body">
-          Implement. Run <code>/hickey</code> + <code>/lowy</code> +
-          <code>/code-police</code> on the diff. CI, merge. Each fix lands as
-          its own commit.
+          Implement. Run <Skill name="hickey" /> + <Skill name="lowy" /> +
+          <Skill name="code-police" /> on the diff. CI, merge. Each fix lands
+          as its own commit.
         </p>
       </div>
     </div>
 
     <div class="body" style="margin-top: 2.25rem;">
       <p>
-        <strong><code class="cmd-magenta">/do</code> has no design phase.</strong>
-        Pasting a thin plan into <code class="cmd-magenta">/do</code> produces a
-        thin implementation. The fix is to do the design work in
-        <code class="cmd-cyan">/talk</code> first.
+        <strong><Skill name="do" /> has no design phase.</strong> Pasting a
+        thin plan into <Skill name="do" /> produces a thin implementation. The
+        fix is to do the design work in <Skill name="talk" /> first.
       </p>
     </div>
   </section>
@@ -125,16 +129,16 @@ const year = new Date().getFullYear();
 
     <div class="body" style="margin-bottom: 2rem;">
       <p>
-        After implementing, <code class="cmd-magenta">/do</code> runs
-        <code>/hickey</code> + <code>/lowy</code> in parallel against the actual
-        diff. Each finding lands as its own commit; the full ledger ships as a
-        PR comment.
+        After implementing, <Skill name="do" /> runs <Skill name="hickey" /> +
+        <Skill name="lowy" /> in parallel against the actual diff. Each
+        finding lands as its own commit; the full ledger ships as a PR
+        comment.
       </p>
     </div>
 
     <div class="pair">
       <div class="pair-cell">
-        <p class="pair-marker is-magenta">/hickey · the space lens</p>
+        <PairMarker name="hickey" suffix="the space lens" />
         <p class="pair-headline">Is anything complected here?</p>
         <p class="pair-body">
           After Rich Hickey's <em>Simple Made Easy</em>. Flags two ideas
@@ -143,7 +147,7 @@ const year = new Date().getFullYear();
         </p>
       </div>
       <div class="pair-cell">
-        <p class="pair-marker is-cyan">/lowy · the time lens</p>
+        <PairMarker name="lowy" suffix="the time lens" />
         <p class="pair-headline">What changes at a different rate?</p>
         <p class="pair-body">
           After Juval Lowy's <em>Righting Software</em>. Flags modules
@@ -181,18 +185,20 @@ const year = new Date().getFullYear();
 
     <div class="pair">
       <div class="pair-cell">
-        <p class="pair-marker is-magenta">/code-police</p>
+        <PairMarker name="code-police" />
         <p class="pair-headline">Your quality gate, your rules.</p>
         <p class="pair-body">
           <code>.agency/code-police.md</code> layers project-specific rules
           on top of the built-in checklist — &ldquo;never use
           <code>as any</code>&rdquo;, &ldquo;always use TanStack Query for
           fetches&rdquo;, whatever your codebase needs. Enforced on every
-          <code class="cmd-magenta">/do</code> diff.
+          <Skill name="do" /> diff.
         </p>
       </div>
       <div class="pair-cell">
-        <p class="pair-marker is-cyan">/hickey, /lowy, /do</p>
+        <p class="pair-marker">
+          <Skill name="hickey" />, <Skill name="lowy" />, <Skill name="do" />
+        </p>
         <p class="pair-headline">Same pattern, opt-in.</p>
         <p class="pair-body">
           <code>.agency/hickey.md</code> + <code>.agency/lowy.md</code>

@@ -5,8 +5,6 @@ Agency[^agency] is a near-autonomous workflow for coding agents, packaged as an 
 > [!IMPORTANT]
 > Agency has mainly been tested with Claude Code & Codex; opencode is supported but less battle-tested. YMMV with other agents.
 
-Landing page: <https://srid.github.io/agency/>. Source under [`website/`](./website/).
-
 ## How the loop works
 
 `talk` and `do` are separate entry points, not steps in a single flow. Pick based on whether the spec is already clear:
