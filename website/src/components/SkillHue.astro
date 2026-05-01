@@ -1,0 +1,12 @@
+---
+import { SKILLS, type SkillName } from "../data/skills";
+
+interface Props {
+  name: SkillName;
+}
+
+const { name } = Astro.props;
+const { color } = SKILLS[name];
+---
+
+<span style={`color: ${color}`}><slot /></span>

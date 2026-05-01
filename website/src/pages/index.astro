@@ -2,8 +2,8 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Terminal from "../components/Terminal.astro";
 import Skill from "../components/Skill.astro";
+import SkillHue from "../components/SkillHue.astro";
 import PairMarker from "../components/PairMarker.astro";
-import { SKILLS } from "../data/skills";
 
 const setupPrompt = `Set up this repo to use srid/agency by following the instructions at
 https://github.com/srid/agency/blob/master/docs/agency-setup.md`;
@@ -125,10 +125,8 @@ const year = new Date().getFullYear();
       <div>
         <p class="sec-label">structural review</p>
         <h2 class="h2">
-          complexity hides in
-          <span style={`color: ${SKILLS.hickey.color}`}>space</span>
-          and in
-          <span style={`color: ${SKILLS.lowy.color}`}>time</span>.
+          complexity hides in <SkillHue name="hickey">space</SkillHue> and in
+          <SkillHue name="lowy">time</SkillHue>.
         </h2>
       </div>
     </div>
