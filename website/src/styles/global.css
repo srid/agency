@@ -470,44 +470,10 @@ code,
   margin: 0;
 }
 
-/* --- Coda ----------------------------------------------------------------- */
+/* --- Footer / colophon --------------------------------------------------- */
 
-.coda {
-  padding: 6rem 0 4rem;
-}
-
-.coda-quote {
-  font-family: var(--font-display);
-  font-variation-settings: "wdth" 90, "opsz" 24;
-  font-style: italic;
-  font-weight: 400;
-  font-size: 1.15rem;
-  line-height: 1.6;
-  color: var(--color-fg-dim);
-  max-width: 42rem;
-  margin: 0 0 1.5rem;
-  border-left: 2px solid var(--color-magenta);
-  padding-left: 1.25rem;
-}
-
-.coda-quote .gold {
-  color: var(--color-lime);
-  font-style: italic;
-}
-
-.coda-quote strong {
-  color: var(--color-fg);
-  font-style: normal;
-  font-weight: 600;
-}
-
-.coda-attrib {
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  color: var(--color-fg-faint);
-  margin: 0 0 5rem;
-  padding-left: 1.25rem;
-  border-left: 2px solid transparent;
+.foot {
+  padding: 4rem 0 4rem;
 }
 
 .colophon {
