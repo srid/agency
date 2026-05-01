@@ -1,0 +1,57 @@
+# Build and deploy the agency website to GitHub Pages.
+#
+# The site lives in website/ and has its own self-contained flake at
+# website/flake.nix. `nix build path:./website#default` produces the
+# static artefact under result/.
+name: pages
+
+on:
+  push:
+    branches: [master, agency-page]
+    paths:
+      - "website/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: nixbuild/nix-quick-install-action@v31
+
+      - name: Build website (nix)
+        run: nix build path:./website#default --print-out-paths
+
+      - name: Stage artefact
+        run: |
+          # result/ is a symlink into /nix/store (read-only). Pages needs
+          # a writable directory with a .nojekyll file and correct perms.
+          mkdir -p _site
+          cp -rL result/* _site/
+          chmod -R u+w _site
+          touch _site/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,18 @@
+---
+import { SKILLS, type SkillName } from "../data/skills";
+
+interface Props {
+  name: SkillName;
+  /**
+   * Tag to render. Defaults to <code> for inline-prose use; pass "span"
+   * inside display headings (H1/H2) to keep the parent's display font.
+   */
+  as?: "code" | "span";
+}
+
+const { name, as = "code" } = Astro.props;
+const { color } = SKILLS[name];
+const Tag = as;
+---
+
+<Tag style={`color: ${color}`}>/{name}</Tag>

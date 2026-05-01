@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+/* Two typefaces, both variable, both with personality:
+   – JetBrains Mono Variable for display H1, numerals, code (the H1 is
+     mono because agency is software for software).
+   – Bricolage Grotesque Variable for everything else — body in default
+     width, headings squashed via the 'wdth' axis at 75. */
+@import "@fontsource-variable/bricolage-grotesque";
+@import "@fontsource-variable/jetbrains-mono";
+
+/* --- Tokens ---------------------------------------------------------------
+
+  Hue primitives + the surface palette. Skill → hue binding lives in
+  src/data/skills.ts; per-component appearance lives in each .astro file's
+  scoped <style> block. This file holds only what every page shares:
+  tokens, the body base, links, code, ::selection, the .wrap container,
+  and the reduced-motion override.
+-------------------------------------------------------------------------- */
+
+@theme {
+  --color-bg: #0c0c0e;
+  --color-bg-raised: #131318;
+  --color-bg-sunk: #060608;
+  --color-fg: #f4f3ed;
+  --color-fg-dim: #a8a7a1;
+  --color-fg-faint: #62615c;
+  --color-rule: #1f1f25;
+  --color-rule-strong: #34343c;
+
+  /* Hue primitives. Skill → hue binding lives in src/data/skills.ts —
+     change the colour for a skill there, not by editing usages. */
+  --color-magenta: #ff3d8a;
+  --color-cyan: #5cb6ff;
+  --color-lime: #c5ff3d;
+  --color-orange: #ff8a3d;
+  --color-iris: #b794ff;
+
+  --font-sans:
+    "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-sans);
+  --font-mono:
+    "JetBrains Mono Variable", ui-monospace, "SF Mono", Menlo, Consolas,
+    monospace;
+}
+
+/* --- Base ------------------------------------------------------------------ */
+
+html,
+body {
+  background: var(--color-bg);
+  color: var(--color-fg);
+}
+
+body {
+  font-family: var(--font-sans);
+  font-variation-settings: "wdth" 100, "opsz" 14;
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-magenta);
+  color: var(--color-bg);
+}
+
+a {
+  color: var(--color-cyan);
+  text-decoration: none;
+  transition: color 140ms ease;
+}
+
+a:hover {
+  color: var(--color-magenta);
+}
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  font-weight: 500;
+  /* Skill-tied <code> elements get their colour inline via the Skill
+     component; non-skill <code> (filenames, state values) stays neutral
+     and inherits from its parent text colour. */
+}
+
+/* --- Container ------------------------------------------------------------ */
+
+.wrap {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+@media (min-width: 48rem) {
+  .wrap {
+    padding: 0 3rem;
+  }
+}
+
+/* --- Reduced motion ------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

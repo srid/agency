@@ -1,5 +1,7 @@
 apm_cmd := "uvx --from 'git+https://github.com/microsoft/apm' apm"
 
+mod website "website/mod.just"
+
 # Install apm dependencies and regenerate .claude/ from .apm/ sources
 apm:
     {{ apm_cmd }} install

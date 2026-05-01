@@ -1,0 +1,577 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Terminal from "../components/Terminal.astro";
+import Skill from "../components/Skill.astro";
+import SkillHue from "../components/SkillHue.astro";
+import PairMarker from "../components/PairMarker.astro";
+
+const setupPrompt = `Set up this repo to use srid/agency by following the instructions at
+https://github.com/srid/agency/blob/master/docs/agency-setup.md`;
+
+const year = new Date().getFullYear();
+---
+
+<BaseLayout title="agency">
+  <header class="topbar">
+    <span class="topbar-mark">srid<span class="slash">/</span>agency</span>
+    <a href="https://github.com/srid/agency" rel="noopener">github ↗</a>
+  </header>
+
+  <section class="hero wrap">
+    <h1 class="hero-mark">agency<span class="dot">.</span></h1>
+    <p class="hero-eyebrow">a workflow for coding agents</p>
+
+    <p class="hero-slogan">
+      a loop you can<br />
+      <span class="accent-magenta">leave alone.</span>
+    </p>
+
+    <p class="hero-tag">
+      Two skills. <Skill name="talk" /> for design. <Skill name="do" /> for
+      shipping. End-to-end, every diff.
+    </p>
+
+    <Terminal text={setupPrompt} />
+  </section>
+
+  <section class="sec wrap">
+    <div class="sec-head">
+      <span class="sec-num">01</span>
+      <div>
+        <p class="sec-label">the loop</p>
+        <h2 class="h2">
+          <Skill name="talk" as="span" /> to design,
+          <Skill name="do" as="span" /> to ship.
+        </h2>
+      </div>
+    </div>
+
+    <div class="pair">
+      <div class="pair-cell">
+        <PairMarker name="talk" suffix="spec isn't obvious" />
+        <p class="pair-headline">Sketch first. Ship later.</p>
+        <p class="pair-body">
+          Discuss, read, sketch. Run <Skill name="hickey" /> +
+          <Skill name="lowy" /> on the sketch. Read-only. Hand the converged
+          plan to <Skill name="do" />.
+        </p>
+      </div>
+      <div class="pair-cell">
+        <PairMarker name="do" suffix={'"done" is concrete'} />
+        <p class="pair-headline">Research → review → ship.</p>
+        <p class="pair-body">
+          Implement. Run <Skill name="hickey" /> + <Skill name="lowy" /> +
+          <Skill name="code-police" /> on the diff. CI, merge. Each fix lands
+          as its own commit.
+        </p>
+      </div>
+    </div>
+
+    <div class="body body--coda">
+      <p>
+        <strong><Skill name="do" /> has no design phase.</strong> Pasting a
+        thin plan into <Skill name="do" /> produces a thin implementation. The
+        fix is to do the design work in <Skill name="talk" /> first.
+      </p>
+    </div>
+  </section>
+
+  <section class="sec wrap">
+    <div class="sec-head">
+      <span class="sec-num">02</span>
+      <div>
+        <p class="sec-label">feedback</p>
+        <h2 class="h2">no signal, <span class="accent-cyan">no loop.</span></h2>
+      </div>
+    </div>
+
+    <div class="body body--lede">
+      <p>
+        The agent needs a signal that its change actually worked. Unit tests
+        and type-checks alone don't give it; what does depends on the surface.
+      </p>
+    </div>
+
+    <ul class="triple">
+      <li class="triple-cell" style="border-top-color: var(--color-magenta)">
+        <p class="triple-label">frontend</p>
+        <p class="triple-body">
+          Screenshot evidence on every PR —
+          <a
+            href="https://github.com/juspay/kolu/pull/791#issuecomment-4352641175"
+            rel="noopener">like kolu#791</a
+          >.
+        </p>
+      </li>
+      <li class="triple-cell" style="border-top-color: var(--color-cyan)">
+        <p class="triple-label">nix infra</p>
+        <p class="triple-body">
+          NixOS VM tests. Closest thing to an executable spec the agent can
+          drive.
+        </p>
+      </li>
+      <li class="triple-cell" style="border-top-color: var(--color-lime)">
+        <p class="triple-label">backend / library</p>
+        <p class="triple-body">
+          Fast, deterministic e2e. 30s deterministic beats 10min thorough.
+        </p>
+      </li>
+    </ul>
+  </section>
+
+  <section class="sec wrap">
+    <div class="sec-head">
+      <span class="sec-num">03</span>
+      <div>
+        <p class="sec-label">structural review</p>
+        <h2 class="h2">
+          complexity hides in <SkillHue name="hickey">space</SkillHue> and in
+          <SkillHue name="lowy">time</SkillHue>.
+        </h2>
+      </div>
+    </div>
+
+    <div class="body body--lede">
+      <p>
+        After implementing, <Skill name="do" /> runs <Skill name="hickey" /> +
+        <Skill name="lowy" /> in parallel against the actual diff. Each
+        finding lands as its own commit; the full ledger ships as a PR
+        comment.
+      </p>
+    </div>
+
+    <div class="pair">
+      <div class="pair-cell">
+        <PairMarker name="hickey" suffix="the space lens" />
+        <p class="pair-headline">Is anything complected here?</p>
+        <p class="pair-body">
+          After Rich Hickey's <em>Simple Made Easy</em>. Flags two ideas
+          braided into one construct — the kind of complecting that tests
+          pass straight through.
+        </p>
+      </div>
+      <div class="pair-cell">
+        <PairMarker name="lowy" suffix="the time lens" />
+        <p class="pair-headline">What changes at a different rate?</p>
+        <p class="pair-body">
+          After Juval Lowy's <em>Righting Software</em>. Flags modules
+          coupled to neighbours that drift on a different schedule —
+          volatility time-bombs that won't surface until later.
+        </p>
+      </div>
+    </div>
+
+    <div class="body body--coda">
+      <p>
+        Full framing:
+        <a href="https://kolu.dev/blog/hickey-lowy/" rel="noopener">Hickey/Lowy on kolu.dev</a>.
+      </p>
+    </div>
+  </section>
+
+  <section class="sec wrap">
+    <div class="sec-head">
+      <span class="sec-num">04</span>
+      <div>
+        <p class="sec-label">project rules</p>
+        <h2 class="h2">your codebase. <span class="accent-magenta">your rules.</span></h2>
+      </div>
+    </div>
+
+    <div class="body body--lede">
+      <p>
+        Drop a <code>.agency/&lt;skill&gt;.md</code> file at the repo root and
+        the matching skill picks it up — plain Markdown, opt-in, no APM
+        ceremony. Adopt skills à la carte; layer your own rules on top of the
+        built-ins.
+      </p>
+    </div>
+
+    <div class="pair">
+      <div class="pair-cell">
+        <PairMarker name="code-police" />
+        <p class="pair-headline">Your quality gate, your rules.</p>
+        <p class="pair-body">
+          <code>.agency/code-police.md</code> layers project-specific rules
+          on top of the built-in checklist — &ldquo;never use
+          <code>as any</code>&rdquo;, &ldquo;always use TanStack Query for
+          fetches&rdquo;, whatever your codebase needs. Enforced on every
+          <Skill name="do" /> diff.
+        </p>
+      </div>
+      <div class="pair-cell">
+        <PairMarker>
+          <Skill name="hickey" />, <Skill name="lowy" />, <Skill name="do" />
+        </PairMarker>
+        <p class="pair-headline">Same pattern, opt-in.</p>
+        <p class="pair-body">
+          <code>.agency/hickey.md</code> + <code>.agency/lowy.md</code>
+          declare project-specific complecting patterns and axes of
+          volatility. <code>.agency/do.md</code> declares your
+          <code>check</code> / <code>test</code> / <code>ci</code> commands and
+          an opt-in <code>## PR evidence</code> step.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot wrap">
+    <p class="colophon">
+      <a href="https://github.com/srid/agency" rel="noopener"
+        >github.com/srid/agency</a
+      >
+      <span>·</span>
+      <a href="https://kolu.dev" rel="noopener">sister · kolu.dev</a>
+      <span>·</span>
+      <span>mit · {year}</span>
+    </p>
+  </footer>
+</BaseLayout>
+
+<style>
+  /* --- Top bar ------------------------------------------------------------ */
+
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.1rem 1.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.02em;
+    color: var(--color-fg-dim);
+    border-bottom: 1px solid var(--color-rule);
+  }
+
+  @media (min-width: 48rem) {
+    .topbar {
+      padding: 1.5rem 3rem;
+    }
+  }
+
+  .topbar a {
+    color: inherit;
+  }
+
+  .topbar a:hover {
+    color: var(--color-fg);
+  }
+
+  .topbar-mark {
+    color: var(--color-fg);
+    font-weight: 600;
+  }
+
+  .topbar-mark .slash {
+    color: var(--color-magenta);
+  }
+
+  /* --- Hero --------------------------------------------------------------- */
+
+  /* NB: longhand padding-top/padding-bottom — shorthand would clobber
+     .wrap's horizontal padding because .hero is defined after .wrap. */
+  .hero {
+    padding-top: 3rem;
+    padding-bottom: 4rem;
+    border-bottom: 1px solid var(--color-rule);
+  }
+
+  @media (min-width: 48rem) {
+    .hero {
+      padding-top: 6rem;
+      padding-bottom: 7rem;
+    }
+  }
+
+  .hero-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    color: var(--color-fg-dim);
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-eyebrow::before {
+    content: "//";
+    color: var(--color-fg-faint);
+    margin-right: 0.5rem;
+  }
+
+  /* Wordmark — biggest thing on the page. Bricolage condensed extra-bold,
+     white with a saturated magenta period. */
+  .hero-mark {
+    font-family: var(--font-display);
+    font-variation-settings: "wdth" 75, "opsz" 96;
+    font-weight: 800;
+    font-size: clamp(4rem, 14vw, 9rem);
+    line-height: 0.92;
+    letter-spacing: -0.05em;
+    color: var(--color-fg);
+    margin: 0 0 1.25rem;
+  }
+
+  .hero-mark .dot {
+    color: var(--color-magenta);
+  }
+
+  /* Slogan — sub-display, mono, now smaller than the wordmark. */
+  .hero-slogan {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: clamp(1.7rem, 5vw, 3.4rem);
+    line-height: 1.02;
+    letter-spacing: -0.04em;
+    color: var(--color-fg);
+    margin: 0 0 2rem;
+  }
+
+  .hero-slogan .accent-magenta {
+    color: var(--color-magenta);
+  }
+
+  .hero-slogan .accent-lime {
+    color: var(--color-lime);
+  }
+
+  .hero-tag {
+    font-family: var(--font-display);
+    font-variation-settings: "wdth" 80, "opsz" 24;
+    font-weight: 500;
+    font-size: clamp(1.2rem, 2.4vw, 1.55rem);
+    line-height: 1.35;
+    color: var(--color-fg-dim);
+    max-width: 38rem;
+    margin: 0 0 3rem;
+  }
+
+  .hero-tag em {
+    color: var(--color-fg);
+    font-style: normal;
+    font-weight: 600;
+  }
+
+  /* --- Section ------------------------------------------------------------ */
+
+  .sec {
+    padding-top: 3.25rem;
+    padding-bottom: 3.25rem;
+    border-bottom: 1px solid var(--color-rule);
+  }
+
+  @media (min-width: 48rem) {
+    .sec {
+      padding-top: 5.5rem;
+      padding-bottom: 5.5rem;
+    }
+  }
+
+  .sec-head {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+    align-items: baseline;
+    margin-bottom: 2rem;
+  }
+
+  @media (min-width: 48rem) {
+    .sec-head {
+      /* Tight column for the number — fits "01" comfortably without leaving
+         a wasteland of whitespace before the heading. */
+      grid-template-columns: 2.25rem 1fr;
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+  }
+
+  .sec-num {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: 1.1rem;
+    color: var(--color-fg-dim);
+    letter-spacing: 0.04em;
+  }
+
+  .sec-label {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    color: var(--color-fg-dim);
+    text-transform: lowercase;
+    margin-bottom: 0.6rem;
+  }
+
+  .sec-label::before {
+    content: "/";
+    color: var(--color-fg-faint);
+    margin-right: 0.15rem;
+  }
+
+  .h2 {
+    font-family: var(--font-display);
+    font-variation-settings: "wdth" 75, "opsz" 96;
+    font-weight: 700;
+    font-size: clamp(1.9rem, 4.5vw, 2.9rem);
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+    color: var(--color-fg);
+    margin: 0;
+  }
+
+  .h2 .accent-magenta {
+    color: var(--color-magenta);
+  }
+
+  .h2 .accent-cyan {
+    color: var(--color-cyan);
+  }
+
+  .h2 .accent-lime {
+    color: var(--color-lime);
+  }
+
+  /* --- Two-pane ----------------------------------------------------------- */
+
+  .pair {
+    display: grid;
+    gap: 0;
+    grid-template-columns: 1fr;
+    border-top: 1px solid var(--color-rule);
+  }
+
+  .pair-cell {
+    padding: 1.75rem 0;
+    border-bottom: 1px solid var(--color-rule);
+  }
+
+  .pair-cell:last-child {
+    border-bottom: none;
+  }
+
+  @media (min-width: 48rem) {
+    .pair {
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    .pair-cell {
+      padding: 1.75rem 2.25rem 1.75rem 0;
+      border-bottom: none;
+      border-right: 1px solid var(--color-rule);
+    }
+    .pair-cell + .pair-cell {
+      padding-left: 2.25rem;
+      padding-right: 0;
+    }
+    .pair-cell:last-child {
+      border-right: none;
+    }
+  }
+
+  .pair-headline {
+    font-family: var(--font-display);
+    font-variation-settings: "wdth" 80;
+    font-weight: 600;
+    font-size: 1.45rem;
+    line-height: 1.2;
+    color: var(--color-fg);
+    margin: 0 0 0.6rem;
+  }
+
+  .pair-body {
+    color: var(--color-fg-dim);
+    font-size: 1.02rem;
+    line-height: 1.55;
+    margin: 0;
+  }
+
+  /* --- Triple grid (feedback surfaces) ----------------------------------- */
+
+  .triple {
+    display: grid;
+    gap: 1.75rem 2rem;
+    grid-template-columns: 1fr;
+    list-style: none;
+    padding: 0;
+  }
+
+  @media (min-width: 48rem) {
+    .triple {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .triple-cell {
+    border-top: 2px solid var(--color-rule-strong);
+    padding-top: 1rem;
+    /* Surface accent (frontend / nix / backend) is set inline at the call
+       site as `border-top-color: var(--color-X)` — these aren't skill-tied,
+       so they bypass src/data/skills.ts and read primitives directly. */
+  }
+
+  .triple-label {
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-fg-dim);
+    margin-bottom: 0.5rem;
+  }
+
+  .triple-body {
+    font-size: 0.98rem;
+    line-height: 1.5;
+    color: var(--color-fg);
+    margin: 0;
+  }
+
+  /* --- Body prose --------------------------------------------------------- */
+
+  .body p {
+    margin: 0 0 1rem;
+    color: var(--color-fg-dim);
+    max-width: 38rem;
+  }
+
+  .body p strong {
+    color: var(--color-fg);
+    font-weight: 600;
+  }
+
+  /* Body modifier classes: lede sits before a grid block, coda after.
+     Replace what used to be inline style="margin-…" overrides at every
+     body usage. */
+  .body--lede {
+    margin-bottom: 2rem;
+  }
+  .body--coda {
+    margin-top: 2.25rem;
+  }
+
+  /* --- Footer / colophon ------------------------------------------------- */
+
+  .foot {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
+
+  .colophon {
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.04em;
+    color: var(--color-fg-faint);
+    border-top: 1px solid var(--color-rule);
+    padding-top: 1.5rem;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    align-items: baseline;
+  }
+
+  .colophon a {
+    color: var(--color-fg-dim);
+  }
+
+  .colophon a:hover {
+    color: var(--color-fg);
+  }
+</style>
