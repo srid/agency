@@ -3,6 +3,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import CopyPrompt from "../components/CopyPrompt.astro";
 import Skill from "../components/Skill.astro";
 import PairMarker from "../components/PairMarker.astro";
+import { SKILLS } from "../data/skills";
 
 const setupPrompt = `Set up this repo to use srid/agency by following the instructions at
 https://github.com/srid/agency/blob/master/docs/agency-setup.md`;
@@ -123,7 +124,12 @@ const year = new Date().getFullYear();
       <span class="sec-num">03</span>
       <div>
         <p class="sec-label">structural review</p>
-        <h2 class="h2">complexity hides in space <span class="accent-magenta">and in time.</span></h2>
+        <h2 class="h2">
+          complexity hides in
+          <span style={`color: ${SKILLS.hickey.color}`}>space</span>
+          and in
+          <span style={`color: ${SKILLS.lowy.color}`}>time</span>.
+        </h2>
       </div>
     </div>
 
