@@ -29,9 +29,6 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: nixbuild/nix-quick-install-action@v31
-        with:
-          nix_conf: |
-            accept-flake-config = true
 
       - name: Build website (nix)
         run: nix build path:./website#default --print-out-paths
