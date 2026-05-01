@@ -349,6 +349,8 @@ a:hover {
   display: grid;
   gap: 1.75rem 2rem;
   grid-template-columns: 1fr;
+  list-style: none;
+  padding: 0;
 }
 
 @media (min-width: 48rem) {
@@ -396,6 +398,16 @@ a:hover {
 .body p strong {
   color: var(--color-fg);
   font-weight: 600;
+}
+
+/* Body modifier classes: lede sits before a grid block, coda after. They
+   replace the inline style="margin-…" overrides that used to live in
+   index.astro at every body usage. */
+.body--lede {
+  margin-bottom: 2rem;
+}
+.body--coda {
+  margin-top: 2.25rem;
 }
 
 code {
