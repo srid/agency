@@ -223,7 +223,11 @@ const { text, id = "agency-paste" } = Astro.props;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 0.35rem;
+    /* Holds width when the label flips copy → copied → press ⌘C so the
+       title bar doesn't reflow on click. Sized to the longest label. */
+    min-width: 6rem;
     box-shadow: 0 0 0 1px var(--color-lime);
     transition:
       background 140ms ease,
