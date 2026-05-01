@@ -93,7 +93,7 @@ const year = new Date().getFullYear();
     </div>
 
     <ul class="triple" style="list-style: none; padding: 0;">
-      <li class="triple-cell is-magenta">
+      <li class="triple-cell" style="border-top-color: var(--color-magenta)">
         <p class="triple-label">frontend</p>
         <p class="triple-body">
           Screenshot evidence on every PR —
@@ -103,14 +103,14 @@ const year = new Date().getFullYear();
           >.
         </p>
       </li>
-      <li class="triple-cell is-cyan">
+      <li class="triple-cell" style="border-top-color: var(--color-cyan)">
         <p class="triple-label">nix infra</p>
         <p class="triple-body">
           NixOS VM tests. Closest thing to an executable spec the agent can
           drive.
         </p>
       </li>
-      <li class="triple-cell is-lime">
+      <li class="triple-cell" style="border-top-color: var(--color-lime)">
         <p class="triple-label">backend / library</p>
         <p class="triple-body">
           Fast, deterministic e2e. 30s deterministic beats 10min thorough.

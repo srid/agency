@@ -360,16 +360,9 @@ a:hover {
 .triple-cell {
   border-top: 2px solid var(--color-rule-strong);
   padding-top: 1rem;
-}
-
-.triple-cell.is-magenta {
-  border-color: var(--color-magenta);
-}
-.triple-cell.is-cyan {
-  border-color: var(--color-cyan);
-}
-.triple-cell.is-lime {
-  border-color: var(--color-lime);
+  /* Surface accent (frontend / nix / backend) is set inline at the call
+     site as `border-top-color: var(--color-X)` — these aren't skill-tied,
+     so they bypass src/data/skills.ts and read primitives directly. */
 }
 
 .triple-label {
