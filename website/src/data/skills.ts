@@ -10,8 +10,8 @@ export const SKILLS = {
   talk: { color: "var(--color-cyan)" },
   do: { color: "var(--color-magenta)" },
   hickey: { color: "var(--color-lime)" },
-  lowy: { color: "var(--color-orange)" },
-  "code-police": { color: "var(--color-iris)" },
+  lowy: { color: "var(--color-iris)" },
+  "code-police": { color: "var(--color-orange)" },
 } as const satisfies Record<string, { color: string }>;
 
 export type SkillName = keyof typeof SKILLS;

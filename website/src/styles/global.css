@@ -99,7 +99,7 @@ a:hover {
 }
 
 .topbar a:hover {
-  color: var(--color-lime);
+  color: var(--color-fg);
 }
 
 .topbar-mark {
@@ -127,14 +127,18 @@ a:hover {
 
 /* --- Hero ----------------------------------------------------------------- */
 
+/* NB: longhand padding-top/padding-bottom — shorthand would clobber
+   .wrap's horizontal padding because .hero is defined after .wrap. */
 .hero {
-  padding: 3rem 0 4rem;
+  padding-top: 3rem;
+  padding-bottom: 4rem;
   border-bottom: 1px solid var(--color-rule);
 }
 
 @media (min-width: 48rem) {
   .hero {
-    padding: 6rem 0 7rem;
+    padding-top: 6rem;
+    padding-bottom: 7rem;
   }
 }
 
@@ -142,7 +146,7 @@ a:hover {
   font-family: var(--font-mono);
   font-size: 0.78rem;
   letter-spacing: 0.06em;
-  color: var(--color-cyan);
+  color: var(--color-fg-dim);
   margin-bottom: 1.5rem;
 }
 
@@ -243,7 +247,7 @@ a:hover {
   font-size: 0.78rem;
   line-height: 1.35;
   letter-spacing: 0.02em;
-  color: var(--color-lime);
+  color: var(--color-fg-dim);
   display: inline-flex;
   align-items: baseline;
   gap: 0.5rem;
@@ -267,7 +271,7 @@ a:hover {
   line-height: 1.6;
   color: var(--color-fg);
   white-space: pre-wrap;
-  word-break: break-word;
+  overflow-wrap: anywhere;
   margin: 0;
   padding: 1.25rem 1.5rem;
 }
@@ -338,13 +342,15 @@ a:hover {
 /* --- Section -------------------------------------------------------------- */
 
 .sec {
-  padding: 3.25rem 0;
+  padding-top: 3.25rem;
+  padding-bottom: 3.25rem;
   border-bottom: 1px solid var(--color-rule);
 }
 
 @media (min-width: 48rem) {
   .sec {
-    padding: 5.5rem 0;
+    padding-top: 5.5rem;
+    padding-bottom: 5.5rem;
   }
 }
 
@@ -358,8 +364,10 @@ a:hover {
 
 @media (min-width: 48rem) {
   .sec-head {
-    grid-template-columns: 4.5rem 1fr;
-    gap: 1.5rem;
+    /* Tight column for the number — fits "01" comfortably without leaving
+       a wasteland of whitespace before the heading. */
+    grid-template-columns: 2.25rem 1fr;
+    gap: 1rem;
     margin-bottom: 2.5rem;
   }
 }
@@ -368,7 +376,7 @@ a:hover {
   font-family: var(--font-mono);
   font-weight: 500;
   font-size: 1.1rem;
-  color: var(--color-lime);
+  color: var(--color-fg-dim);
   letter-spacing: 0.04em;
 }
 
@@ -376,7 +384,7 @@ a:hover {
   font-family: var(--font-mono);
   font-size: 0.78rem;
   letter-spacing: 0.06em;
-  color: var(--color-cyan);
+  color: var(--color-fg-dim);
   text-transform: lowercase;
   margin-bottom: 0.6rem;
 }
@@ -548,7 +556,8 @@ code {
 /* --- Footer / colophon --------------------------------------------------- */
 
 .foot {
-  padding: 4rem 0 4rem;
+  padding-top: 4rem;
+  padding-bottom: 4rem;
 }
 
 .colophon {
@@ -570,7 +579,7 @@ code {
 }
 
 .colophon a:hover {
-  color: var(--color-lime);
+  color: var(--color-fg);
 }
 
 /* --- Reduced motion ------------------------------------------------------- */
