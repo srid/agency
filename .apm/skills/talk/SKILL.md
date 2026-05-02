@@ -82,7 +82,7 @@ Use `AskUserQuestion` to collaborate on the cut: propose your split, surface the
 
 ## Auto-review (Lowy + Hickey)
 
-Any time the conversation produces a concrete code plan, diff proposal, or design sketch that could be implemented, **invoke both the `lowy` and `hickey` sub-agents on that proposal in parallel before presenting your final recommendation** — do not wait for the user to ask. Use `Agent(subagent_type="lowy")` and `Agent(subagent_type="hickey")` (not the `Skill` tool) so each runs in an isolated context and keeps the main turn lean.
+Any time the conversation produces a concrete code plan, diff proposal, or design sketch that could be implemented, **invoke both the `lowy` and `hickey` sub-agents on that proposal in parallel before presenting your final recommendation** — do not wait for the user to ask. Use the harness's agent-delegation tool with `subagent_type="lowy"` and `subagent_type="hickey"` (on Claude Code this is `Agent`; on opencode it is `task`) — not the `Skill` tool — so each runs in an isolated context and keeps the main turn lean.
 
 **Revise the recommendation in light of their findings before presenting it.** Invoking the reviewers is not the deliverable — the deliverable is a *post-review* proposal whose shape already reflects what landed. Concretely: when a finding lands (real complecting, fragmentation, or a missing volatility seam), change the design itself — don't tack the finding onto an unchanged sketch as a critique section the user has to reconcile. When a finding doesn't land, say briefly why. The headline the user reads should be the revised proposal, with the reviewer pass evident in what changed (and what was rejected), not the original sketch with raw sub-agent output appended.
 
@@ -91,7 +91,7 @@ Any time the conversation produces a concrete code plan, diff proposal, or desig
 
 Skip both passes only when the turn is pure Q&A with no proposed change (e.g. "how does X work?"). When in doubt, run them. `do` re-runs hickey + lowy post-implement on the real diff, so the talk-mode pass is the design-level rehearsal, not the final word.
 
-**Model override.** If `ARGUMENTS` contains `--review-model=<model>` (accept `opus`, `sonnet`, or `haiku`; strip the flag before treating the rest as the topic), pass `model: "<model>"` in **both** the `Agent(subagent_type="lowy")` and `Agent(subagent_type="hickey")` calls. This overrides the `model: sonnet` in each sub-agent's frontmatter via the `Agent` tool's built-in `model` parameter. Without the flag, omit `model` so the default (sonnet) applies. Reject unknown values with a one-line error instead of silently falling back — a typo shouldn't quietly erase a budget decision.
+**Model override.** If `ARGUMENTS` contains `--review-model=<value>` (strip the flag before treating the rest as the topic), pass `model: "<value>"` verbatim in **both** the lowy and hickey delegation calls (`Agent` on Claude Code, `task` on opencode). The harness resolves the value; the user owns whether it's a name the harness can resolve (Claude Code accepts bare aliases like `opus`/`sonnet`/`haiku`; opencode requires `provider/modelID`). Without the flag, the default depends on the delegation tool: on `Agent` (Claude Code), pass `model: "sonnet"` to keep the review pass cheap; on `task` (opencode), omit `model` so the sub-agent inherits the parent session's model.
 
 ## Laconic mode (default)
 

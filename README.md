@@ -37,7 +37,7 @@ Type-checkers, tests, and CI catch correctness; they don't catch design. An LLM-
 - **`hickey`** — accidental complexity, after Rich Hickey's [*Simple Made Easy*](https://www.infoq.com/presentations/Simple-Made-Easy/).
 - **`lowy`** — volatility-based decomposition, after Juval Lowy's [*Righting Software*](https://rightingsoftware.org/) (building on [Parnas 1972](https://www.win.tue.nl/~wstomv/edu/2ip30/references/criteria_for_modularization.pdf)).
 
-Each "Fix in this PR" finding lands as its own commit, so PR history reads as a progression from primary implementation through each structural refinement. The full findings ledger is posted as a PR comment. Both default to Sonnet to keep review cheap enough to run on every task; pass **`--review-model=opus`** when the diff warrants a deeper pass. Both are also auto-invoked from `/talk` against design sketches, so the same lenses shape the spec before you ship it.
+Each "Fix in this PR" finding lands as its own commit, so PR history reads as a progression from primary implementation through each structural refinement. The full findings ledger is posted as a PR comment. Both run on a cheap model by default — Sonnet on Claude Code, your session model on opencode — pass **`--review-model=...`** when the diff warrants a deeper pass. Both are also auto-invoked from `/talk` against design sketches, so the same lenses shape the spec before you ship it.
 
 Read [**Hickey/Lowy on kolu.dev**](https://kolu.dev/blog/hickey-lowy/) for the full framing — what each lens looks for and why the pair catches what tests miss. Both can be extended with project-specific patterns via `.agency/hickey.md` / `.agency/lowy.md` (see [Project config](#project-config)).
 
