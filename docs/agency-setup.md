@@ -149,11 +149,23 @@ For each entry: announce to the user which migration is being applied and which 
 
 (Future migrations get appended below as new `### #<PR>` subsections.)
 
-## 7. Draft `.agency/do.md`
+## 7. Set up `.agency/`
+
+### Seed `.agency/README.md`
+
+Whether `.agency/` was just created in step 6's migration, gets created below for `do.md`, or already existed from an earlier run, make sure it carries a short pointer back to the agency site. Idempotent — if `.agency/README.md` already exists, leave it alone:
+
+```markdown
+# .agency/
+
+Project-specific config for [agency](https://agency.srid.ca/) skills.
+```
+
+### Draft `.agency/do.md`
 
 If this file already exists, **leave it alone** — the user has either already configured it or is intentionally hand-maintaining it. Skip to step 8.
 
-If it's missing (whether this is a first-time setup or an upgrade where the user added `srid/agency` to `apm.yml` themselves but never wrote a do config), create it now. Make sure the `.agency/` directory exists at the project root before writing.
+If it's missing (whether this is a first-time setup or an upgrade where the user added `srid/agency` to `apm.yml` themselves but never wrote a do config), create it now.
 
 `do` runs autonomously but needs to know your project's check, format, test, and CI commands. Inspect the project to figure them out — look at:
 
