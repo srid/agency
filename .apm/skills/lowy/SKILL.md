@@ -110,7 +110,7 @@ After completing all steps, **invoke `/fact-check` on your own output**. The fac
 - _"This module is only used in one place, but that's fine for now"_ — single-use is the reuse signal firing. Investigate.
 - _"The boundary follows the framework's conventions"_ — framework conventions are functional decomposition by default. Convention is not volatility analysis.
 - _"This could theoretically change independently"_ — theoretical independence without a concrete change scenario is wishful thinking.
-- _"Out of scope for this PR" / "pre-existing"_ — process judgment, not a volatility judgment. Defer with an issue link or fix it.
+- _"Out of scope for this PR" / "pre-existing"_ — process judgment, not a volatility judgment. There is no defer; fix it in this PR. The PR's scope expands to absorb the finding.
 - _"The module encapsulates [domain entity]"_ — domain entities are not volatility axes. What *about* the entity changes? Name the specific volatility or it's domain decomposition.
 - _"This is variable, so we should encapsulate it"_ — variable is not volatile. Can you state the risk in terms of likelihood and effect?
 
@@ -123,7 +123,11 @@ If fact-check finds issues, revise before presenting to the user.
 3. **Findings** — Boundaries that track functionality rather than volatility, with blast-radius analysis. Include symmetry violations and layering inversions.
 4. **Simplifications** — Concrete restructuring to align boundaries with axes of change.
 5. **Fact-check result** — Output of `/fact-check` on this evaluation, including the phrase-shape check.
-6. **Actions** — One entry per finding, formatted so a downstream step (e.g. `/do`'s PR comment composer) can lift each entry into a table row. Each entry **starts with a short bolded finding label (≤8 words)** naming *what* is wrong, then dispositions it as **Fix in this PR** or **Defer `#<issue>`**. Every finding must appear here — including those labeled "pre-existing" or "orthogonal". A finding that never reaches this section has been dismissed, not deferred.
+6. **Actions** — One entry per finding, formatted so a downstream step (e.g. `/do`'s PR comment composer) can lift each entry into a table row. Each entry **starts with a short bolded finding label (≤8 words)** naming *what* is wrong, then dispositions it as exactly one of:
+   - **Fix in this PR**: one-line description of what the implementation step must do. This is the only forward-action disposition. The PR's scope expands to absorb every finding.
+   - **No-op**: reserved for findings that need no code action — the diff already deletes the offending code, or the finding is subsumed verbatim by another finding in this same review. Treat this as the rare exception.
+
+   **There is no Defer disposition.** "Out of scope", "pre-existing", "follow-up refactor", "should be its own PR" are not dispositions — they are process judgments dressed up as volatility analysis. Every finding must appear here — including those labeled "pre-existing" or "orthogonal" — and every finding either gets fixed in this PR or is a No-op. A finding that never reaches this section has been dismissed.
 
 Example: `**useViewport encapsulates ghost concern** — Fix in this PR: delete the hook, let FitAddon measure per-tile.`
 
