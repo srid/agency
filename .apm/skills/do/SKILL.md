@@ -146,13 +146,19 @@ That's it — just the local branch. No commit, no push, no PR. The branch is pu
 
 ### implement
 
-If the task is a bug fix: write a failing test first (e2e or unit, whichever is appropriate), then fix the bug.
+The test-first rule depends on what the change is:
 
-Otherwise: implement the planned changes. Prefer simplicity. Do the boring obvious thing.
+- **Bug fix**: write a failing test first (e2e or unit, whichever is appropriate), then fix the bug.
+- **New behavior** — anything that fails at runtime if it's wrong: new endpoints or routes, new services or modules, configuration paths, environment variables, secrets wiring, network connectivity, data persistence (migrations, preStart scripts, schema changes), auth/OIDC flows. Write an integration or unit test covering the new behavior **before** implementing. NixOS service modules need a VM test; new HTTP endpoints need an e2e or integration test; new modules with logic need at least a unit test.
+- **Otherwise** — documentation, refactors with no behavioral change, purely internal cleanups, dependency bumps that don't change behavior. Just implement the planned changes; no test-first requirement.
+
+If you're not sure which bucket the change falls into, treat it as new behavior. The cost of an unnecessary test is small; the cost of a silent deployment failure is not.
+
+Prefer simplicity. Do the boring obvious thing.
 
 **E2E coverage**: When the change introduces multiple user-facing paths (e.g., a dialog that appears under different conditions), write e2e scenarios for **each distinct path**. Enumerate the user-visible paths, then check that every one has a corresponding test.
 
-**Verify**: Code changes match the planned approach. All distinct user-facing paths have test coverage.
+**Verify**: Code changes match the planned approach. For bug fixes and new-behavior changes, at least one test exercises the changed behavior; multi-path changes have one test per distinct user-visible path. Refactor/docs/cleanup diffs are exempt.
 
 ---
 
@@ -296,7 +302,9 @@ Use `git diff origin/HEAD...HEAD --name-only` to identify changed files and dete
 
 If changes are purely internal with no user-facing impact, unit tests may suffice — skip e2e if no relevant scenarios exist. If no test command is documented, skip with a note.
 
-**Verify**: Tests pass (exit code 0), or no relevant tests to run.
+**Coverage gap check**: After the test command exits 0, confirm at least one of the tests run actually exercised the new behavior (per the **implement** step's classification). A green run that didn't touch the changed code paths — e.g. a new NixOS service module with no corresponding VM test, or a new endpoint with no integration test — is a coverage gap, not a pass. Refactor/docs/internal-cleanup diffs are exempt. The implement step should have caught this; if it didn't, treat it as a real failure: write the missing test, then loop through **fmt** → **commit** → **test** as below.
+
+**Verify**: Tests pass (exit code 0) **and** the new behavior is covered, or the diff is exempt from the coverage check, or no relevant tests to run.
 **If failed** (max 4 attempts): Analyze the failure. If flaky, re-run. If real: fix → go to **fmt**, then retry.
 
 ---
