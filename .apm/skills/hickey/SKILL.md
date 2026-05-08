@@ -24,6 +24,16 @@ Source: [Full talk transcript](https://github.com/matthiasn/talk-transcripts/blo
 
 **Compose** (com-ponere, "to place together"): Combine independent things side by side, preserving isolation. Hickey: _"I'd rather have more things hanging nice, straight down, not twisted together, than just a couple of things tied in a knot."_
 
+## Scope of Review
+
+The trigger — "review this for X", "extract Y", "look at file Z", a `/do` diff with N touched files — is a *starting point*, not a frame. The structural questions in this skill (concept multiplication, fragmentation, complecting) are most legible at module boundaries; reviewing only the lines the user (or upstream issue) pointed at is how recurring patterns in the same file get missed.
+
+**Default to whole-module scope.** When the trigger lives inside a single file or component, read the whole file — not just the cited region. When invoked on a multi-file diff, each touched file is in scope, and cross-file structural patterns (concept multiplication across modules, fragmentation that spans files) are in scope too. Adjacent files in the same directory are fair game when the trigger's pattern recurs there — concept multiplication often lives across siblings.
+
+**Don't let the user's framing define the scope.** A trigger that says "extract `<ValueInputMode>`" implies a UI extraction; if the surrounding code shows the same fragmentation pattern recurring, name *that* — even when the implied fix is elsewhere (e.g., a discriminated data-model change rather than a sub-component split). The reviewer's job is to surface what the evidence on disk says, not to confirm the trigger's framing.
+
+**Push back when the evidence contradicts the trigger.** If the prompt narrows the question to one symptom but the file shows the symptom is one instance of a broader structural issue, the broader finding is the headline, not a footnote. *"Issue #N described an extraction; the actual leverage is the data model"* is a valid first finding, not an out-of-scope tangent. Anchoring on the trigger's framing is itself a Layer 2 silence — a finding the review never let form.
+
 ## The Evaluation Process
 
 Work through these layers in order. **Every finding must survive `/fact-check`** — after completing all layers, invoke the `fact-check` skill on your own evaluation to catch wishful justifications and bogus dismissals.

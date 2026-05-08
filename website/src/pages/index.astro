@@ -117,6 +117,15 @@ const year = new Date().getFullYear();
         </p>
       </li>
     </ul>
+
+    <div class="body body--coda">
+      <p>
+        <Skill name="do" /> writes the test before the implementation for any
+        change that introduces new behavior — services, endpoints, config,
+        persistence. A green run that didn't cover the new code is a
+        coverage gap, not a pass.
+      </p>
+    </div>
   </section>
 
   <section class="sec wrap">
@@ -134,9 +143,9 @@ const year = new Date().getFullYear();
     <div class="body body--lede">
       <p>
         After implementing, <Skill name="do" /> runs <Skill name="hickey" /> +
-        <Skill name="lowy" /> in parallel against the actual diff. Each
-        finding lands as its own commit; the full ledger ships as a PR
-        comment.
+        <Skill name="lowy" /> in parallel against the actual diff. Every
+        finding lands as its own commit in the same PR — no defers, no
+        follow-up issues. The full ledger ships as a PR comment.
       </p>
     </div>
 

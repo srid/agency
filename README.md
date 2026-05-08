@@ -22,6 +22,8 @@ The autonomous loop is only as good as the feedback signal it gets. If the agent
 - **Nix-based infra** → NixOS VM tests. Honest tradeoff: a VM isn't a live environment, mocking is often required, and reaching real fidelity for non-trivial infra takes effort — but it's still the closest thing to an executable spec the agent can drive.
 - **Backend / library** → fast, deterministic e2e suites the agent can run in a tight loop. Slow or flaky suites destroy the loop; a 30-second deterministic run beats a 10-minute thorough one.
 
+`/do` enforces this end of the bargain: any change that introduces new behavior (services, endpoints, configuration, env vars, network connectivity, persistence) writes its test before the implementation, and the `test` step fails the run if no test actually exercises the changed paths. Bug fixes get the same test-first treatment; refactors and pure docs are exempt only when there's no observable behavior to verify.
+
 ### State, within and across PRs
 
 **Within a PR**, `/do` writes per-step lifecycle, status, and timing to `.do-results.json` at the repo root. The `do-stop-guard` Stop hook reads this so the agent can't bail mid-workflow — if a run is still `working`, stops are blocked until it reaches `done` or is explicitly marked `failed`.
@@ -37,7 +39,7 @@ Type-checkers, tests, and CI catch correctness; they don't catch design. An LLM-
 - **`hickey`** — accidental complexity, after Rich Hickey's [*Simple Made Easy*](https://www.infoq.com/presentations/Simple-Made-Easy/).
 - **`lowy`** — volatility-based decomposition, after Juval Lowy's [*Righting Software*](https://rightingsoftware.org/) (building on [Parnas 1972](https://www.win.tue.nl/~wstomv/edu/2ip30/references/criteria_for_modularization.pdf)).
 
-Each "Fix in this PR" finding lands as its own commit, so PR history reads as a progression from primary implementation through each structural refinement. The full findings ledger is posted as a PR comment. Both default to Sonnet on Claude Code to keep review cheap enough to run on every task; on harnesses that don't honor the `model:` skill extension (opencode, Codex), reviews use the active model. Both are also auto-invoked from `/talk` against design sketches, so the same lenses shape the spec before you ship it.
+Every finding lands as its own commit in the same PR — there is no Defer disposition, no follow-up issue, no "out of scope" exit. The PR's scope expands to absorb each finding, even when the fix grows the diff substantially; the alternative is shipping the complected version and trusting a "broader refactor" follow-up that statistically never happens. Reviewers default to whole-module scope, not just the diff lines — recurring patterns in the same file are in scope even when the trigger pointed only at one symptom. PR history reads as a progression from primary implementation through each structural refinement; the full findings ledger ships as a PR comment. Both default to Sonnet on Claude Code to keep review cheap enough to run on every task; on harnesses that don't honor the `model:` skill extension (opencode, Codex), reviews use the active model. Both are also auto-invoked from `/talk` against design sketches, so the same lenses shape the spec before you ship it.
 
 Read [**Hickey/Lowy on kolu.dev**](https://kolu.dev/blog/hickey-lowy/) for the full framing — what each lens looks for and why the pair catches what tests miss. Both can be extended with project-specific patterns via `.agency/hickey.md` / `.agency/lowy.md` (see [Project config](#project-config)).
 

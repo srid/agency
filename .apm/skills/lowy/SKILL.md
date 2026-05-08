@@ -36,6 +36,16 @@ Conflating these two — putting orchestration logic and activity logic in the s
 
 Not everything that varies is volatile. Lowy makes a critical distinction: adding an attribute to a data model is *variable* but not *volatile* — the architecture won't suffer. **"If you cannot clearly state what the volatility is, why it is volatile, and what risk the volatility poses in terms of likelihood and effect, then you need to look further."** Decomposing around things that merely vary (rather than things that are genuinely volatile) produces over-engineered boundaries that add cost without containing real change.
 
+## Scope of Review
+
+The trigger — "review this boundary", "should we split X", "look at module Y", a `/do` diff inside one component — is a *starting point*, not a frame. Volatility-based decomposition is most legible at module boundaries; reviewing only the lines the user (or upstream issue) pointed at is how a missing volatility seam in the surrounding module gets missed.
+
+**Default to whole-module scope.** When the trigger lives inside a single file or component, read the whole file — not just the cited region. When invoked on a multi-file diff, each touched file is in scope, and cross-file boundary questions (does this volatility actually live in one place, or is it sprayed across modules?) are in scope too. Sibling modules are fair game when the same boundary question recurs there.
+
+**Don't let the user's framing define the scope.** A trigger that says "extract this into a new component" implies the boundary is the right shape and only the placement is wrong; if the surrounding module shows the volatility axis is actually elsewhere — the data model, the consumer pattern, a sequence/activity split — name *that*, even when the implied fix lands at a different layer than the trigger suggests. The reviewer's job is to surface what the evidence says about volatility, not to confirm the trigger's framing.
+
+**Push back when the evidence contradicts the trigger.** If the prompt narrows the question to one boundary but the surrounding code shows the volatility doesn't track that boundary at all, the redirected finding is the headline, not a footnote. *"Issue #N described a UI extraction; the volatility actually splits the data model into two kinds"* is a valid first finding, not an out-of-scope tangent.
+
 ## The Evaluation
 
 For every module boundary, service split, or new abstraction in the code under review:
