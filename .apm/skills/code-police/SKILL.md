@@ -58,9 +58,11 @@ Collections, buffers, and listeners that grow with usage must have a bound or a 
 
 _Rationale_: LLM-generated code defaults to the simplest correct implementation, which is often O(n) in session lifetime. These patterns silently degrade performance over hours/days and surface as "the app got slow" with no obvious cause. The fix is almost always straightforward (cap, debounce, stream, share) but must be applied at write time — it's rarely caught in review because the code is functionally correct.
 
-### comments-why-not-what
+### comments-only-for-non-obvious
 
-Add comments where the _why_ isn't obvious from the code. Don't comment the _what_. Also comment where the _what_ isn't obvious — non-obvious guards, CSS workarounds, platform-specific behavior. Non-obvious workarounds (temp files, wrapper scripts, env var shims) must have a comment explaining why they exist.
+Default to writing NO comments. Add one only when the **why** is non-obvious to a reader who can already see the code — a hidden constraint, a subtle invariant, a workaround for a specific bug, behavior that would surprise.
+
+If removing the comment wouldn't confuse a future reader, don't write it.
 
 ## Pass 1: Rule checklist
 
@@ -69,7 +71,12 @@ Present a table with **every rule above**:
 | Rule ID | Violation found? | What was identified | Action taken |
 | ------- | ---------------- | ------------------- | ------------ |
 
-If no violation was found for a rule, mark it as "No" with a brief note on what was checked. Every rule must appear in the table — no skipping.
+Every "No" requires a **`Checked by:`** field whose content is one of:
+
+- For purely-negative rules (e.g. `no-dead-code`, `no-silent-error-swallowing`): the grep that confirmed absence — _"grep'd for `head`, `tail`, `fromJust`, `(!!)`, `Map.!`, `error`, `undefined`; zero matches."_
+- For bidirectional rules (e.g. `comments-only-for-non-obvious`, `prefer-focused-library`): the enumeration of positive candidates ruled out — _"enumerated `am`, `keep`, guard branches, `G.stars`/`G.reachable` calls; for each, named why a fresh reader decodes the why from code alone."_
+
+A "No" without `Checked by:` is malformed and must be rewritten. Every rule must appear in the table — no skipping.
 
 ## Pass 2: Fact-check
 
