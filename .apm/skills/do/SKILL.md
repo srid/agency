@@ -241,7 +241,17 @@ If a sub-agent emits anything resembling a defer — `Defer #N`, "out of scope",
 
 Findings that genuinely require coordination outside this repo (upstream library bug, breaking dep upgrade, schema migration that must ship separately) shouldn't have surfaced as findings of this structural review in the first place; if one did, apply a local workaround or interface boundary in this PR rather than punt — and flag the upstream dependency in the PR description as a strategic note, not as a deferred finding.
 
-After the audit, every finding lands as a commit, except entries dispositioned **No-op**.
+**Cross-validate the parallel findings.** Hickey and Lowy ran in parallel without seeing each other's output. Each reviewer's local-optimum call can produce a problem the other lens should have caught — a Lowy "consolidate `helper` into module X" can land in a destination that Hickey would have flagged as two volatility axes braided into one module, and a Hickey "decompose interleaved roles" split can land both halves into modules whose imports Lowy would have called fragmentation. Neither lens, running alone, sees the cross-effect.
+
+Skip this phase if **both** reviewers returned zero findings — there is nothing for the other lens to second-guess. Otherwise, for each reviewer that produced findings, spawn a second invocation of *that same skill* (`subagent_type: "hickey"` or `subagent_type: "lowy"`) with a self-contained prompt containing:
+
+- The actual diff (`git diff origin/HEAD...HEAD`).
+- The other reviewer's full findings output (paste it verbatim — the cross-validator must see the recommendations being audited, not a summary).
+- The question, phrased neutrally: _"Apply your lens to the diff **and** to the other reviewer's recommendations. Does any recommendation, if applied, create a problem your lens would flag? If yes, surface it as a new finding with the same Actions disposition rules (Fix in this PR / No-op, no Defer)."_
+
+Run the two cross-validation calls in parallel (single message, both `Agent` blocks). Each call is cheap because the diff and the other-side findings fit in one prompt. If either cross-validator surfaces a new finding, treat it identically to a first-pass finding — apply as its own commit per the rules below, with commit prefix `refactor(hickey)`/`refactor(lowy)` and a short label indicating it came from cross-validation (e.g. `refactor(hickey): cross-validate — placement audit on logPathFor`).
+
+After the audit (and cross-validation, when run), every finding lands as a commit, except entries dispositioned **No-op**.
 
 **Apply each "Fix in this PR" finding as its own commit** — do not batch multiple findings into one commit. A reviewer reading the PR's commit history should be able to read one "address hickey finding: decomplect viewportDimensions" commit at a time and follow the structural refinement as a sequence, not decode a grab-bag diff. For each finding in turn:
 
@@ -253,7 +263,7 @@ After the audit, every finding lands as a commit, except entries dispositioned *
 
 **Under `--no-git`**: Skip the commit/push steps entirely. Apply fixes to the working tree and move on — the user will review the combined working-tree delta themselves. Record the step as passed with verification noting "--no-git: fixes applied to working tree, not committed."
 
-**Verify**: Both hickey and lowy produced review output using their respective skills, either through sub-agents or the main-model fallback. Every finding has an action recorded — either **Fix in this PR** or **No-op** (no defers; if the sub-agent emitted one, the audit step above flipped it to Fix in this PR). Every "Fix in this PR" finding has a corresponding commit on the feature branch (check via `git log origin/HEAD..HEAD --oneline`), except under `--no-git`. No unactioned findings; no deferred findings.
+**Verify**: Both hickey and lowy produced review output using their respective skills, either through sub-agents or the main-model fallback. Cross-validation ran (or was correctly skipped because both reviewers returned zero findings). Every finding — first-pass or cross-validation — has an action recorded, either **Fix in this PR** or **No-op** (no defers; if the sub-agent emitted one, the audit step above flipped it to Fix in this PR). Every "Fix in this PR" finding has a corresponding commit on the feature branch (check via `git log origin/HEAD..HEAD --oneline`), except under `--no-git`. No unactioned findings; no deferred findings.
 
 ---
 
