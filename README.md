@@ -73,7 +73,7 @@ Review the staged changes before committing. Pasting the same prompt again later
 
 - **`hickey`** — Structural simplicity evaluation, shipped as a sub-agent (`@agent-hickey`) so it can run in parallel with `lowy`.
 - **`lowy`** — Volatility-based decomposition review, shipped as a sub-agent (`@agent-lowy`).
-- **`code-police`** — Three-pass quality gate: rule checklist, fact-check for logic errors, and an elegance pass (delegates to Claude Code's `/simplify` when available, otherwise runs an iterative refinement loop).
+- **`code-police`** — Three-pass quality gate (rule checklist, fact-check for logic errors, elegance). Rules and fact-check run as parallel sub-agents on fresh contexts so the implementer's main context — which just wrote the diff and is biased to rationalize it — can't launder violations through. The elegance pass runs sequentially after them and delegates to Claude Code's `/simplify` when available, otherwise runs an iterative refinement loop. Defaults to Sonnet on Claude Code to keep the gate cheap enough to run on every diff.
 - **`fact-check`** — Standalone correctness audit: silent error swallowing, unjustified fallbacks, wishful thinking, logic errors. Prosecutor posture, no self-dismissals.
 - **`elegance`** — Iterative elegance pass: understand, research, apply, verify. 3 iterations by default, each building on the last.
 - **`forge-pr`** — PR titles and descriptions devs actually want to read. Narrative paragraphs for the why; lists/tables/diagrams when the content is genuinely structured. GitHub today; Bitbucket support tracked in [#10](https://github.com/srid/agency/issues/10).
