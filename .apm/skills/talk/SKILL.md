@@ -122,6 +122,6 @@ The point is to pair with a runner that can render the artifact and let the user
 - **Repo-write exception**: writing that one `.html` file in `$PWD` is the only mutation `--html` permits. No `Edit` on pre-existing repo files, no `git` writes, no destructive ops — the rest of talk mode's read-only posture holds.
 - **Follow-up loop**: when the user replies with comments (typically pasted from a select-and-queue surface as a Markdown list), re-emit the **full** revised HTML and print the file path again. Do not narrate the diff in chat; the updated artifact is the reply.
 - **Interaction with `hickey` + `lowy`**: when the artifact is a design sketch, run the reviewers as usual and fold their findings into the HTML body **before** printing the file path — same "post-review proposal, not original sketch + critique appended" rule as text-mode responses.
-- **Interaction with laconic mode**: only the file path is printed regardless of laconic. The HTML body's verbosity is governed by the topic, not by `--no-laconic`.
+- **Interaction with laconic mode**: laconic trims the HTML body the same way it would trim a text response — brief prose, no preamble, no needless bullets, no heading scaffolding unless the answer is genuinely structured. `--html` picks the medium; `--no-laconic` picks the verbosity. UI-prototype markup is the substance of the answer, not prose filler, so it's not what laconic trims.
 
 ARGUMENTS: $ARGUMENTS
