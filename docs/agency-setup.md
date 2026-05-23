@@ -60,6 +60,33 @@ If `apm.yml` already exists, edit it idempotently:
 
 Don't touch unrelated entries. Refreshing an existing `srid/agency` pin is handled by `apm deps update` in step 8 — don't hand-edit the ref here.
 
+### Layer on companion skill packs
+
+`srid/agency` ships the core agentic workflow. Two community skill packs are commonly layered on top — offer the user the relevant ones for *this* project before moving on. Skipping is the safe default; don't add anything the user didn't confirm.
+
+- [`juspay/skills`](https://github.com/juspay/skills) — Nix-centric and language-specific skills. Each is installed by a virtual-subdirectory reference (`juspay/skills/skills/<name>`); pick only what applies.
+- [`anthropics/skills/skills/frontend-design`](https://github.com/anthropics/skills/tree/main/skills/frontend-design) — Anthropic's skill for distinctive, production-grade frontend UI work.
+
+Inspect the project to identify plausible candidates. Suggested detection cues (non-exhaustive — browse [`juspay/skills`](https://github.com/juspay/skills) for the current full list, since new skills land there over time):
+
+- `flake.nix` → `juspay/skills/skills/nix-for-dev`
+- `justfile` in a Nix project → `juspay/skills/skills/nix-justfile`
+- `*.cabal` / `cabal.project` → `juspay/skills/skills/nix-haskell`
+- `package.json` + `pnpm-lock.yaml` in a Nix project → `juspay/skills/skills/nix-typescript`
+- `Cargo.toml` → `juspay/skills/skills/cargo-watch`
+- `Cargo.toml` + Trunk/Leptos → `juspay/skills/skills/nix-rust-leptos`
+- `playwright.config.*` / a Playwright e2e suite → `juspay/skills/skills/nix-playwright`
+- `.github/workflows/` in a Nix project → `juspay/skills/skills/nix-ci`
+- Web frontend code (React, Vue, Svelte, raw HTML/CSS, or any UI-heavy artifact) → `anthropics/skills/skills/frontend-design`
+
+For each plausible candidate, use `AskUserQuestion` to confirm before adding. Offer:
+
+- "Add it" — append the entry to `dependencies.apm:` unpinned (no `#<ref>` — `apm install` will fetch the default branch).
+- "Skip" — don't add this one.
+- A free-form fallback so the user can pin a specific ref (`<dep>#<ref>`) or name another skill pack not listed above (e.g. a different `juspay/skills/skills/<name>`).
+
+If `dependencies.apm:` already contains an entry for a candidate (whether unpinned, `#master`, or some other ref), treat it as already wired in and skip the prompt for that entry. [Kolu's `apm.yml`](https://github.com/juspay/kolu/blob/master/apm.yml) is a worked example of `srid/agency` + several `juspay/skills` + `anthropics/skills/skills/frontend-design` layered together.
+
 ## 4. Ensure `.gitignore` covers agency runtime artifacts
 
 `apm install` (which runs in step 8) will add `apm_modules/` for you, but `do` writes `.do-results.json` at the repo root during a workflow run and that should not be committed. Make sure both lines exist in `.gitignore` (create the file if missing), idempotently — don't duplicate entries that are already there:
@@ -233,7 +260,7 @@ If you discover after this step that you still need to touch `apm.yml` or anythi
 Summarize for the user, in this order:
 
 1. Which `apm` invocation you used (so the user knows the exact command for ad-hoc `apm` calls later).
-2. Which target(s) ended up in `apm.yml` (and which form — `target:` scalar or `targets:` list).
+2. Which target(s) ended up in `apm.yml` (and which form — `target:` scalar or `targets:` list), and which companion skill packs (if any) were added vs. skipped — list each `juspay/skills/skills/<name>` and `anthropics/skills/skills/frontend-design` entry the user accepted, plus the ones they declined.
 3. Which workflow sections were filled in (and from where) versus skipped at the user's request.
 4. **Intake** (if step 5 fired) — which root files (`AGENTS.md`, `CLAUDE.md`) were migrated, into which `.apm/instructions/` files (with `applyTo` globs if split), and any leftover originals (e.g. `CLAUDE.md` retained pending the user's decision). If the user picked "Keep as-is" for `AGENTS.md`, call out that step 8 has overwritten it.
 5. **Migrations applied** (if step 6 ran) — list each migration entry that fired and what it touched, so the user knows what restructuring happened in their tree. If a migration suggested a follow-up rename (e.g. `workflow.instructions.md` → `conventions.instructions.md`), surface that suggestion here.
