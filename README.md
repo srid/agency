@@ -56,6 +56,7 @@ The setup instructions are repository documentation, not an installed skill. The
 
 - Run `apm` via `uvx` (no install needed; falls back to `nix shell nixpkgs#uv -c uvx` if you have Nix but not `uvx`)
 - Create or extend `apm.yml` and run `apm install` (plus `apm compile -t codex,opencode` when those hosts are declared, since they need a project-root `AGENTS.md`)
+- Offer relevant companion skill packs — [`juspay/skills`](https://github.com/juspay/skills) (Nix and language-specific) and [`anthropics/skills/skills/frontend-design`](https://github.com/anthropics/skills/tree/main/skills/frontend-design) (UI work) — based on what's in the repo, and add the ones you confirm to `apm.yml`
 - Migrate any pre-existing `AGENTS.md` / `CLAUDE.md` content into `.apm/instructions/` so `apm compile` doesn't overwrite hand-written instructions ([#132](https://github.com/srid/agency/issues/132))
 - Draft `.agency/do.md` from your project's existing scripts
 
