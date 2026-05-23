@@ -60,12 +60,13 @@ If `apm.yml` already exists, edit it idempotently:
 
 Don't touch unrelated entries. Refreshing an existing `srid/agency` pin is handled by `apm deps update` in step 8 — don't hand-edit the ref here.
 
-### Layer on companion skill packs
+### Layer on companion skill packs and MCP servers
 
-`srid/agency` ships the core agentic workflow. Two community skill packs are commonly layered on top — offer the user the relevant ones for *this* project before moving on. Skipping is the safe default; don't add anything the user didn't confirm.
+`srid/agency` ships the core agentic workflow. A few community packages — skill packs that add more skills, and an MCP-server launcher for browser-driven evidence — are commonly layered on top. Offer the user the relevant ones for *this* project before moving on. Skipping is the safe default; don't add anything the user didn't confirm.
 
 - [`juspay/skills`](https://github.com/juspay/skills) — Nix-centric and language-specific skills. Each is installed by a virtual-subdirectory reference (`juspay/skills/skills/<name>`); pick only what applies.
 - [`anthropics/skills/skills/frontend-design`](https://github.com/anthropics/skills/tree/main/skills/frontend-design) — Anthropic's skill for distinctive, production-grade frontend UI work.
+- [`juspay/nix-chrome-devtools-mcp`](https://github.com/juspay/nix-chrome-devtools-mcp) — Nix-based launcher that wires the [Chrome DevTools MCP](https://github.com/ChromeDevTools/chrome-devtools-mcp) into Claude Code / Codex / opencode. Lets the agent drive a real browser for `/do`'s evidence step (UI screenshots) and ad-hoc frontend debugging. Requires Nix with flakes enabled.
 
 Inspect the project to identify plausible candidates. Suggested detection cues (non-exhaustive — browse [`juspay/skills`](https://github.com/juspay/skills) for the current full list, since new skills land there over time):
 
@@ -78,6 +79,7 @@ Inspect the project to identify plausible candidates. Suggested detection cues (
 - `playwright.config.*` / a Playwright e2e suite → `juspay/skills/skills/nix-playwright`
 - `.github/workflows/` in a Nix project → `juspay/skills/skills/nix-ci`
 - Web frontend code (React, Vue, Svelte, raw HTML/CSS, or any UI-heavy artifact) → `anthropics/skills/skills/frontend-design`
+- `flake.nix` + web frontend code (any of the above frontend cues) → `juspay/nix-chrome-devtools-mcp` (so `/do`'s evidence step can capture UI screenshots in a PR comment)
 
 For each plausible candidate, use `AskUserQuestion` to confirm before adding. Offer:
 
@@ -260,7 +262,7 @@ If you discover after this step that you still need to touch `apm.yml` or anythi
 Summarize for the user, in this order:
 
 1. Which `apm` invocation you used (so the user knows the exact command for ad-hoc `apm` calls later).
-2. Which target(s) ended up in `apm.yml` (and which form — `target:` scalar or `targets:` list), and which companion skill packs (if any) were added vs. skipped — list each `juspay/skills/skills/<name>` and `anthropics/skills/skills/frontend-design` entry the user accepted, plus the ones they declined.
+2. Which target(s) ended up in `apm.yml` (and which form — `target:` scalar or `targets:` list), and which companion packages (if any) were added vs. skipped — list each `juspay/skills/skills/<name>` entry, `anthropics/skills/skills/frontend-design`, and `juspay/nix-chrome-devtools-mcp` the user accepted, plus the ones they declined.
 3. Which workflow sections were filled in (and from where) versus skipped at the user's request.
 4. **Intake** (if step 5 fired) — which root files (`AGENTS.md`, `CLAUDE.md`) were migrated, into which `.apm/instructions/` files (with `applyTo` globs if split), and any leftover originals (e.g. `CLAUDE.md` retained pending the user's decision). If the user picked "Keep as-is" for `AGENTS.md`, call out that step 8 has overwritten it.
 5. **Migrations applied** (if step 6 ran) — list each migration entry that fired and what it touched, so the user knows what restructuring happened in their tree. If a migration suggested a follow-up rename (e.g. `workflow.instructions.md` → `conventions.instructions.md`), surface that suggestion here.
