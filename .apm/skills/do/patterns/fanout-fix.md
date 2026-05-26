@@ -4,12 +4,9 @@ Parallel reviewers produce findings; each finding is applied as its own commit. 
 
 ## Slots
 
-- `reviewer_a`: first reviewer (e.g. `hickey`)
-  - requires: `diff`, `task`, `context`
-  - ensures: `findings` (list of `{label, disposition, rationale}`)
-- `reviewer_b`: second reviewer (e.g. `lowy`)
-  - requires: `diff`, `task`, `context`
-  - ensures: `findings` (list of `{label, disposition, rationale}`)
+- `reviewers`: list of reviewer slots (e.g. `[hickey, lowy]`)
+  - each requires: `diff`, `task`, `context`
+  - each ensures: `findings` (list of `{label, disposition, rationale}`)
 - `fixer`: applies a single finding
   - requires: `finding`, `diff`
   - ensures: `commit_sha` (string or null if no-op)
@@ -18,7 +15,7 @@ Parallel reviewers produce findings; each finding is applied as its own commit. 
 
 | Param | Default | Meaning |
 |-------|---------|---------|
-| `cross_validate` | `true` | When `true` and both reviewers produced findings, run each reviewer a second time against the other reviewer's findings to catch cross-effects. |
+| `cross_validate` | `true` | When `true` and at least two reviewers produced findings, run each reviewer a second time against the other reviewers' findings to catch cross-effects. |
 
 ## Requires
 
@@ -43,18 +40,20 @@ Parallel reviewers produce findings; each finding is applied as its own commit. 
 
 ```prose
 # Phase 1: parallel first-pass
-let findings_a = spawn reviewer_a(diff, task, context)
-let findings_b = spawn reviewer_b(diff, task, context)
-await both
+let all_first_pass = []
+for reviewer in reviewers:
+  all_first_pass.push(spawn reviewer(diff, task, context))
+await all
 
-let all_findings = findings_a + findings_b
+let all_findings = concat all_first_pass
 
-# Phase 2: cross-validation (if both found something)
-if cross_validate and findings_a.nonempty and findings_b.nonempty:
-  let cv_a = spawn reviewer_a(diff, task, context, other_findings: findings_b)
-  let cv_b = spawn reviewer_b(diff, task, context, other_findings: findings_a)
-  await both
-  merge new findings into all_findings
+# Phase 2: cross-validation (if at least two reviewers found something)
+if cross_validate and count_nonempty(all_first_pass) >= 2:
+  for reviewer in reviewers where reviewer.findings.nonempty:
+    let others = all_findings excluding this reviewer's findings
+    let cv = spawn reviewer(diff, task, context, other_findings: others)
+    await cv
+    merge new findings into all_findings
 
 # Phase 3: apply fixes
 let commits = []
