@@ -23,9 +23,9 @@ call implement
   plan: research.plan
 
 # Cheapest verification gate first
-call check                             # pattern: check-loop, max_attempts: 3
+call check                             # pattern: check-loop
 if not minimal:
-  call docs                            # pattern: check-loop, max_attempts: 3
+  call docs                            # pattern: check-loop
 
 call fmt                               # one-shot, no retry pattern
 
@@ -34,17 +34,15 @@ if not noGit:
 
 # Structural review fanout (post-implement, on a concrete diff)
 if not minimal:
-  call hickey-lowy                     # pattern: fanout-fix, reviewers: [hickey, lowy]
-  call police                          # pattern: check-loop, loop_artifacts: commit-per-fix
+  call hickey-lowy                     # pattern: fanout-fix
+  call police                          # pattern: check-loop
 
-call test                              # pattern: check-loop, coverage_check: true
+call test                              # pattern: check-loop
 
 # Forge integration
 call create-pr                         # one-shot; skipped under --no-git or non-github
 
-call ci                                # pattern: check-loop, flaky_classification: true
-                                       # max_attempts: 5 real, flaky_budget: 3
-                                       # rerun_on_new_commit: true
+call ci                                # pattern: check-loop
 
 call evidence                          # opt-in; skipped unless .agency/do.md declares it
 
@@ -68,9 +66,9 @@ Read each node for its full rationale. The high-level reasoning:
 |------|---------|-----|
 | check | check-loop | Run a verification command; on failure, fix the just-written code and retry. |
 | docs | check-loop | Verify docs match code; on staleness, update and re-verify. |
-| police | check-loop (`loop_artifacts: commit-per-fix`) | `/code-police` reports violations; each fix is its own commit. |
-| test | check-loop (`coverage_check: true`, `loop_artifacts: commit-per-fix`) | Run tests; on real failure, fix + commit + retry. Coverage check verifies the new behavior is actually exercised. |
-| ci | check-loop (`flaky_classification: true`, `flaky_budget: 3`, `loop_artifacts: commit-per-fix`, `rerun_on_new_commit: true`) | CI flakes are expected; real failures get fix + commit + retry. CI on a stale SHA does not satisfy verification. |
+| police | check-loop | `/code-police` reports violations; each fix is its own commit. |
+| test | check-loop | Run tests; on real failure, fix + commit + retry. Coverage check verifies the new behavior is actually exercised. |
+| ci | check-loop | CI flakes are expected; real failures get fix + commit + retry. CI on a stale SHA does not satisfy verification. |
 | hickey-lowy | fanout-fix | Two reviewers in parallel; one commit per finding. |
 
 ## Entry points
