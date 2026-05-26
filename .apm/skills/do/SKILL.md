@@ -8,6 +8,8 @@ argument-hint: "<issue-url | prompt> [--review] [--no-git] [--minimal] [--from <
 
 Take a task and do it top-to-bottom: research, branch, implement, pass CI, open a PR, and ship. (Under `--no-git`, extend the working tree in place — no branch, commit, or PR.)
 
+> All paths in this skill are relative to the skill's base directory.
+
 **This is a workflow graph.** The graph lives in [`execution.md`](execution.md); each step is a node file under [`nodes/`](nodes/); reusable shapes live under [`patterns/`](patterns/). The agent is the runtime — there is no separate engine.
 
 **Mostly autonomous.** Do NOT use `AskUserQuestion` at any point (except during the `--review` planning pause). Make sensible default choices and keep moving.
