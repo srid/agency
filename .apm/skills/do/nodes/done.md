@@ -19,18 +19,20 @@ description: Timing summary, optimization suggestions, and wrap-up.
 
 Present a summary of all steps with their verification status. If any step has a non-success status, retry it (max 3 attempts from done). If still failing after retries, set `status: "failed"`.
 
-`"completed"` requires **all steps `passed`**, with four exceptions that count toward completion:
+`"completed"` requires **all steps `passed`**, with six exceptions that count toward completion:
 
 1. A step `skipped` with `reason` beginning `"non-<forge> forge:"`.
 2. A step `skipped` with `reason` `"--no-git"`.
 3. A step `skipped` with `reason` `"no PR evidence section in .agency/do.md"`.
 4. A step `skipped` with `reason` `"--minimal"`.
+5. A step `skipped` with `reason` beginning `"no * command configured"`.
+6. A step `skipped` with `reason` `"docs-only changes"`.
 
 A `failed` step always blocks `"completed"`.
 
 #### Timing summary
 
-Run `scripts/steps/done` in this skill's directory. It emits:
+Call `scripts/do-driver summary`. It delegates to `scripts/steps/done` and emits:
 
 1. A markdown timing table (step, status, duration, verification), with any step that took ≥30% of total time shown in **bold**.
 2. A total wall-clock line.
