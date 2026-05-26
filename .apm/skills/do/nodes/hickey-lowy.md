@@ -19,7 +19,7 @@ description: Parallel structural review with hickey and lowy sub-agents.
 
 ## Pattern
 
-Instances [fanout-fix](../../patterns/fanout-fix.md) with:
+Instances [fanout-fix](../patterns/fanout-fix.md) with:
 - `reviewer_a`: `hickey` sub-agent
 - `reviewer_b`: `lowy` sub-agent
 - Config: `cross_validate: true`

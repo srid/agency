@@ -18,7 +18,7 @@ description: Three-pass quality gate.
 
 ## Pattern
 
-Instances [check-loop](../../patterns/check-loop.md) with:
+Instances [check-loop](../patterns/check-loop.md) with:
 - `runner`: invoke `/code-police` skill
 - `fixer`: apply one violation fix at a time
 - Config: `max_attempts: 3`, `loop_artifacts: commit-per-fix`

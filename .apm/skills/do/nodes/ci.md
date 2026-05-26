@@ -16,7 +16,7 @@ description: Run CI and verify it covers HEAD.
 
 ## Pattern
 
-Instances [check-loop](../../patterns/check-loop.md) with:
+Instances [check-loop](../patterns/check-loop.md) with:
 - `runner`: read `.agency/do.md` for `## CI command`, run it
 - `fixer`: fix real bugs; retry flaky without fixing
 - Config: `max_attempts: 5`, `flaky_classification: true`, `flaky_budget: 3`, `loop_artifacts: commit-per-fix`, `rerun_on_new_commit: true`

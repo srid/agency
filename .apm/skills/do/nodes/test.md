@@ -17,7 +17,7 @@ description: Run relevant tests.
 
 ## Pattern
 
-Instances [check-loop](../../patterns/check-loop.md) with:
+Instances [check-loop](../patterns/check-loop.md) with:
 - `runner`: read `.agency/do.md` for `## Test command`, run relevant tests
 - `fixer`: fix test failures
 - Config: `max_attempts: 4`, `coverage_check: true`, `loop_artifacts: commit-per-fix`

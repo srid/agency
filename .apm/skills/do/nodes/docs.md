@@ -16,7 +16,7 @@ description: Keep documentation in sync with code changes.
 
 ## Pattern
 
-Instances [check-loop](../../patterns/check-loop.md) with:
+Instances [check-loop](../patterns/check-loop.md) with:
 - `runner`: read `.agency/do.md` for `## Documentation`, compare listed files against changes
 - `fixer`: update outdated sections
 - Config: `max_attempts: 3`

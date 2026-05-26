@@ -15,7 +15,7 @@ description: Fast static-correctness gate.
 
 ## Pattern
 
-Instances [check-loop](../../patterns/check-loop.md) with:
+Instances [check-loop](../patterns/check-loop.md) with:
 - `runner`: read `.agency/do.md` for `## Check command`, run it
 - `fixer`: fix errors in just-written code
 - Config: `max_attempts: 3`
