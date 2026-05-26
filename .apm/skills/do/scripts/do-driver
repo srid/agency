@@ -69,10 +69,9 @@ case "$cmd" in
     ;;
 
   end)
-    step="${1:?step required}"
-    status="${2:?status required}"
-    verif="${3:?verification required}"
-    reason="${4:-}"
+    status="${1:?status required}"
+    verif="${2:?verification required}"
+    reason="${3:-}"
     if [ -n "$reason" ]; then
       "$DO_RESULTS" step-end "$status" "$verif" "$reason"
     else

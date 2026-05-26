@@ -21,7 +21,7 @@ Take a task and do it top-to-bottom: research, branch, implement, pass CI, open 
 5. For each step in order:
    - Call `scripts/do-driver start <step>`.
    - Read `nodes/<step>.md` and do the work.
-   - Call `scripts/do-driver end <step> <status> "<verification>" [reason]`.
+   - Call `scripts/do-driver end <status> "<verification>" [reason]`.
 6. Call `scripts/do-driver summary` to emit the timing table.
 
 ## Arguments
@@ -37,7 +37,7 @@ The workflow is **forge-aware**: it auto-detects whether the repo lives on GitHu
 
 ## Results Tracking
 
-Every node is bookended by `scripts/do-driver start <name>` before work and `scripts/do-driver end <name> <status> "<verification>" [reason]` after verification. The driver wraps `scripts/do-results`, which persists step records in `.do-results.json`.
+Every node is bookended by `scripts/do-driver start <name>` before work and `scripts/do-driver end <status> "<verification>" [reason]` after verification. The driver wraps `scripts/do-results`, which persists step records in `.do-results.json`.
 
 **Trust the driver's stdout.** Every mutation echoes a one-line confirmation.
 
