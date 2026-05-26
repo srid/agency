@@ -18,12 +18,6 @@ description: Open a draft PR on GitHub.
 
 ## Strategies
 
-**If `--no-git`**: Skip with status `skipped` and reason `"--no-git"`. There is no PR to create. Proceed to the next step.
-
-**If `forge != github`**: Skip with status `skipped` and reason `"non-<forge> forge: <forge>"`. Proceed to the next step.
-
-**If `forge == github`**:
-
 Check whether a PR already exists for this branch (`gh pr view`).
 
 **If no PR exists** (first run, normal path):

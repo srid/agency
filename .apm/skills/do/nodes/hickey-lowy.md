@@ -25,8 +25,6 @@ Instances [fanout-fix](../patterns/fanout-fix.md) with:
 
 ## Strategies
 
-**If `--minimal`**: Skip with status `skipped` and reason `"--minimal"`. Move to the next step. Do not spawn either sub-agent.
-
 Invoke `hickey` and `lowy` as two **parallel sub-agents** via the harness's agent tool (`subagent_type: "hickey"` and `subagent_type: "lowy"`). On opencode this is the `task` tool (with `subagent_type` parameter).
 
 **Fallback, never skip.** If the harness cannot honor the model declared in the reviewer skill's frontmatter, run hickey and lowy as sub-agents on the available model instead. If a sub-agent invocation fails for harness/tooling reasons before producing a review, retry that reviewer once; if it still cannot produce a sub-agent review, run that review in the main model by loading the reviewer skill against the same diff.

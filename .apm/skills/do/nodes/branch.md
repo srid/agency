@@ -16,8 +16,6 @@ description: Create a descriptive feature branch from origin/defaultBranch.
 
 ## Strategies
 
-**If `--no-git`**: Skip this step entirely with status `skipped` and reason `"--no-git"`. Stay on the current branch — do not create, commit, or push anything. Move to the next step.
-
 Detect the default branch: `git symbolic-ref refs/remotes/origin/HEAD`
 
 1. Create a descriptive feature branch from `origin/<default>`

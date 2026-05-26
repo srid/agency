@@ -18,13 +18,7 @@ description: Attach empirical evidence to the PR (opt-in).
 
 ## Strategies
 
-**If `--minimal`**: Skip with status `skipped` and reason `"--minimal"`.
-
-**If `--no-git`**: Skip with status `skipped` and reason `"--no-git"`.
-
-**If `forge != github`**: Skip with status `skipped` and reason `"non-<forge> forge: <forge>"`.
-
-**Otherwise**: Read `.agency/do.md` and look for a `## PR evidence` section. If missing or empty, skip with status `skipped` and reason `"no PR evidence section in .agency/do.md"`.
+Read `.agency/do.md` and look for a `## PR evidence` section. If missing or empty, skip with status `skipped` and reason `"no PR evidence section in .agency/do.md"`.
 
 **If the section is present**:
 

@@ -25,8 +25,6 @@ Instances [check-loop](../patterns/check-loop.md) with:
 
 ## Strategies
 
-**If `--minimal`**: Skip with status `skipped` and reason `"--minimal"`. Move to the next step.
-
 Use `git diff origin/HEAD...HEAD --name-only` to check if the PR contains code changes. If all changed files are documentation-only (e.g., `.md`, `.txt`, `README`, docs/) — skip this step with a note.
 
 Otherwise, invoke the `/code-police` skill via the Skill tool. It runs three passes: rule checklist, fact-check, and elegance.

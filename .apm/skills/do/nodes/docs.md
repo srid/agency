@@ -23,8 +23,6 @@ Instances [check-loop](../patterns/check-loop.md) with:
 
 ## Strategies
 
-**If `--minimal`**: Skip with status `skipped` and reason `"--minimal"`. Move to the next step.
-
 Read `.agency/do.md` and look for a `## Documentation` section listing which docs to keep in sync (e.g., README.md). Compare those files against changes in this PR.
 
 If no documentation files are documented, skip this step with a note.
