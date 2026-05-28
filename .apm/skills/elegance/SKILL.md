@@ -12,7 +12,7 @@ Run for **3 iterations** (or as specified by the user — can be a number or a d
 ## 0. Determine Scope
 
 - Before starting, use the `AskUserQuestion` tool to ask: should this operate on the **whole codebase** or only on **changes in the current branch/PR**?
-- If scoped to current branch/PR, use `git diff main...HEAD` (or the appropriate base branch) to identify changed files and limit all subsequent steps to those files only.
+- If scoped to current branch/PR, get the diff: use `.../skills/do/scripts/vcs-op diff-range <base>` (VCS-agnostic, preferred when running under `/do`), or fall back to `git diff main...HEAD` (or the appropriate base branch) to identify changed files and limit all subsequent steps to those files only.
 
 ## For each iteration (1 to N):
 
