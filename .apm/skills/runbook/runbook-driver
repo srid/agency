@@ -11,8 +11,8 @@
 #
 # Usage:
 #   runbook-driver --workflow=<name> init
-#   runbook-driver --workflow=<name> step-start <name>
-#   runbook-driver --workflow=<name> step-end <status> <verif> [reason]
+#   runbook-driver --workflow=<name> start <name>
+#   runbook-driver --workflow=<name> end <status> <verif> [reason]
 #   runbook-driver --workflow=<name> step <name> <status> <verif> <startedAt> <completedAt> [reason]
 #   runbook-driver --workflow=<name> skip <name> <reason>
 #   runbook-driver --workflow=<name> set <field> <value>
@@ -51,7 +51,7 @@ fi
 
 FILE=".${workflow}-results.json"
 
-cmd="${1:?Usage: runbook-driver --workflow=<name> <init|step-start|step-end|step|skip|set> ...}"
+cmd="${1:?Usage: runbook-driver --workflow=<name> <init|start|end|step|skip|set> ...}"
 shift
 
 case "$cmd" in
@@ -69,12 +69,12 @@ ENDJSON
     echo "init: startedAt=$startedAt"
     ;;
 
-  step-start)
+  start)
     name="${1:?name required}"
     startedAt="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
     existing="$($JQ -r '.pendingStep.name // empty' "$FILE")"
     if [ -n "$existing" ]; then
-      echo "runbook-driver: pendingStep '$existing' already active — call step-end before starting '$name'" >&2
+      echo "runbook-driver: pendingStep '$existing' already active — call end before starting '$name'" >&2
       exit 1
     fi
     # shellcheck disable=SC2016
@@ -84,7 +84,7 @@ ENDJSON
     echo "pending: $name"
     ;;
 
-  step-end)
+  end)
     status="${1:?status required (passed|failed|skipped)}"
     verif="${2:?verification required}"
     reason="${3:-}"
@@ -93,7 +93,7 @@ ENDJSON
     name="$($JQ -r '.pendingStep.name // empty' "$FILE")"
     startedAt="$($JQ -r '.pendingStep.startedAt // empty' "$FILE")"
     if [ -z "$name" ] || [ -z "$startedAt" ]; then
-      echo "runbook-driver: no pendingStep — call step-start first" >&2
+      echo "runbook-driver: no pendingStep — call start first" >&2
       exit 1
     fi
 
@@ -171,7 +171,7 @@ ENDJSON
 
   *)
     echo "Unknown command: $cmd" >&2
-    echo "Usage: runbook-driver --workflow=<name> <init|step-start|step-end|step|skip|set> ..." >&2
+    echo "Usage: runbook-driver --workflow=<name> <init|start|end|step|skip|set> ..." >&2
     exit 1
     ;;
 esac

@@ -62,7 +62,7 @@ Tenant-specific fields (e.g. /do's `forge`, `noGit`, `minimal`) are stashed via 
 
 ## Scripts
 
-`.../skills/runbook/runbook-driver` — state writer. Subcommands: `init`, `step-start <name>`, `step-end <status> <verif> [reason]`, `skip <name> <reason>`, `set <field> <value>`. All accept `--workflow=<name>` (or `RUNBOOK_WORKFLOW=<name>` env var) to choose the state file `.${name}-results.json`.
+`.../skills/runbook/runbook-driver` — state writer. Subcommands: `init`, `start <name>`, `end <status> <verif> [reason]`, `skip <name> <reason>`, `set <field> <value>`. All accept `--workflow=<name>` (or `RUNBOOK_WORKFLOW=<name>` env var) to choose the state file `.${name}-results.json`.
 
 `.../skills/runbook/done` — timing-table + FACTS-block report. Reads `.${name}-results.json` given `--workflow=<name>`. Emits a markdown table (step, status, duration, verification) plus a `<<<FACTS …` block with `totalSeconds`, `slowestStep`, `dominantSteps`, `skippedSteps`, `failedSteps`.
 

@@ -12,7 +12,7 @@ If you (the user) typed `/runbook`, you probably meant `/do` or `/audit`.
 ## What's here
 
 - [`RUNTIME.md`](RUNTIME.md) — the prose convention runbook tenants follow. Read this first if you're authoring a new runbook tenant.
-- [`runbook-driver`](runbook-driver) — generic state writer. Subcommands: `init`, `step-start <name>`, `step-end <status> <verif> [reason]`, `step <name> <status> <verif> <startedAt> <completedAt> [reason]`, `skip <name> <reason>`, `set <field> <value>`. All take `--workflow=<name>` (or `RUNBOOK_WORKFLOW=<name>` env).
+- [`runbook-driver`](runbook-driver) — generic state writer. Subcommands: `init`, `start <name>`, `end <status> <verif> [reason]`, `step <name> <status> <verif> <startedAt> <completedAt> [reason]`, `skip <name> <reason>`, `set <field> <value>`. All take `--workflow=<name>` (or `RUNBOOK_WORKFLOW=<name>` env).
 - [`done`](done) — generic timing-table + FACTS-block summarizer. Reads `.${workflow}-results.json`, writes a markdown table + machine-readable FACTS block. Takes `--workflow=<name>`.
 
 ## Authoring a new runbook tenant
