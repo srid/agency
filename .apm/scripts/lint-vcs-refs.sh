@@ -31,6 +31,15 @@ PATTERNS=(
   'git remote get-url'
   'git pull --ff-only'
   'git remote set-head'
+  'jj diff '
+  'jj log '
+  'jj bookmark '
+  'jj git fetch'
+  'jj git push'
+  'jj git remote'
+  'jj describe'
+  'jj new '
+  'jj file list'
 )
 
 extra_args=()
@@ -54,12 +63,17 @@ check_file() {
   local file="$1"
   local pattern="$2"
 
-  # Non-strict skips: allow git references in do/SKILL.md prose and
-  # talk/SKILL.md (which has explicit permission for git commands)
+  # Non-strict skips: allow git/jj references in these files where they
+  # appear as documented fallback examples, not as executable instructions.
   if [ "$strict" = false ]; then
     case "$file" in
-      */do/SKILL.md) return ;;
-      */talk/SKILL.md) return ;;
+      */do/SKILL.md)        return ;;
+      */talk/SKILL.md)      return ;;
+      */code-police/SKILL.md) return ;;
+      */fact-check/SKILL.md)  return ;;
+      */hickey/SKILL.md)      return ;;
+      */lowy/SKILL.md)        return ;;
+      */elegance/SKILL.md)    return ;;
     esac
   fi
 
