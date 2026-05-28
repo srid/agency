@@ -16,7 +16,7 @@ Each sub-agent prompt must be self-contained (sub-agents do not inherit this con
 
 - The full task context — the original prompt (if /audit was invoked with one) and any relevant file paths.
 - The scope: the actual diff captured during **sync**.
-- **Duplication-audit hint**, when the diff adds new files — check via `/vcs op new-files` and only include the hint if the output is non-empty. The hint tells the reviewer to start with the codebase survey their skill describes (`hickey` Layer 3, `lowy` §1 "Check for prior encapsulation"): find the canonical in-repo pattern for the same *kind* of operation and flag it as the headline finding if the diff reinvents rather than extends it.
+- **Duplication-audit hint**, when the diff adds new files — check via `.apm/skills/vcs/vcs-op new-files` and only include the hint if the output is non-empty. The hint tells the reviewer to start with the codebase survey their skill describes (`hickey` Layer 3, `lowy` §1 "Check for prior encapsulation"): find the canonical in-repo pattern for the same *kind* of operation and flag it as the headline finding if the diff reinvents rather than extends it.
 
 The sub-agent already knows to read its skill file and follow that methodology; don't re-state it in the prompt.
 
@@ -52,6 +52,6 @@ Collect every finding from every pass into a structured ledger. Each entry has:
 }
 ```
 
-Stash the full ledger as a JSON array via `runbook-driver --workflow=audit set findings '<json-array>'`. The **done** node writes the final `.audit-results.json` including this ledger.
+Stash the full ledger as a JSON array via `.apm/runbook/scripts/runbook-driver --workflow=audit set findings '<json-array>'`. The **done** node writes the final `.audit-results.json` including this ledger.
 
 **Verify**: At least one of hickey/lowy/code-police produced output (zero findings is a valid output; failure to produce output is not). Cross-validation ran (or was correctly skipped because both hickey AND lowy returned zero findings). Every finding has `source`, `label`, `disposition`, `rationale`, `commit_prefix`; no deferred dispositions; no orphaned findings.

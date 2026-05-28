@@ -4,11 +4,11 @@ Open the draft PR and post the hickey/lowy/police findings comment. Skipped unde
 
 ## Strategies
 
-Check whether a PR already exists for this branch: `/forge op view-pr`.
+Check whether a PR already exists for this branch: `.apm/skills/forge/forge-op view-pr`.
 
 ### If no PR exists (first run, normal path)
 
-1. Create a draft PR: `/forge op create-pr --draft`
+1. Create a draft PR: `.apm/skills/forge/forge-op create-pr --draft`
 
    **MANDATORY**: Load the `forge-pr` skill (via Skill tool) BEFORE writing the PR title/body.
 
@@ -39,12 +39,12 @@ Check whether a PR already exists for this branch: `/forge op view-pr`.
 
    If `/audit` produced zero findings, write a one-line "No findings — analysis below" instead of an empty table.
 
-   Post via `/forge op comment-pr`.
+   Post via `.apm/skills/forge/forge-op comment-pr`.
 
 ### If PR already exists (followup runs, `--from` entry points)
 
-Re-check the PR title/body against current scope. If scope changed, update via `/forge op edit-pr` per the `forge-pr` skill.
+Re-check the PR title/body against current scope. If scope changed, update via `.apm/skills/forge/forge-op edit-pr` per the `forge-pr` skill.
 
 **Why this runs before `ci`**: The draft PR is the canonical home for CI status. Opening it before CI runs means CI checks land directly on the PR, reviewers see the run history as it happens, and a failing run doesn't leave an orphaned branch with red statuses and no PR to explain them.
 
-**Verify**: Draft PR exists (`/forge op view-pr` succeeds), PR title/body matches the delivered scope, hickey/lowy/police findings posted if any.
+**Verify**: Draft PR exists (`.apm/skills/forge/forge-op view-pr` succeeds), PR title/body matches the delivered scope, hickey/lowy/police findings posted if any.

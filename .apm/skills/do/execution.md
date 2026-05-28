@@ -1,6 +1,6 @@
 # /do execution
 
-Read [`../../runbook/RUNTIME.md`](../../runbook/RUNTIME.md) for the prose grammar. Skip reasons come from the unsatisfied guard expression (`reason="not noGit"`, `reason="not minimal"`, `reason="forge != github"`).
+Read [`.apm/runbook/RUNTIME.md`](.apm/runbook/RUNTIME.md) for the prose grammar. Skip reasons come from the unsatisfied guard expression (`reason="not noGit"`, `reason="not minimal"`, `reason="forge != github"`).
 
 ## Order
 

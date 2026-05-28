@@ -4,7 +4,7 @@ Research the task thoroughly before writing code.
 
 ## Strategies
 
-- If given a GitHub issue URL **and** `forge == github`, fetch via `/forge op fetch-issue <url>`. On non-GitHub forges, treat any issue-like URL as opaque context — use the prompt text as-is and do not attempt to fetch. (Bitbucket issue/Jira fetching is tracked in [#10](https://github.com/srid/agency/issues/10).)
+- If given a GitHub issue URL **and** `forge == github`, fetch via `.apm/skills/forge/forge-op fetch-issue <url>`. On non-GitHub forges, treat any issue-like URL as opaque context — use the prompt text as-is and do not attempt to fetch. (Bitbucket issue/Jira fetching is tracked in [#10](https://github.com/srid/agency/issues/10).)
 - **Never assume** how something works. Read the code. Check the config.
 - If the prompt involves external tools/libraries, prefer `git clone` to a scratch dir (e.g. `/tmp/<name>`) at the version the project actually uses, then read the source on disk with `Read`/`Grep`/`Glob`. Fall back to `WebSearch`/`WebFetch` only when the source genuinely isn't a clonable repo (vendor docs, blog posts, RFCs).
 

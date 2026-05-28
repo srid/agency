@@ -8,7 +8,7 @@ argument-hint: "[<branch-or-revision>]"
 
 Run hickey + lowy + code-police as a coordinated review fanout against a given diff. Emit a structured findings ledger to `.audit-results.json` and to stdout. **Never commits.** Callers (standalone CLI use or `/do`'s `audit` node) decide what to do with the findings.
 
-**This is a runbook.** The graph lives in [`execution.md`](execution.md); each step is a node file under [`nodes/`](nodes/). Read [`../../runbook/RUNTIME.md`](../../runbook/RUNTIME.md) for walking conventions.
+**This is a runbook.** The graph lives in [`execution.md`](execution.md); each step is a node file under [`nodes/`](nodes/). Read [`.apm/runbook/RUNTIME.md`](.apm/runbook/RUNTIME.md) for walking conventions.
 
 ## Two entry points, one execution
 
@@ -23,11 +23,11 @@ Run hickey + lowy + code-police as a coordinated review fanout against a given d
 
 ## How to walk
 
-Same protocol as any runbook tenant — see [`../../runbook/RUNTIME.md`](../../runbook/RUNTIME.md):
+Same protocol as any runbook tenant — see [`.apm/runbook/RUNTIME.md`](.apm/runbook/RUNTIME.md):
 
-1. `runbook-driver --workflow=audit init`
+1. `.apm/runbook/scripts/runbook-driver --workflow=audit init`
 2. Seed the harness task list with `sync`, `fanout`, `done`.
-3. For each node in execution.md: `runbook-driver --workflow=audit start <node>` → read `nodes/<node>.md` → `runbook-driver --workflow=audit end <status> "<verif>"`.
+3. For each node in execution.md: `.apm/runbook/scripts/runbook-driver --workflow=audit start <node>` → read `nodes/<node>.md` → `.apm/runbook/scripts/runbook-driver --workflow=audit end <status> "<verif>"`.
 4. The `done` node invokes `.apm/runbook/scripts/done --workflow=audit` for timing + writes the ledger to `.audit-results.json`.
 
 ## No deferrals

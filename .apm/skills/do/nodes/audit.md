@@ -14,7 +14,7 @@ Read `.audit-results.json` for the findings ledger. For each finding with dispos
 
 1. Apply the fix narrowly — only the lines that address this specific finding.
 2. Run the project's format command (from **fmt** instructions) on the changed files, if one is configured.
-3. Stage the touched files only: `/vcs op stage <files>` (or use the fixer's stage convention).
+3. Stage the touched files only: `.apm/skills/vcs/vcs-op stage <files>` (or use the fixer's stage convention).
 4. Commit with the appropriate conventional prefix based on the finding's source lens:
    - Hickey findings: `refactor(hickey): <short finding label>`
    - Lowy findings: `refactor(lowy): <short finding label>`
@@ -30,4 +30,4 @@ Apply commits **one per finding** — do not batch multiple findings into one co
 
 This node still runs (the `audit` guard is `--minimal`, not `--no-git`). Apply fixes to the working tree and skip the commit/push steps entirely. Record the step as passed with verification noting "--no-git: fixes applied to working tree, not committed."
 
-**Verify**: `/audit` returned and wrote `.audit-results.json`. Every finding with disposition **Fix in this PR** has a corresponding commit on the feature branch (`/vcs op log-range origin/HEAD..HEAD` shows them), except under `--no-git`. No unactioned findings; no deferred findings (the `/audit` skill enforces no-defer at its boundary).
+**Verify**: `/audit` returned and wrote `.audit-results.json`. Every finding with disposition **Fix in this PR** has a corresponding commit on the feature branch (`.apm/skills/vcs/vcs-op log-range origin/HEAD..HEAD` shows them), except under `--no-git`. No unactioned findings; no deferred findings (the `/audit` skill enforces no-defer at its boundary).

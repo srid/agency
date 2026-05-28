@@ -4,7 +4,7 @@ Write the final findings ledger; emit timing table; print the ledger.
 
 ## Strategies
 
-1. Set workflow status: `runbook-driver --workflow=audit set status completed`.
+1. Set workflow status: `.apm/runbook/scripts/runbook-driver --workflow=audit set status completed`.
 2. The `findings` field is already in `.audit-results.json` (stashed by the **fanout** node). Read it back to compose the printed ledger.
 3. Compose the human-readable ledger markdown and print it. The format mirrors what /do's create-pr node posts as a PR comment:
 
