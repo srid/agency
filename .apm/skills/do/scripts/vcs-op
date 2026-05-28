@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2168  # local used in case branches at top level
 # Semantic VCS operation dispatcher. Translates named operations into
 # the appropriate tool-specific commands for git or jj. Consumers call
 # this instead of raw `git` or `jj` commands.
@@ -104,6 +103,7 @@ case "$op" in
     case "$vcs" in
       git) git rev-parse --abbrev-ref HEAD ;;
       jj)
+        # shellcheck disable=SC2168
         local bookmark
         bookmark=$(jj bookmark list -r @ --no-graph -T 'name' 2>/dev/null | head -1)
         if [ -z "$bookmark" ]; then
@@ -133,6 +133,8 @@ case "$op" in
     esac
     ;;
   diff-range)
+    # shellcheck disable=SC2168
+    # shellcheck disable=SC2168
     local base="${1:-$(get_default_branch)}"
     case "$vcs" in
       git)
@@ -140,6 +142,7 @@ case "$op" in
         git diff "origin/${base}...HEAD" -- "${@:2}"
         ;;
       jj)
+        # shellcheck disable=SC2168
         local merge_base
         merge_base=$(jj log -r 'heads(ancestors(@) & ancestors('"$base"'))' --no-graph -T 'change_id' 2>/dev/null | head -1)
         if [ -n "$merge_base" ]; then
@@ -152,10 +155,12 @@ case "$op" in
     esac
     ;;
   diff-names)
+    # shellcheck disable=SC2168
     local base="${1:-$(get_default_branch)}"
     case "$vcs" in
       git) git diff "origin/${base}...HEAD" --name-only -- "${@:2}" ;;
       jj)
+        # shellcheck disable=SC2168
         local merge_base
         merge_base=$(jj log -r 'heads(ancestors(@) & ancestors('"$base"'))' --no-graph -T 'change_id' 2>/dev/null | head -1)
         if [ -n "$merge_base" ]; then
@@ -168,10 +173,12 @@ case "$op" in
     esac
     ;;
   diff-stat)
+    # shellcheck disable=SC2168
     local base="${1:-$(get_default_branch)}"
     case "$vcs" in
       git) git diff "origin/${base}...HEAD" --shortstat -- "${@:2}" ;;
       jj)
+        # shellcheck disable=SC2168
         local merge_base
         merge_base=$(jj log -r 'heads(ancestors(@) & ancestors('"$base"'))' --no-graph -T 'change_id' 2>/dev/null | head -1)
         if [ -n "$merge_base" ]; then
@@ -184,10 +191,12 @@ case "$op" in
     esac
     ;;
   new-files)
+    # shellcheck disable=SC2168
     local base="${1:-$(get_default_branch)}"
     case "$vcs" in
       git) git diff --diff-filter=A --name-only "origin/${base}...HEAD" -- "${@:2}" ;;
       jj)
+        # shellcheck disable=SC2168
         local merge_base
         merge_base=$(jj log -r 'heads(ancestors(@) & ancestors('"$base"'))' --no-graph -T 'change_id' 2>/dev/null | head -1)
         if [ -n "$merge_base" ]; then
@@ -200,6 +209,7 @@ case "$op" in
     esac
     ;;
   log-range)
+    # shellcheck disable=SC2168
     local base="${1:-$(get_default_branch)}"
     case "$vcs" in
       git) git log "origin/${base}..HEAD" --oneline -- "${@:2}" ;;
@@ -215,7 +225,9 @@ case "$op" in
     esac
     ;;
   branch)
+    # shellcheck disable=SC2168
     local name="${1:?branch name required}"
+    # shellcheck disable=SC2168
     local base="${2:-$(get_default_branch)}"
     case "$vcs" in
       git) git branch "$name" "origin/$base" ;;
@@ -226,6 +238,7 @@ case "$op" in
     esac
     ;;
   commit)
+    # shellcheck disable=SC2168
     local msg="${1:?commit message required}"
     case "$vcs" in
       git)
@@ -239,6 +252,7 @@ case "$op" in
     esac
     ;;
   push)
+    # shellcheck disable=SC2168
     local ref="${1:-}"
     case "$vcs" in
       git)
@@ -259,6 +273,7 @@ case "$op" in
     esac
     ;;
   fix-commit)
+    # shellcheck disable=SC2168
     local msg="${1:?commit message required}"
     case "$vcs" in
       git)
@@ -268,6 +283,7 @@ case "$op" in
         ;;
       jj)
         jj new -m "$msg"
+        # shellcheck disable=SC2168
         local bookmark
         bookmark=$(jj bookmark list -r '@-' --no-graph -T 'name' 2>/dev/null | head -1)
         if [ -n "$bookmark" ]; then
