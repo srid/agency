@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016  # jq filter expressions use $var binding syntax
 # Generic step-results recorder. Manages a workflow's lifecycle state +
 # step-record list in a JSON file, with all mutations done in bash+jq so the
 # caller doesn't burn LLM tokens on JSON arithmetic.

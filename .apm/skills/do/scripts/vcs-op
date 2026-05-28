@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2168  # local used in case branches at top level
 # Semantic VCS operation dispatcher. Translates named operations into
 # the appropriate tool-specific commands for git or jj. Consumers call
 # this instead of raw `git` or `jj` commands.
@@ -111,7 +112,7 @@ case "$op" in
           echo "$bookmark"
         fi
         ;;
-      *)   echo "vcs-op: no VCS detected" >&2; exit 1 ;;    ;;
+      *)   echo "vcs-op: no VCS detected" >&2; exit 1 ;;
     esac
     ;;
   head-commit-sha)
