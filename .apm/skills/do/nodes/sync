@@ -21,10 +21,13 @@ case "$noGit" in
   *) echo "sync: noGit must be 'true' or 'false', got '$noGit'" >&2; exit 2 ;;
 esac
 
+# Resolve sibling-skill scripts relative to this script's location, so the
+# resolution works the same in the source tree (.apm/skills/do/nodes/) and
+# in the compiled tree (.claude/skills/do/nodes/) without knowing the
+# prefix. The runbook engine and the vcs dispatcher are sibling skills.
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-APM_ROOT="$SCRIPT_DIR/../../../.."
-RUNBOOK="$APM_ROOT/.apm/runbook/scripts/runbook-driver"
-VCS_OP="$APM_ROOT/.apm/skills/vcs/vcs-op"
+RUNBOOK="$SCRIPT_DIR/../../runbook/runbook-driver"
+VCS_OP="$SCRIPT_DIR/../../vcs/vcs-op"
 
 startedAt="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 

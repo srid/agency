@@ -14,11 +14,11 @@ Present a summary of all steps with their verification status. If any step has a
 4. A step `skipped` with `reason` `"not minimal"` or beginning `"--minimal"` (user opted out on a trivial diff).
 5. A step `skipped` with `reason` beginning `"no <X> command configured"` (project hasn't configured that gate).
 
-A `failed` step always blocks `"completed"`. Update via `.apm/runbook/scripts/runbook-driver --workflow=do set status completed` or `set status failed`.
+A `failed` step always blocks `"completed"`. Update via `.../skills/runbook/runbook-driver --workflow=do set status completed` or `set status failed`.
 
 ### Timing summary
 
-Run `.apm/runbook/scripts/done --workflow=do`. It emits:
+Run `.../skills/runbook/done --workflow=do`. It emits:
 
 1. A markdown timing table (step, status, duration, verification), with any step that took ≥30% of total time shown in **bold**.
 2. A `**Slowest step**:` line.
@@ -40,11 +40,11 @@ Be specific to this run's data, not generic advice.
 
 ### PR comment & wrap-up
 
-**If `--no-git`**: There is no branch or PR. Print the timing table and optimization suggestions to the terminal only. List the files modified in the working tree (`.apm/skills/vcs/vcs-op dirty-files` or equivalent) so the user can see what the agent touched. Remind the user that changes are uncommitted.
+**If `--no-git`**: There is no branch or PR. Print the timing table and optimization suggestions to the terminal only. List the files modified in the working tree (`.../skills/vcs/vcs-op dirty-files` or equivalent) so the user can see what the agent touched. Remind the user that changes are uncommitted.
 
-**If `forge != github`**: Report the branch name (and remote URL via `.apm/skills/vcs/vcs-op remote-url`) instead of a PR URL. Print the timing table and optimization suggestions to the terminal only — do not attempt to post a PR comment.
+**If `forge != github`**: Report the branch name (and remote URL via `.../skills/vcs/vcs-op remote-url`) instead of a PR URL. Print the timing table and optimization suggestions to the terminal only — do not attempt to post a PR comment.
 
-**If `forge == github`**: Report the PR URL. Post the final step status table as a PR comment via `.apm/skills/forge/forge-op comment-pr`. Use the markdown table and slowest-step line emitted by the runbook done script verbatim (strip the trailing `<<<FACTS ... FACTS` block — that's internal). Format:
+**If `forge == github`**: Report the PR URL. Post the final step status table as a PR comment via `.../skills/forge/forge-op comment-pr`. Use the markdown table and slowest-step line emitted by the runbook done script verbatim (strip the trailing `<<<FACTS ... FACTS` block — that's internal). Format:
 
 ```md
 ## [`/do`](https://github.com/srid/agency) results

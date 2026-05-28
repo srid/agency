@@ -27,6 +27,7 @@ FORGE_PATTERNS=(
 EXEMPT=(
   '.apm/skills/vcs/'
   '.apm/skills/forge/'
+  '.apm/skills/runbook/'             # may reference git/jj/gh as examples in docs
   '.apm/skills/forge-pr/SKILL.md'    # documents the gh body-passing pattern
   '.apm/scripts/lint-vcs-refs.sh'
   'README.md'

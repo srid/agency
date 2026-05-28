@@ -1,6 +1,6 @@
 # Runbook RUNTIME
 
-The runbook engine is a convention for organizing multi-step skills as a graph: one `execution.md` declares the order in a small **prose pseudo-DSL**, and one file per step under `nodes/` describes what to do when that step runs. The agent IS the runtime — there is no separate engine binary. Two scripts under `.apm/runbook/scripts/` provide state recording and a timing summary; both are workflow-agnostic and parameterized by `--workflow=<name>`.
+The runbook engine is a convention for organizing multi-step skills as a graph: one `execution.md` declares the order in a small **prose pseudo-DSL**, and one file per step under `nodes/` describes what to do when that step runs. The agent IS the runtime — there is no separate engine binary. Two scripts under `.../skills/runbook/` provide state recording and a timing summary; both are workflow-agnostic and parameterized by `--workflow=<name>`.
 
 A skill is a **runbook tenant** when its directory contains an `execution.md` next to its `SKILL.md`. Today's tenants: `/do`, `/audit`.
 
@@ -35,7 +35,7 @@ The grammar is intentionally small. Anything more elaborate (loops, parallelism,
    - Read `nodes/<node>.md` and follow its instructions. Use whatever tools the node prescribes (Bash, Skill, Agent, Read, Edit, …).
    - `runbook-driver --workflow=<name> end <status> "<verification>" [reason]` — bookend the close.
 4. For a guarded line whose guard is false: `runbook-driver --workflow=<name> skip <node> "<guard text>"`.
-5. When all calls in `execution.md` have been visited, the tenant's `done` node typically invokes `.apm/runbook/scripts/done --workflow=<name>` to emit the universal timing table.
+5. When all calls in `execution.md` have been visited, the tenant's `done` node typically invokes `.../skills/runbook/done --workflow=<name>` to emit the universal timing table.
 
 The agent's discipline (bookending every step, not lying about results, honest skip reasons) is the same trust model as any prose-driven skill today. The driver doesn't enforce; it records.
 
@@ -62,8 +62,8 @@ Tenant-specific fields (e.g. /do's `forge`, `noGit`, `minimal`) are stashed via 
 
 ## Scripts
 
-`.apm/runbook/scripts/runbook-driver` — state writer. Subcommands: `init`, `step-start <name>`, `step-end <status> <verif> [reason]`, `skip <name> <reason>`, `set <field> <value>`. All accept `--workflow=<name>` (or `RUNBOOK_WORKFLOW=<name>` env var) to choose the state file `.${name}-results.json`.
+`.../skills/runbook/runbook-driver` — state writer. Subcommands: `init`, `step-start <name>`, `step-end <status> <verif> [reason]`, `skip <name> <reason>`, `set <field> <value>`. All accept `--workflow=<name>` (or `RUNBOOK_WORKFLOW=<name>` env var) to choose the state file `.${name}-results.json`.
 
-`.apm/runbook/scripts/done` — timing-table + FACTS-block report. Reads `.${name}-results.json` given `--workflow=<name>`. Emits a markdown table (step, status, duration, verification) plus a `<<<FACTS …` block with `totalSeconds`, `slowestStep`, `dominantSteps`, `skippedSteps`, `failedSteps`.
+`.../skills/runbook/done` — timing-table + FACTS-block report. Reads `.${name}-results.json` given `--workflow=<name>`. Emits a markdown table (step, status, duration, verification) plus a `<<<FACTS …` block with `totalSeconds`, `slowestStep`, `dominantSteps`, `skippedSteps`, `failedSteps`.
 
 Both scripts are deliberately small. The tenant's nodes do the actual work; the engine just tracks it.

@@ -8,11 +8,11 @@ Read `.agency/do.md` and look for a `## CI command` section, plus any verificati
 
 **Never pipe CI to `tail`/`head`**, and **never append `2>&1`** — background mode captures both streams.
 
-**Active state**: Before waiting for background CI, run `.apm/runbook/scripts/runbook-driver --workflow=do set active waiting`. When CI returns (success or failure), run `.apm/runbook/scripts/runbook-driver --workflow=do set active working` before proceeding. This lets the stop hook allow graceful exits while the agent is idle.
+**Active state**: Before waiting for background CI, run `.../skills/runbook/runbook-driver --workflow=do set active waiting`. When CI returns (success or failure), run `.../skills/runbook/runbook-driver --workflow=do set active working` before proceeding. This lets the stop hook allow graceful exits while the agent is idle.
 
 CI commands are typically local (e.g. `nix flake check`, `just ci`, `make ci`) and are forge-independent — **run them regardless of forge**. Only the *verification method* may be forge-specific: if `.agency/do.md` describes verification via GitHub commit-status checks and `forge != github`, fall back to exit code + command output for verification on non-GitHub forges, and note this in the step record. (Bitbucket support is tracked in [#10](https://github.com/srid/agency/issues/10).)
 
-**Verify**: Use the verification method described in `.agency/do.md` (e.g., `.apm/skills/forge/forge-op ci-status` on GitHub, reading CI output elsewhere). If no CI command is documented, skip with a note. **The CI result must cover `HEAD`.** Before recording the step as passed, compare the commit SHA that CI ran against with `.apm/skills/vcs/vcs-op head-commit-sha`. If they differ (e.g., a commit was pushed after CI started), re-run CI against the current HEAD. CI passing on a stale commit does not satisfy verification.
+**Verify**: Use the verification method described in `.agency/do.md` (e.g., `.../skills/forge/forge-op ci-status` on GitHub, reading CI output elsewhere). If no CI command is documented, skip with a note. **The CI result must cover `HEAD`.** Before recording the step as passed, compare the commit SHA that CI ran against with `.../skills/vcs/vcs-op head-commit-sha`. If they differ (e.g., a commit was pushed after CI started), re-run CI against the current HEAD. CI passing on a stale commit does not satisfy verification.
 
 **On failure** — read logs or output to diagnose.
 

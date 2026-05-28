@@ -13,10 +13,10 @@ Today's /do has 24 distinct `git ` references baked into its prose. Adding Jujut
 
 ## Invocation
 
-Skills invoke `vcs-op` directly as a script. The script lives at `.apm/skills/vcs/vcs-op` and is executable.
+Skills invoke `vcs-op` directly as a script. The script lives at `.../skills/vcs/vcs-op` and is executable.
 
 ```sh
-.apm/skills/vcs/vcs-op <operation> [args...]
+.../skills/vcs/vcs-op <operation> [args...]
 ```
 
 Detection: reads `$vcs` from the calling workflow's state file if present (e.g. `.do-results.json` under `--workflow=do`); otherwise falls back to filesystem detection (`.jj/` → jj, `.git/` → git).

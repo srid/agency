@@ -15,10 +15,10 @@ Today's /do has 13 distinct `gh ` references in its prose. Adding Bitbucket supp
 
 ## Invocation
 
-Skills invoke `forge-op` directly as a script. The script lives at `.apm/skills/forge/forge-op` and is executable.
+Skills invoke `forge-op` directly as a script. The script lives at `.../skills/forge/forge-op` and is executable.
 
 ```sh
-.apm/skills/forge/forge-op <operation> [args...]
+.../skills/forge/forge-op <operation> [args...]
 ```
 
 Detection: reads `$forge` from the calling workflow's state file if present (e.g. `.do-results.json`); otherwise classifies by inspecting `origin` URL via `/vcs op remote-url`.

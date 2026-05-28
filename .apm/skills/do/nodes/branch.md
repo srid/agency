@@ -4,8 +4,8 @@ Create a descriptive feature branch from `origin/<default>`. Skipped under `--no
 
 ## Strategies
 
-Invoke `.apm/skills/vcs/vcs-op default-branch` to detect the default branch, then `.apm/skills/vcs/vcs-op branch <name>` to create a descriptive feature branch from `origin/<default>`.
+Invoke `.../skills/vcs/vcs-op default-branch` to detect the default branch, then `.../skills/vcs/vcs-op branch <name>` to create a descriptive feature branch from `origin/<default>`.
 
 No commit, no push, no PR. The branch is pushed later in **commit**, and the PR is created in **create-pr** after all changes are done.
 
-**Verify**: On a feature branch (not master/main). Confirm via `.apm/skills/vcs/vcs-op head-revision`.
+**Verify**: On a feature branch (not master/main). Confirm via `.../skills/vcs/vcs-op head-revision`.
