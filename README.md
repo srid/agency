@@ -1,6 +1,6 @@
 # agency
 
-Agency[^agency] is a near-autonomous workflow for coding agents, packaged as an [APM](https://github.com/microsoft/apm) package. Two skills: **`talk`** for design and code exploration (read-only), **`do`** for shipping end-to-end (research → implement → structural review → CI → done).
+Agency[^agency] is a near-autonomous workflow for coding agents, packaged as an [APM](https://github.com/microsoft/apm) package. Two primary skills: **`talk`** for design and code exploration (read-only), **`do`** for shipping end-to-end (research → implement → structural review → CI → done). Plus **`audit`** to run the structural review (`hickey` + `lowy` + `code-police`) standalone on any branch — the same skill `do` invokes internally.
 
 > [!IMPORTANT]
 > Agency has mainly been tested with Claude Code & Codex; opencode is supported but less battle-tested. YMMV with other agents.
@@ -66,8 +66,9 @@ Review the staged changes before committing. Pasting the same prompt again later
 
 ### Primary skills
 
-- **`do`** — Full pipeline: research → implement → structural review (`hickey`, `lowy`) → quality gate (`code-police`) → CI → evidence (opt-in) → ship. Skip specific steps by mentioning them in the prompt, or pass **`--minimal`** to skip docs / structural review / police / evidence wholesale on trivially-scoped diffs (one-line fixes, typos, config tweaks).
+- **`do`** — Full pipeline: research → implement → structural review (`audit`) → CI → evidence (opt-in) → ship. Skip specific steps by mentioning them in the prompt, or pass **`--minimal`** to skip docs / audit / evidence wholesale on trivially-scoped diffs (one-line fixes, typos, config tweaks).
 - **`talk`** — Conversation-and-research mode. Discuss ideas, explore approaches, read code, inspect upstream sources in temporary scratch space when needed — read-only by default. Auto-runs `hickey` + `lowy` on design sketches. Pass **`--html`** to write the response as a self-contained HTML artifact in `$PWD` instead of replying in chat — pair with a runner that can render and select-to-comment on the artifact (e.g. [juspay/kolu#922](https://github.com/juspay/kolu/pull/922)) for tight comment-driven iteration on the same file. When the topic involves UI work, the artifact embeds *rendered* HTML/CSS prototypes of the proposed components so you can react to the visual itself, not a prose description of it.
+- **`audit`** — Reviewer fanout (`hickey` + `lowy` + `code-police` in parallel, with cross-validation) against any branch's diff. Returns a structured findings ledger; never commits. Invoked standalone (`/audit feature-branch`) or as a sub-skill from `do`'s post-implement step.
 - **`ralph`** — Iterative measurement-driven improvement loop. Measure, profile, mutate, re-measure, commit. Works for performance, bundle size, complexity — anything quantifiable.
 
 ### Supporting skills
@@ -78,6 +79,12 @@ Review the staged changes before committing. Pasting the same prompt again later
 - **`fact-check`** — Standalone correctness audit: silent error swallowing, unjustified fallbacks, wishful thinking, logic errors. Prosecutor posture, no self-dismissals.
 - **`elegance`** — Iterative elegance pass: understand, research, apply, verify. 3 iterations by default, each building on the last.
 - **`forge-pr`** — PR titles and descriptions devs actually want to read. Narrative paragraphs for the why; lists/tables/diagrams when the content is genuinely structured. GitHub today; Bitbucket support tracked in [#10](https://github.com/srid/agency/issues/10).
+- **`vcs`** — Semantic dispatch for git ⊕ jujutsu (jj). Library skill — workflow nodes invoke `.apm/skills/vcs/vcs-op <named-op>` instead of running raw `git`/`jj` commands. Auto-detects backend from `.git/` vs `.jj/`. Adding a new backend is a one-skill change; a CI lint (`.apm/scripts/lint-vcs-refs.sh`) catches raw VCS commands leaking back into other skills.
+- **`forge`** — Semantic dispatch for GitHub today; Bitbucket planned ([#10](https://github.com/srid/agency/issues/10)). Library skill — workflow nodes invoke `.apm/skills/forge/forge-op <named-op>` instead of running raw `gh` commands. Operations: `create-pr`, `comment-pr`, `view-pr`, `edit-pr`, `fetch-issue`, `ci-status`.
+
+### The runbook engine
+
+`do` and `audit` are **runbook tenants** — multi-step skills whose graph lives in a small prose pseudo-DSL in `execution.md`, with one node file per step under `nodes/`, walked by the agent. The runbook engine itself is just `.apm/runbook/RUNTIME.md` (walking conventions), `.apm/runbook/scripts/runbook-driver` (state writer), and `.apm/runbook/scripts/done` (timing summary). Each tenant gets its own state file: `do` writes `.do-results.json`, `audit` writes `.audit-results.json`. The engine knows nothing about either tenant; the tenants share the engine without sharing state. New runbook tenants need only an `execution.md` + `nodes/` next to their `SKILL.md`.
 
 ### Hooks & instructions
 
