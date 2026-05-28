@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# /do workflow's sync step — extracted to a script to collapse several
+# Bash round-trips into one. Handles fetch, fast-forward, forge + VCS
+# detection, dirty-tree hint, and initial state bookkeeping.
+#
+# Usage:
+#   sync <noGit>
+#     <noGit>  "true" or "false" — whether --no-git was passed
+#
+# Stdout (for the agent to parse):
+#   forge=<github|bitbucket|unknown>
+#   branch=<current branch name>
+#   defaultBranch=<origin HEAD ref name>
+#   vcs=<git|jj|unknown>
+
+set -euo pipefail
+
+noGit="${1:?Usage: sync <noGit>  (true|false)}"
+case "$noGit" in
+  true|false) ;;
+  *) echo "sync: noGit must be 'true' or 'false', got '$noGit'" >&2; exit 2 ;;
+esac
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+APM_ROOT="$SCRIPT_DIR/../../../.."
+RUNBOOK="$APM_ROOT/.apm/runbook/scripts/runbook-driver"
+VCS_OP="$APM_ROOT/.apm/skills/vcs/vcs-op"
+
+startedAt="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+# Detect VCS first — the rest of sync delegates git/jj ops through vcs-op.
+vcs="$("$VCS_OP" detect)"
+
+# Fetch from remote
+"$VCS_OP" fetch
+
+# Fast-forward if behind, unless --no-git
+if [ "$noGit" = "false" ]; then
+  "$VCS_OP" ff-pull
+fi
+
+# Dirty-tree hint (no pause, just print to stderr)
+if [ "$noGit" = "false" ] && "$VCS_OP" dirty; then
+  echo "Dirty tree detected. Continuing will create a fresh branch on top of these changes. If you wanted the agent to extend your WIP in place without touching git, re-run with --no-git." >&2
+fi
+
+# Forge detection from origin URL
+origin_url="$("$VCS_OP" remote-url)"
+case "$origin_url" in
+  *github.com*)  forge="github" ;;
+  *bitbucket.*)  forge="bitbucket" ;;
+  *)             forge="unknown" ;;
+esac
+
+# Initialize state (guarded — sync may run as part of --from <step> on a
+# pre-existing state file). Stash tenant-specific fields via `set`, then
+# record the sync step itself with explicit timestamps.
+[ -f ".do-results.json" ] || "$RUNBOOK" --workflow=do init >/dev/null
+"$RUNBOOK" --workflow=do set forge "$forge" >/dev/null
+"$RUNBOOK" --workflow=do set noGit "$noGit" >/dev/null
+"$RUNBOOK" --workflow=do set vcs "$vcs" >/dev/null
+"$RUNBOOK" --workflow=do step sync passed \
+  "fetch ok; forge=$forge; vcs=$vcs; noGit=$noGit" \
+  "$startedAt" now >/dev/null
+
+# Emit structured facts the agent uses for downstream steps
+branch="$("$VCS_OP" head-revision)"
+default_ref="$("$VCS_OP" default-branch)"
+
+echo "forge=$forge"
+echo "branch=$branch"
+echo "defaultBranch=$default_ref"
+echo "vcs=$vcs"
