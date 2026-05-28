@@ -1,0 +1,158 @@
+#!/usr/bin/env bash
+# Semantic forge operation dispatcher. Translates named operations into
+# the appropriate tool-specific commands for github (gh) or bitbucket
+# (bkt — planned). Consumers call this instead of raw `gh`.
+#
+# Detection: reads $forge from any present .*-results.json file in CWD;
+# if absent, classifies from `origin` URL (github.com → github,
+# bitbucket.* → bitbucket).
+#
+# Usage:  forge-op <operation> [args...]
+# See .apm/skills/forge/SKILL.md for the full operation surface.
+
+set -euo pipefail
+
+if command -v jq &>/dev/null; then
+  JQ=jq
+else
+  JQ="nix run nixpkgs#jq --"
+fi
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+VCS_OP="$SCRIPT_DIR/../vcs/vcs-op"
+
+detect_forge() {
+  if [ -n "${FORGE_OVERRIDE:-}" ]; then
+    echo "$FORGE_OVERRIDE"
+    return
+  fi
+  for f in .*-results.json; do
+    if [ -f "$f" ]; then
+      local v
+      v=$($JQ -r '.forge // ""' "$f" 2>/dev/null || true)
+      if [ -n "$v" ] && [ "$v" != "null" ]; then
+        echo "$v"
+        return
+      fi
+    fi
+  done
+  # Fallback: classify from origin URL
+  if [ -x "$VCS_OP" ]; then
+    local url
+    url=$("$VCS_OP" remote-url 2>/dev/null || true)
+    case "$url" in
+      *github.com*)  echo github; return ;;
+      *bitbucket.*)  echo bitbucket; return ;;
+    esac
+  fi
+  echo unknown
+}
+
+forge="$(detect_forge)"
+op="${1:-}"
+shift || true
+
+bail() { echo "forge-op: $1" >&2; exit "${2:-1}"; }
+unsupported_forge() { bail "forge=$forge does not support operation '$op'" 2; }
+
+# Body-file plumbing: when a --body or --body-file arg is given, write to
+# a temp file and pass --body-file to gh. This sidesteps shell escaping
+# issues with backticks and $ in PR/comment bodies.
+write_body_to_tempfile() {
+  local body_arg="" body_file_arg=""
+  local args=() i=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --body)      body_arg="$2"; shift 2 ;;
+      --body-file) body_file_arg="$2"; shift 2 ;;
+      *)           args+=("$1"); shift ;;
+    esac
+  done
+  if [ -n "$body_arg" ]; then
+    BODY_TMP=$(mktemp)
+    printf '%s\n' "$body_arg" > "$BODY_TMP"
+    args+=(--body-file "$BODY_TMP")
+  elif [ -n "$body_file_arg" ]; then
+    args+=(--body-file "$body_file_arg")
+  fi
+  REWRITTEN_ARGS=("${args[@]}")
+}
+cleanup_body_tmp() {
+  [ -n "${BODY_TMP:-}" ] && rm -f "$BODY_TMP" || true
+}
+trap cleanup_body_tmp EXIT
+
+case "$op" in
+  detect)
+    echo "$forge"
+    ;;
+  fetch-issue)
+    target="${1:?issue url or number required}"
+    case "$forge" in
+      github) gh issue view "$target" ;;
+      *) unsupported_forge ;;
+    esac
+    ;;
+  view-pr)
+    ref="${1:-}"
+    case "$forge" in
+      github)
+        if [ -n "$ref" ]; then
+          gh pr view "$ref" --json number,title,url,state,isDraft,body 2>/dev/null
+        else
+          gh pr view --json number,title,url,state,isDraft,body 2>/dev/null
+        fi
+        ;;
+      *) unsupported_forge ;;
+    esac
+    ;;
+  view-pr-url)
+    case "$forge" in
+      github) gh pr view --json url --jq .url ;;
+      *) unsupported_forge ;;
+    esac
+    ;;
+  view-pr-comments)
+    case "$forge" in
+      github) gh pr view --comments ;;
+      *) unsupported_forge ;;
+    esac
+    ;;
+  create-pr)
+    write_body_to_tempfile "$@"
+    case "$forge" in
+      github) gh pr create "${REWRITTEN_ARGS[@]}" ;;
+      *) unsupported_forge ;;
+    esac
+    ;;
+  edit-pr)
+    write_body_to_tempfile "$@"
+    case "$forge" in
+      github) gh pr edit "${REWRITTEN_ARGS[@]}" ;;
+      *) unsupported_forge ;;
+    esac
+    ;;
+  comment-pr)
+    write_body_to_tempfile "$@"
+    case "$forge" in
+      github) gh pr comment "${REWRITTEN_ARGS[@]}" ;;
+      *) unsupported_forge ;;
+    esac
+    ;;
+  ci-status)
+    sha="${1:-}"
+    case "$forge" in
+      github)
+        if [ -n "$sha" ]; then
+          gh api "repos/{owner}/{repo}/commits/$sha/check-runs" --jq '.check_runs[] | "\(.name): \(.conclusion // .status)"'
+        else
+          gh pr checks 2>/dev/null
+        fi
+        ;;
+      *) unsupported_forge ;;
+    esac
+    ;;
+  *)
+    bail "unknown operation '$op'. Available: detect, fetch-issue, view-pr, view-pr-url, view-pr-comments, create-pr, edit-pr, comment-pr, ci-status" 1
+    ;;
+esac

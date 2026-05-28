@@ -1,0 +1,300 @@
+#!/usr/bin/env bash
+# Semantic VCS operation dispatcher. Translates named operations into the
+# appropriate tool-specific commands for git or jj. Consumers call this
+# instead of raw `git` or `jj`.
+#
+# Detection: reads $vcs from any present .*-results.json file in CWD
+# (workflow state); if absent, falls back to filesystem (.jj/ → jj,
+# else .git/ → git, else unknown).
+#
+# Usage:  vcs-op <operation> [args...]
+# See .apm/skills/vcs/SKILL.md for the full operation surface.
+
+set -euo pipefail
+
+if command -v jq &>/dev/null; then
+  JQ=jq
+else
+  JQ="nix run nixpkgs#jq --"
+fi
+
+# Resolve VCS type
+detect_vcs() {
+  if [ -n "${VCS_OVERRIDE:-}" ]; then
+    echo "$VCS_OVERRIDE"
+    return
+  fi
+  # Try any *-results.json in CWD (workflow state)
+  for f in .*-results.json; do
+    if [ -f "$f" ]; then
+      local v
+      v=$($JQ -r '.vcs // ""' "$f" 2>/dev/null || true)
+      if [ -n "$v" ] && [ "$v" != "null" ]; then
+        echo "$v"
+        return
+      fi
+    fi
+  done
+  # `-e` not `-d`: `.git` may be a file (worktree pointer) rather than a directory.
+  if [ -e .jj ]; then echo jj; return; fi
+  if [ -e .git ]; then echo git; return; fi
+  echo unknown
+}
+
+get_default_branch() {
+  case "$vcs" in
+    git)
+      git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|^origin/||' || echo master
+      ;;
+    jj)
+      local remote_bookmarks default
+      remote_bookmarks=$(jj bookmark list --remote origin 2>/dev/null || true)
+      default=$(echo "$remote_bookmarks" | grep -m1 -E '^main|^master' | head -1 | awk '{print $1}')
+      if [ -n "$default" ]; then
+        echo "$default"
+      else
+        echo master
+      fi
+      ;;
+    *) echo master ;;
+  esac
+}
+
+vcs="$(detect_vcs)"
+op="${1:-}"
+shift || true
+
+bail() { echo "vcs-op: $1" >&2; exit "${2:-1}"; }
+unknown_vcs() { bail "no VCS detected (looked for .jj/, .git/, and state files)" 1; }
+
+case "$op" in
+  detect)
+    echo "$vcs"
+    ;;
+  fetch)
+    case "$vcs" in
+      git) git fetch origin ;;
+      jj)  jj git fetch ;;
+      *)   unknown_vcs ;;
+    esac
+    ;;
+  remote-url)
+    case "$vcs" in
+      git) git remote get-url origin ;;
+      jj)  jj git remote list | head -1 | awk '{print $2}' ;;
+      *)   unknown_vcs ;;
+    esac
+    ;;
+  head-revision)
+    case "$vcs" in
+      git) git rev-parse --abbrev-ref HEAD ;;
+      jj)
+        bookmark=$(jj bookmark list -r @ --no-graph -T 'name' 2>/dev/null | head -1)
+        if [ -z "$bookmark" ]; then
+          jj log -r @ --no-graph -T 'change_id' 2>/dev/null
+        else
+          echo "$bookmark"
+        fi
+        ;;
+      *)   unknown_vcs ;;
+    esac
+    ;;
+  head-commit-sha)
+    case "$vcs" in
+      git) git rev-parse HEAD ;;
+      jj)  jj log -r @ --no-graph -T 'commit_id' 2>/dev/null ;;
+      *)   unknown_vcs ;;
+    esac
+    ;;
+  default-branch)
+    get_default_branch
+    ;;
+  current-branch)
+    case "$vcs" in
+      git) git rev-parse --abbrev-ref HEAD ;;
+      jj)
+        bookmark=$(jj bookmark list -r @ --no-graph -T 'name' 2>/dev/null | head -1)
+        echo "${bookmark:-@}"
+        ;;
+      *)   unknown_vcs ;;
+    esac
+    ;;
+  dirty)
+    case "$vcs" in
+      git) [ -n "$(git status --porcelain)" ] ;;
+      jj)  [ -n "$(jj diff -r @ --summary 2>/dev/null)" ] ;;
+      *)   false ;;
+    esac
+    ;;
+  dirty-files)
+    case "$vcs" in
+      git) git status --porcelain | awk '{print $2}' ;;
+      jj)  jj diff -r @ --summary 2>/dev/null | awk '{print $2}' ;;
+      *)   unknown_vcs ;;
+    esac
+    ;;
+  diff-range)
+    base="${1:-$(get_default_branch)}"
+    case "$vcs" in
+      git) git diff "origin/${base}...HEAD" -- "${@:2}" ;;
+      jj)
+        merge_base=$(jj log -r 'heads(ancestors(@) & ancestors('"$base"'))' --no-graph -T 'change_id' 2>/dev/null | head -1)
+        if [ -n "$merge_base" ]; then
+          jj diff --from "$merge_base" --to @ -- "${@:2}"
+        else
+          jj diff --from "$base" --to @ -- "${@:2}"
+        fi
+        ;;
+      *) unknown_vcs ;;
+    esac
+    ;;
+  diff-names)
+    base="${1:-$(get_default_branch)}"
+    case "$vcs" in
+      git) git diff "origin/${base}...HEAD" --name-only -- "${@:2}" ;;
+      jj)
+        merge_base=$(jj log -r 'heads(ancestors(@) & ancestors('"$base"'))' --no-graph -T 'change_id' 2>/dev/null | head -1)
+        if [ -n "$merge_base" ]; then
+          jj diff --from "$merge_base" --to @ --name-only -- "${@:2}"
+        else
+          jj diff --from "$base" --to @ --name-only -- "${@:2}"
+        fi
+        ;;
+      *)   unknown_vcs ;;
+    esac
+    ;;
+  diff-stat)
+    base="${1:-$(get_default_branch)}"
+    case "$vcs" in
+      git) git diff "origin/${base}...HEAD" --shortstat -- "${@:2}" ;;
+      jj)
+        merge_base=$(jj log -r 'heads(ancestors(@) & ancestors('"$base"'))' --no-graph -T 'change_id' 2>/dev/null | head -1)
+        if [ -n "$merge_base" ]; then
+          jj diff --from "$merge_base" --to @ --summary -- "${@:2}"
+        else
+          jj diff --from "$base" --to @ --summary -- "${@:2}"
+        fi
+        ;;
+      *)   unknown_vcs ;;
+    esac
+    ;;
+  new-files)
+    base="${1:-$(get_default_branch)}"
+    case "$vcs" in
+      git) git diff --diff-filter=A --name-only "origin/${base}...HEAD" -- "${@:2}" ;;
+      jj)
+        merge_base=$(jj log -r 'heads(ancestors(@) & ancestors('"$base"'))' --no-graph -T 'change_id' 2>/dev/null | head -1)
+        if [ -n "$merge_base" ]; then
+          comm -13 <(jj file list -r "$merge_base" | sort) <(jj file list -r @ | sort)
+        else
+          comm -13 <(jj file list -r "$base" | sort) <(jj file list -r @ | sort)
+        fi
+        ;;
+      *)   unknown_vcs ;;
+    esac
+    ;;
+  log-range)
+    base="${1:-$(get_default_branch)}"
+    case "$vcs" in
+      git) git log "origin/${base}..HEAD" --oneline -- "${@:2}" ;;
+      jj)  jj log -r "${base}..@" --no-graph -T 'separate(" ", commit_id.shortest(8), change_id.shortest(8), description.first_line()) ++ "\n"' 2>/dev/null ;;
+      *)   unknown_vcs ;;
+    esac
+    ;;
+  log-head)
+    case "$vcs" in
+      git) git log -1 --oneline ;;
+      jj)  jj log -r @ --no-graph -n 1 -T 'separate(" ", commit_id.shortest(8), change_id.shortest(8), description.first_line()) ++ "\n"' 2>/dev/null ;;
+      *)   unknown_vcs ;;
+    esac
+    ;;
+  branch)
+    name="${1:?branch name required}"
+    base="${2:-$(get_default_branch)}"
+    case "$vcs" in
+      git) git checkout -b "$name" "origin/$base" ;;
+      jj)  jj new "$base" && jj bookmark create "$name" -r @ ;;
+      *) unknown_vcs ;;
+    esac
+    ;;
+  commit)
+    msg="${1:?commit message required}"
+    case "$vcs" in
+      git) git add -A && git commit -m "$msg" ;;
+      jj)  jj describe -m "$msg" ;;
+      *) unknown_vcs ;;
+    esac
+    ;;
+  stage)
+    case "$vcs" in
+      git) git add -- "$@" ;;
+      jj)  : ;;  # jj has no staging area; describe acts on the working copy
+      *) unknown_vcs ;;
+    esac
+    ;;
+  commit-staged)
+    msg="${1:?commit message required}"
+    case "$vcs" in
+      git) git commit -m "$msg" ;;
+      jj)  jj describe -m "$msg" ;;
+      *) unknown_vcs ;;
+    esac
+    ;;
+  push)
+    ref="${1:-}"
+    case "$vcs" in
+      git)
+        if [ -n "$ref" ]; then
+          git push -u origin "$ref"
+        else
+          git push
+        fi
+        ;;
+      jj)
+        if [ -n "$ref" ]; then
+          jj git push --bookmark "$ref"
+        else
+          jj git push
+        fi
+        ;;
+      *) unknown_vcs ;;
+    esac
+    ;;
+  up-to-date)
+    case "$vcs" in
+      git)
+        if upstream="$(git rev-parse --abbrev-ref '@{u}' 2>/dev/null)"; then
+          behind="$(git rev-list --count "HEAD..$upstream" 2>/dev/null || echo 0)"
+          ahead="$(git rev-list --count "$upstream..HEAD" 2>/dev/null || echo 0)"
+          echo "behind=$behind ahead=$ahead" >&2
+          [ "$behind" -eq 0 ]
+        else
+          echo "behind=0 ahead=0" >&2
+        fi
+        ;;
+      jj)
+        # jj's model differs; treat as always up to date for now.
+        echo "behind=0 ahead=0" >&2
+        ;;
+      *) unknown_vcs ;;
+    esac
+    ;;
+  ff-pull)
+    case "$vcs" in
+      git)
+        if upstream="$(git rev-parse --abbrev-ref '@{u}' 2>/dev/null)"; then
+          behind="$(git rev-list --count "HEAD..$upstream" 2>/dev/null || echo 0)"
+          ahead="$(git rev-list --count "$upstream..HEAD" 2>/dev/null || echo 0)"
+          if [ "$behind" -gt 0 ] && [ "$ahead" -eq 0 ]; then
+            git pull --ff-only
+          fi
+        fi
+        ;;
+      jj) : ;;  # jj's pull semantics differ; no-op for now
+      *) unknown_vcs ;;
+    esac
+    ;;
+  *)
+    bail "unknown operation '$op'. Available: detect, fetch, remote-url, head-revision, head-commit-sha, default-branch, current-branch, dirty, dirty-files, diff-range, diff-names, diff-stat, new-files, log-range, log-head, branch, commit, stage, commit-staged, push, up-to-date, ff-pull" 1
+    ;;
+esac

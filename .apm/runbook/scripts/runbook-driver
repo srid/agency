@@ -1,32 +1,27 @@
 #!/usr/bin/env bash
-# Generic step-results recorder. Manages a workflow's lifecycle state +
-# step-record list in a JSON file, with all mutations done in bash+jq so the
-# caller doesn't burn LLM tokens on JSON arithmetic.
+# Generic step-results recorder for runbook tenants. Manages a workflow's
+# lifecycle state + step-record list in a JSON file, with all mutations done
+# in bash+jq so the caller doesn't burn LLM tokens on JSON arithmetic.
 #
-# The script knows only about workflow lifecycle (active, status), step records
-# (name, status, verification, timestamps, optional reason), and arbitrary
-# top-level fields the caller wants to remember. It does NOT know about any
-# workflow-specific concepts (e.g. forge or noGit are /do's business — the
-# /do workflow stashes them via `set` after init, not as init arguments).
+# The script knows only about workflow lifecycle (active, status), step
+# records (name, status, verification, timestamps, optional reason), and
+# arbitrary top-level fields the caller wants to remember. It does NOT
+# know about any workflow-specific concepts (e.g. forge or noGit are /do's
+# business — /do stashes them via `set` after init).
 #
 # Usage:
-#   do-results init                           — create the lifecycle skeleton
-#   do-results step-start <name>              — stamp pendingStep with now; call at step start
-#   do-results step-end <status> <verif> [reason]
-#                                             — pop pendingStep, append with completedAt=now
-#   do-results step <name> <status> <verif> <startedAt> <completedAt> [reason]
-#                                             — append a completed step with explicit timestamps
-#                                               (use when startedAt comes from a single-shell caller)
-#                                               pass "now" for startedAt/completedAt to auto-generate UTC timestamp
-#   do-results set <field> <value>            — set/update an arbitrary top-level field
+#   runbook-driver --workflow=<name> init
+#   runbook-driver --workflow=<name> step-start <name>
+#   runbook-driver --workflow=<name> step-end <status> <verif> [reason]
+#   runbook-driver --workflow=<name> step <name> <status> <verif> <startedAt> <completedAt> [reason]
+#   runbook-driver --workflow=<name> skip <name> <reason>
+#   runbook-driver --workflow=<name> set <field> <value>
+#
+# --workflow may also come from the RUNBOOK_WORKFLOW environment variable.
+# The state file is .${workflow}-results.json in $PWD.
 #
 # Every mutation echoes a one-line confirmation on stdout so the caller can
-# trust the write succeeded without re-reading the JSON. Format:
-#   init       — init: startedAt=<ts>
-#   step-start — pending: <name>
-#   step-end   — recorded: <name> <status> (steps=<count>, pending=<none|name>)
-#   step       — recorded: <name> <status> (steps=<count>)
-#   set        — set: <field>=<value>
+# trust the write succeeded without re-reading the JSON.
 
 set -euo pipefail
 
@@ -37,9 +32,26 @@ else
   JQ="nix run nixpkgs#jq --"
 fi
 
-FILE=".do-results.json"
+# Parse --workflow=<name> from anywhere in argv (allows it to come before
+# or after the subcommand). Falls back to $RUNBOOK_WORKFLOW.
+workflow="${RUNBOOK_WORKFLOW:-}"
+args=()
+for arg in "$@"; do
+  case "$arg" in
+    --workflow=*) workflow="${arg#*=}" ;;
+    *) args+=("$arg") ;;
+  esac
+done
+set -- "${args[@]+${args[@]}}"
 
-cmd="${1:?Usage: do-results <init|step-start|step-end|step|set> ...}"
+if [ -z "$workflow" ]; then
+  echo "runbook-driver: --workflow=<name> required (or set RUNBOOK_WORKFLOW)" >&2
+  exit 2
+fi
+
+FILE=".${workflow}-results.json"
+
+cmd="${1:?Usage: runbook-driver --workflow=<name> <init|step-start|step-end|step|skip|set> ...}"
 shift
 
 case "$cmd" in
@@ -47,7 +59,7 @@ case "$cmd" in
     startedAt="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
     cat > "$FILE" <<ENDJSON
 {
-  "workflow": "do",
+  "workflow": "$workflow",
   "startedAt": "$startedAt",
   "active": "working",
   "status": "running",
@@ -62,9 +74,10 @@ ENDJSON
     startedAt="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
     existing="$($JQ -r '.pendingStep.name // empty' "$FILE")"
     if [ -n "$existing" ]; then
-      echo "do-results: pendingStep '$existing' already active — call step-end before starting '$name'" >&2
+      echo "runbook-driver: pendingStep '$existing' already active — call step-end before starting '$name'" >&2
       exit 1
     fi
+    # shellcheck disable=SC2016
     $JQ --arg n "$name" --arg sa "$startedAt" \
        '.pendingStep = {"name":$n,"startedAt":$sa}' \
        "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
@@ -80,16 +93,18 @@ ENDJSON
     name="$($JQ -r '.pendingStep.name // empty' "$FILE")"
     startedAt="$($JQ -r '.pendingStep.startedAt // empty' "$FILE")"
     if [ -z "$name" ] || [ -z "$startedAt" ]; then
-      echo "do-results: no pendingStep — call step-start first" >&2
+      echo "runbook-driver: no pendingStep — call step-start first" >&2
       exit 1
     fi
 
     if [ -n "$reason" ]; then
+      # shellcheck disable=SC2016
       $JQ --arg n "$name" --arg s "$status" --arg v "$verif" \
          --arg sa "$startedAt" --arg ca "$completedAt" --arg r "$reason" \
          '.steps += [{"name":$n,"status":$s,"verification":$v,"startedAt":$sa,"completedAt":$ca,"reason":$r}] | del(.pendingStep)' \
          "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
     else
+      # shellcheck disable=SC2016
       $JQ --arg n "$name" --arg s "$status" --arg v "$verif" \
          --arg sa "$startedAt" --arg ca "$completedAt" \
          '.steps += [{"name":$n,"status":$s,"verification":$v,"startedAt":$sa,"completedAt":$ca}] | del(.pendingStep)' \
@@ -108,16 +123,17 @@ ENDJSON
     completedAt="${5:?completedAt required}"
     reason="${6:-}"
 
-    # Resolve "now" sentinel to current UTC timestamp
     [[ "$startedAt" == "now" ]] && startedAt="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
     [[ "$completedAt" == "now" ]] && completedAt="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
     if [ -n "$reason" ]; then
+      # shellcheck disable=SC2016
       $JQ --arg n "$name" --arg s "$status" --arg v "$verif" \
          --arg sa "$startedAt" --arg ca "$completedAt" --arg r "$reason" \
          '.steps += [{"name":$n,"status":$s,"verification":$v,"startedAt":$sa,"completedAt":$ca,"reason":$r}]' \
          "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
     else
+      # shellcheck disable=SC2016
       $JQ --arg n "$name" --arg s "$status" --arg v "$verif" \
          --arg sa "$startedAt" --arg ca "$completedAt" \
          '.steps += [{"name":$n,"status":$s,"verification":$v,"startedAt":$sa,"completedAt":$ca}]' \
@@ -127,13 +143,27 @@ ENDJSON
     echo "recorded: $name $status (steps=$count)"
     ;;
 
+  skip)
+    name="${1:?name required}"
+    reason="${2:?reason required}"
+    # Back-to-back start+end with status=skipped. Duration is 0.
+    startedAt="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    # shellcheck disable=SC2016
+    $JQ --arg n "$name" --arg s "skipped" --arg v "" \
+       --arg sa "$startedAt" --arg ca "$startedAt" --arg r "$reason" \
+       '.steps += [{"name":$n,"status":$s,"verification":$v,"startedAt":$sa,"completedAt":$ca,"reason":$r}]' \
+       "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
+    echo "skipped: $name ($reason)"
+    ;;
+
   set)
     field="${1:?field required}"
     value="${2:?value required}"
-    # Handle booleans and strings
     if [ "$value" = "true" ] || [ "$value" = "false" ]; then
+      # shellcheck disable=SC2016
       $JQ --arg f "$field" --argjson v "$value" '.[$f] = $v' "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
     else
+      # shellcheck disable=SC2016
       $JQ --arg f "$field" --arg v "$value" '.[$f] = $v' "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
     fi
     echo "set: $field=$value"
@@ -141,7 +171,7 @@ ENDJSON
 
   *)
     echo "Unknown command: $cmd" >&2
-    echo "Usage: do-results <init|step-start|step-end|step|set> ..." >&2
+    echo "Usage: runbook-driver --workflow=<name> <init|step-start|step-end|step|skip|set> ..." >&2
     exit 1
     ;;
 esac
