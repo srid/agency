@@ -102,8 +102,16 @@ case "$op" in
   head-revision)
     case "$vcs" in
       git) git rev-parse --abbrev-ref HEAD ;;
-      jj)  jj log -r @ --no-graph -T 'change_id.shortest(8)' 2>/dev/null ;;
-      *)   echo "vcs-op: no VCS detected" >&2; exit 1 ;;
+      jj)
+        local bookmark
+        bookmark=$(jj bookmark list -r @ --no-graph -T 'name' 2>/dev/null | head -1)
+        if [ -z "$bookmark" ]; then
+          jj log -r @ --no-graph -T 'change_id' 2>/dev/null
+        else
+          echo "$bookmark"
+        fi
+        ;;
+      *)   echo "vcs-op: no VCS detected" >&2; exit 1 ;;    ;;
     esac
     ;;
   head-commit-sha)
@@ -131,7 +139,13 @@ case "$op" in
         git diff "origin/${base}...HEAD" -- "${@:2}"
         ;;
       jj)
-        jj diff --from "$base" --to @ -- "${@:2}"
+        local merge_base
+        merge_base=$(jj log -r 'heads(ancestors(@) & ancestors('"$base"'))' --no-graph -T 'change_id' 2>/dev/null | head -1)
+        if [ -n "$merge_base" ]; then
+          jj diff --from "$merge_base" --to @ -- "${@:2}"
+        else
+          jj diff --from "$base" --to @ -- "${@:2}"
+        fi
         ;;
       *) echo "vcs-op: no VCS detected" >&2; exit 1 ;;
     esac
@@ -140,7 +154,15 @@ case "$op" in
     local base="${1:-$(get_default_branch)}"
     case "$vcs" in
       git) git diff "origin/${base}...HEAD" --name-only -- "${@:2}" ;;
-      jj)  jj diff --from "$base" --to @ --name-only -- "${@:2}" ;;
+      jj)
+        local merge_base
+        merge_base=$(jj log -r 'heads(ancestors(@) & ancestors('"$base"'))' --no-graph -T 'change_id' 2>/dev/null | head -1)
+        if [ -n "$merge_base" ]; then
+          jj diff --from "$merge_base" --to @ --name-only -- "${@:2}"
+        else
+          jj diff --from "$base" --to @ --name-only -- "${@:2}"
+        fi
+        ;;
       *)   echo "vcs-op: no VCS detected" >&2; exit 1 ;;
     esac
     ;;
@@ -148,7 +170,15 @@ case "$op" in
     local base="${1:-$(get_default_branch)}"
     case "$vcs" in
       git) git diff "origin/${base}...HEAD" --shortstat -- "${@:2}" ;;
-      jj)  jj diff --from "$base" --to @ --summary -- "${@:2}" ;;
+      jj)
+        local merge_base
+        merge_base=$(jj log -r 'heads(ancestors(@) & ancestors('"$base"'))' --no-graph -T 'change_id' 2>/dev/null | head -1)
+        if [ -n "$merge_base" ]; then
+          jj diff --from "$merge_base" --to @ --summary -- "${@:2}"
+        else
+          jj diff --from "$base" --to @ --summary -- "${@:2}"
+        fi
+        ;;
       *)   echo "vcs-op: no VCS detected" >&2; exit 1 ;;
     esac
     ;;
@@ -156,7 +186,15 @@ case "$op" in
     local base="${1:-$(get_default_branch)}"
     case "$vcs" in
       git) git diff --diff-filter=A --name-only "origin/${base}...HEAD" -- "${@:2}" ;;
-      jj)  comm -13 <(jj file list -r "$base" | sort) <(jj file list -r @ | sort) ;;
+      jj)
+        local merge_base
+        merge_base=$(jj log -r 'heads(ancestors(@) & ancestors('"$base"'))' --no-graph -T 'change_id' 2>/dev/null | head -1)
+        if [ -n "$merge_base" ]; then
+          comm -13 <(jj file list -r "$merge_base" | sort) <(jj file list -r @ | sort)
+        else
+          comm -13 <(jj file list -r "$base" | sort) <(jj file list -r @ | sort)
+        fi
+        ;;
       *)   echo "vcs-op: no VCS detected" >&2; exit 1 ;;
     esac
     ;;
