@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+# /do workflow's driver — a thin state wrapper around do-results.
+#
+# Does NOT sequence, skip, or retry. The agent reads execution.md for
+# choreography and calls this script only to record state and emit summaries.
+#
+# Usage:
+#   do-driver init [--no-git] [--minimal] [--from=<step>] <task>
+#   do-driver start <step>
+#   do-driver end <step> <status> <verification> [reason]
+#   do-driver skip <step> <reason>
+#   do-driver set <field> <value>
+#   do-driver summary
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+DO_RESULTS="$SCRIPT_DIR/do-results"
+
+if [ $# -lt 1 ]; then
+  echo "Usage: do-driver <init|start|end|skip|set|summary> ..." >&2
+  exit 1
+fi
+
+cmd="${1}"
+shift
+
+case "$cmd" in
+  init)
+    noGit="false"
+    minimal="false"
+    from=""
+    task=""
+
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --no-git) noGit="true"; shift ;;
+        --minimal) minimal="true"; shift ;;
+        --from=*)
+          from="${1#*=}"
+          shift
+          ;;
+        --*)
+          echo "do-driver: unknown flag: $1" >&2
+          exit 2
+          ;;
+        *)
+          task="$1"
+          shift
+          ;;
+      esac
+    done
+
+    "$DO_RESULTS" init >/dev/null
+    "$DO_RESULTS" set noGit "$noGit" >/dev/null
+    "$DO_RESULTS" set minimal "$minimal" >/dev/null
+    if [ -n "$from" ]; then
+      "$DO_RESULTS" set from "$from" >/dev/null
+    fi
+    if [ -n "$task" ]; then
+      "$DO_RESULTS" set task "$task" >/dev/null
+    fi
+    echo "init: noGit=$noGit minimal=$minimal from=${from:-default}"
+    ;;
+
+  start)
+    step="${1:?step required}"
+    "$DO_RESULTS" step-start "$step"
+    ;;
+
+  end)
+    status="${1:?status required}"
+    verif="${2:?verification required}"
+    reason="${3:-}"
+    if [ -n "$reason" ]; then
+      "$DO_RESULTS" step-end "$status" "$verif" "$reason"
+    else
+      "$DO_RESULTS" step-end "$status" "$verif"
+    fi
+    ;;
+
+  skip)
+    step="${1:?step required}"
+    reason="${2:?reason required}"
+    "$DO_RESULTS" step-start "$step"
+    "$DO_RESULTS" step-end skipped "" "$reason"
+    ;;
+
+  set)
+    field="${1:?field required}"
+    value="${2:?value required}"
+    "$DO_RESULTS" set "$field" "$value"
+    ;;
+
+  summary)
+    "$SCRIPT_DIR/steps/done"
+    ;;
+
+  *)
+    echo "Unknown command: $cmd" >&2
+    echo "Usage: do-driver <init|start|end|skip|set|summary> ..." >&2
+    exit 1
+    ;;
+esac
