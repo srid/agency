@@ -9,11 +9,15 @@ That control-flow-in-the-runtime model is exactly what a multi-step delivery pip
 `do-wf` ([`.claude/workflows/do-wf.js`](../.claude/workflows/do-wf.js)) is a dynamic-workflow port of the `/do` skill ([`.apm/skills/do/SKILL.md`](../.apm/skills/do/SKILL.md)). It runs the same pipeline:
 
 ```
-sync → research → branch → implement → check → docs → fmt → commit
-     → review (hickey+lowy) → police → test → create-pr → ci → evidence → done
+sync → (research ∥ branch) → implement → check → docs → fmt → commit
+     → detect in parallel: (hickey ∥ lowy ∥ police ∥ test)
+     → apply fixes (serial, one commit each) → revalidate
+     → create-pr → ci → evidence → done
 ```
 
-The difference is where the control flow lives. In the skill, the model walks the steps and a Stop hook keeps it from quitting between them. In the workflow, the *script* holds the pipeline: a generic `loopStep` runner owns the per-step retry budget (check retries 3×, test 4×, CI 5×, and so on), `sync`/`research`/`implement` abort the run on hard failure rather than blindly re-running, and `--from` entry points jump into the middle of the array. Each step is one subagent that does the work and verifies it; the script reads the structured result and decides whether to retry, abort, or advance.
+The difference is where the control flow lives. In the skill, the model walks the steps and a Stop hook keeps it from quitting between them. In the workflow, the *script* holds the pipeline: a generic `loopStep` runner owns the per-step retry budget (check retries 3×, test 4×, CI 5×, and so on), `sync`/`research`/`implement` abort the run on hard failure rather than blindly re-running, and `--from` entry points jump into the middle of the array. Each step is a subagent that does the work and verifies it; the script reads the structured result and decides whether to retry, abort, or advance.
+
+Holding the plan in code also lets the script run independent work **concurrently** where the shared checkout allows it. `research` (read-only) and `branch` (just creates a git ref) start together. More importantly, the three post-commit gates — `review` (hickey+lowy), `police`, and `test` — fan their *read-only detection* out in parallel, then apply any fixes **serially** (every fix is a git commit on the one shared working tree, so they can't safely overlap) and re-run the cheap gates once via a `revalidate` step. The governing rule is simple: only read-only work parallelizes; anything that mutates the tree or git serializes. That's also why `ci` and `evidence` stay sequential — `ci` can push fix commits, and you want `evidence` to capture the *post-CI-green* state.
 
 The piece that fits the runtime best is the post-implement structural review. `do-wf` spawns `hickey` and `lowy` as two parallel subagents over the concrete diff, then runs a **cross-validation** pass — each lens audits the other's recommendations for problems it would flag if applied — before applying every `fix` finding as its own narrow commit. That parallel-then-cross-validate shape maps directly onto the workflow adversarial-review pattern, and it is the same hickey+lowy step the `/do` skill describes. See [Hickey/Lowy on kolu.dev](https://kolu.dev/blog/hickey-lowy/) for what each lens looks for and why the pair catches what tests miss.
 

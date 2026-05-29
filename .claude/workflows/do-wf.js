@@ -6,15 +6,16 @@ export const meta = {
   phases: [
     { title: 'Sync', detail: 'fetch origin, fast-forward, detect forge' },
     { title: 'Research', detail: 'understand the task against the codebase' },
-    { title: 'Branch', detail: 'create a feature branch from origin/HEAD' },
+    { title: 'Branch', detail: 'create a feature branch (runs concurrently with research)' },
     { title: 'Implement', detail: 'write the change (test-first where applicable)' },
     { title: 'Check', detail: 'static-correctness gate (retries)' },
     { title: 'Docs', detail: 'keep documentation in sync' },
     { title: 'Format', detail: 'run the formatter' },
     { title: 'Commit', detail: 'commit + push the primary feature work' },
-    { title: 'Review', detail: 'hickey+lowy parallel review, cross-validate, apply fixes' },
-    { title: 'Police', detail: 'code-police: rules, fact-check, elegance (retries)' },
-    { title: 'Test', detail: 'run relevant tests, fix failures (retries)' },
+    { title: 'Review', detail: 'hickey+lowy review — detection fans out with police+test' },
+    { title: 'Police', detail: 'code-police detection (parallel) → serial fixes' },
+    { title: 'Test', detail: 'test run (parallel) → serial fixes' },
+    { title: 'Revalidate', detail: 're-run check/test after parallel-detected fixes land' },
     { title: 'Create PR', detail: 'open draft PR, post hickey/lowy findings ledger' },
     { title: 'CI', detail: 'run CI against HEAD, fix failures (retries)' },
     { title: 'Evidence', detail: 'opt-in PR evidence capture' },
@@ -205,6 +206,46 @@ const FINDINGS = {
   required: ['findings', 'startedEpoch', 'endedEpoch'],
 }
 
+// Detection-only schemas for the parallel gate fan-out: police/test REPORT what
+// they find without committing; the serial fix phase applies the changes.
+const POLICE_DETECT = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    status: { type: 'string', enum: ['passed', 'failed', 'skipped'], description: 'passed = all clear; failed = violations found; skipped = docs-only / n/a' },
+    verification: { type: 'string' },
+    reason: { type: 'string' },
+    violations: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          pass: { type: 'string', enum: ['rules', 'fact-check', 'elegance'] },
+          label: { type: 'string' },
+          detail: { type: 'string' },
+        },
+        required: ['pass', 'label'],
+      },
+    },
+    ...TIMING_PROPS,
+  },
+  required: ['status', 'verification', 'violations', 'startedEpoch', 'endedEpoch'],
+}
+
+const TEST_DETECT = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    status: { type: 'string', enum: ['passed', 'failed', 'skipped'], description: 'passed = green + covered; failed = failures or coverage gap; skipped = no test command' },
+    verification: { type: 'string' },
+    reason: { type: 'string' },
+    failures: { type: 'array', items: { type: 'string' }, description: 'one line per failing test or coverage gap' },
+    ...TIMING_PROPS,
+  },
+  required: ['status', 'verification', 'failures', 'startedEpoch', 'endedEpoch'],
+}
+
 // ---- Result accumulation + timing table -----------------------------------
 const results = []
 
@@ -312,6 +353,68 @@ async function reviewer(lens, prompt, label) {
   ).catch(() => null)
 }
 
+// Run the post-implement structural review's DETECTION phase (read-only): the
+// two lenses in parallel, then cross-validation. Returns findings + prose + the
+// agent results (for timing). Fix application happens later, serially. Used as
+// one thunk in the gate fan-out, so it owns its own nested parallel() rather
+// than calling the global phase().
+async function detectReview(brief) {
+  const [hk, lw] = await parallel([
+    () => reviewer('hickey', 'You are the HICKEY reviewer. Apply your skill to the diff below.\n' + brief, 'hickey'),
+    () => reviewer('lowy', 'You are the LOWY reviewer. Apply your skill to the diff below.\n' + brief, 'lowy'),
+  ])
+  const hkOk = hk && hk.status !== 'failed'
+  const lwOk = lw && lw.status !== 'failed'
+  const hkFindings = (hkOk && hk.findings) || []
+  const lwFindings = (lwOk && lw.findings) || []
+  const findings = [...hkFindings, ...lwFindings]
+
+  // Cross-validation: each lens audits the other's recommendations. Skip only
+  // when both first-pass reviewers returned nothing.
+  if (hkFindings.length + lwFindings.length > 0) {
+    const crossTasks = []
+    if (hkFindings.length) {
+      crossTasks.push(() =>
+        reviewer(
+          'hickey',
+          [
+            'You are the HICKEY reviewer doing CROSS-VALIDATION.',
+            brief,
+            "OTHER REVIEWER'S (lowy) FINDINGS TO AUDIT:",
+            JSON.stringify(lwFindings, null, 2),
+            'Apply your lens to the diff AND to the other reviewer\'s recommendations. Does any recommendation, if applied, create a problem your lens would flag? If yes, surface it as a NEW finding (disposition fix/noop, no defer). Return only new findings.',
+          ].join('\n'),
+          'hickey:cross',
+        ),
+      )
+    }
+    if (lwFindings.length) {
+      crossTasks.push(() =>
+        reviewer(
+          'lowy',
+          [
+            'You are the LOWY reviewer doing CROSS-VALIDATION.',
+            brief,
+            "OTHER REVIEWER'S (hickey) FINDINGS TO AUDIT:",
+            JSON.stringify(hkFindings, null, 2),
+            'Apply your lens to the diff AND to the other reviewer\'s recommendations. Does any recommendation, if applied, create a problem your lens would flag? If yes, surface it as a NEW finding (disposition fix/noop, no defer). Return only new findings.',
+          ].join('\n'),
+          'lowy:cross',
+        ),
+      )
+    }
+    const cross = await parallel(crossTasks)
+    for (const c of cross) if (c && c.findings) findings.push(...c.findings)
+  }
+
+  return {
+    findings,
+    hickeyProse: hk ? (hk.status === 'failed' ? '(hickey review did not complete)' : hk.rationale || '') : '(hickey reviewer unavailable)',
+    lowyProse: lw ? (lw.status === 'failed' ? '(lowy review did not complete)' : lw.rationale || '') : '(lowy reviewer unavailable)',
+    agents: [hk, lw].filter(Boolean),
+  }
+}
+
 // ===========================================================================
 // SYNC — always runs.
 // ===========================================================================
@@ -342,29 +445,56 @@ const state = { forge: sync.forge, branch: sync.branch, defaultBranch: sync.defa
 log(`sync ok: forge=${state.forge} branch=${state.branch} default=${state.defaultBranch}`)
 
 // ===========================================================================
-// RESEARCH — runs when a downstream consumer (implement or the reviewers) will
-// run, i.e. unless the entry point is at `ci` or later.
+// RESEARCH ∥ BRANCH — independent, run concurrently: research is read-only;
+// branch only creates a git ref (no tracked-content change). Both gate on sync.
+// Branch is held back under --review (we stop after research), --no-git, or an
+// entry point past it. Inside parallel() each agent sets opts.phase explicitly
+// (never the global phase()) so the two don't race the phase pointer.
 // ===========================================================================
 const needResearch = fromIdx <= ORDER.indexOf('review')
+const runBranch = shouldRun('branch') && !noGit && !review
 let research = null
 let researchBrief = '(no research step for this entry point; infer scope from the existing branch/diff)'
+
+const [researchRes, branchRes] = await parallel([
+  () =>
+    needResearch
+      ? agent(
+          [
+            'You are the RESEARCH step of a /do workflow. Research the task thoroughly BEFORE any code is written.',
+            AUTONOMY,
+            contextBlock(state),
+            'Rules:',
+            `- If the task is a GitHub issue URL and forge==github, fetch it with \`gh issue view\`. On non-github forges treat any URL as opaque context (do not fetch).`,
+            '- Never assume how something works — read the code, check the config. Prefer Grep/Glob before Read.',
+            '- If external tools/libraries are involved, prefer `git clone` to /tmp at the version the project uses and read the source on disk; fall back to WebSearch/WebFetch only when the source is not clonable.',
+            '- Keep the investigation lean and map-based: prefer Grep/Glob, and use Read with offset/limit to confirm specific lines rather than dumping whole files. Return a file:line map, not file contents.',
+            'Return: a compact map — `summary` (what changes, where, why), `approach` (the intended implementation), `findings` (file:line citations with notes), and `plan` (a short human-readable plan). These are threaded into the implement and review steps.',
+            TIMING_INSTR,
+          ].join('\n'),
+          { schema: RESEARCH, phase: 'Research', label: 'research' },
+        )
+      : null,
+  () =>
+    runBranch
+      ? agent(
+          [
+            'You are the BRANCH step of a /do workflow.',
+            AUTONOMY,
+            contextBlock(state),
+            `Create a descriptive feature branch from origin/${state.defaultBranch} (e.g. \`git switch -c <slug> origin/${state.defaultBranch}\`). Just the local branch — no commit, no push, no PR.`,
+            'If you are already on an appropriate feature branch (not the default branch), keep it and report passed.',
+            'Verify: HEAD is on a feature branch, not the default branch.',
+            TIMING_INSTR,
+          ].join('\n'),
+          { schema: STEP, phase: 'Branch', label: 'branch' },
+        )
+      : null,
+])
+
+// Record research first (keeps the timing table in canonical order).
 if (needResearch) {
-  phase('Research')
-  research = await agent(
-    [
-      'You are the RESEARCH step of a /do workflow. Research the task thoroughly BEFORE any code is written.',
-      AUTONOMY,
-      contextBlock(state),
-      'Rules:',
-      `- If the task is a GitHub issue URL and forge==github, fetch it with \`gh issue view\`. On non-github forges treat any URL as opaque context (do not fetch).`,
-      '- Never assume how something works — read the code, check the config. Prefer Grep/Glob before Read.',
-      '- If external tools/libraries are involved, prefer `git clone` to /tmp at the version the project uses and read the source on disk; fall back to WebSearch/WebFetch only when the source is not clonable.',
-      '- Keep the investigation lean and map-based: prefer Grep/Glob, and use Read with offset/limit to confirm specific lines rather than dumping whole files. Return a file:line map, not file contents.',
-      'Return: a compact map — `summary` (what changes, where, why), `approach` (the intended implementation), `findings` (file:line citations with notes), and `plan` (a short human-readable plan). These are threaded into the implement and review steps.',
-      TIMING_INSTR,
-    ].join('\n'),
-    { schema: RESEARCH, phase: 'Research', label: 'research' },
-  )
+  research = researchRes
   if (!research || research.status !== 'passed') {
     log('research failed — aborting workflow.')
     pushResult('research', research || { status: 'failed', verification: 'research agent produced no result' })
@@ -381,7 +511,8 @@ if (needResearch) {
   skipResult('research', `entry point ${startStep} has no downstream consumer`)
 }
 
-// --review: stop here and hand the plan back. The runtime cannot pause for
+// --review: stop here and hand the plan back (branch was intentionally not
+// created — runBranch is false under --review). The runtime cannot pause for
 // approval mid-run, so plan-approval is a stage boundary (re-run --from implement).
 if (review && research) {
   log('--review: plan ready. Re-run `/do-wf --from implement <task>` after you approve to continue.')
@@ -399,26 +530,15 @@ if (review && research) {
   }
 }
 
-// ===========================================================================
-// BRANCH — skipped under --no-git, or when entering past it.
-// ===========================================================================
+// Record branch.
 if (!shouldRun('branch')) {
   skipResult('branch', 'entry point is past it')
 } else if (noGit) {
   skipResult('branch', '--no-git')
+} else if (review) {
+  skipResult('branch', '--review (deferred to --from implement)')
 } else {
-  const branch = await loopStep('branch', 'Branch', 2, () =>
-    [
-      'You are the BRANCH step of a /do workflow.',
-      AUTONOMY,
-      contextBlock(state),
-      `Create a descriptive feature branch from origin/${state.defaultBranch} (e.g. \`git switch -c <slug> origin/${state.defaultBranch}\`). Just the local branch — no commit, no push, no PR.`,
-      'If you are already on an appropriate feature branch (not the default branch), keep it and report passed.',
-      'Verify: HEAD is on a feature branch, not the default branch.',
-      TIMING_INSTR,
-    ].join('\n'),
-  )
-  pushResult('branch', branch)
+  pushResult('branch', branchRes)
 }
 
 // ===========================================================================
@@ -535,91 +655,83 @@ if (!shouldRun('commit')) {
 }
 
 // ===========================================================================
-// REVIEW — hickey + lowy, post-implement, on the concrete diff.
-// Parallel reviewers → cross-validate → apply Fix findings (one commit each).
-// Skipped under --minimal. The centerpiece the workflow model fits best.
+// QUALITY GATES — parallel detection, serial fixes.
+// review (hickey/lowy), police, and test all begin by READING the committed
+// diff, so their detection phases fan out concurrently. Every fix mutates git,
+// so fixes apply strictly serially after detection, in canonical order. Then,
+// if anything changed, the cheap gates re-run once on the post-fix state
+// (Revalidate) — restoring the "final state is validated" property the
+// all-serial pipeline got for free.
+//
+// Tradeoff vs. fully-serial: parallel detection means each gate sees the
+// post-commit BASE diff, not the others' fixes; the serial apply + Revalidate
+// pass reconciles that.
 // ===========================================================================
 let reviewFindings = []
 let hickeyProse = ''
 let lowyProse = ''
-if (!shouldRun('review')) {
-  skipResult('review', 'entry point is past it')
-} else if (minimal) {
-  skipResult('review', '--minimal')
-} else {
-  phase('Review')
 
-  const reviewerBrief = [
-    contextBlock(state),
-    researchBrief,
-    'SCOPE: review the actual diff `git diff origin/HEAD...HEAD`.',
-    'If `git diff --diff-filter=A --name-only origin/HEAD...HEAD` is non-empty (the diff adds new files), FIRST run the duplication audit your skill describes: find the canonical in-repo pattern for the same KIND of operation and make it the headline finding if the diff reinvents rather than extends it. If there are no new files, skip the audit and review unprimed.',
-    'Dispositions are "fix" (Fix in this PR) or "noop" (No-op: the diff already deletes the offending code, or the finding is subsumed verbatim by another). There is NO defer — anything resembling defer/out-of-scope/follow-up is a "fix".',
-    'Return your findings array and the full rationale prose. If you cannot complete the review (tooling/skill error), return status:"failed" so the workflow does not mistake an aborted review for "no issues found".',
-    TIMING_INSTR,
-  ].join('\n')
+const runReview = shouldRun('review') && !minimal
+const runPolice = shouldRun('police') && !minimal
+const runTest = shouldRun('test')
 
-  // First pass: two reviewers in parallel via reviewer() (dedicated subagent,
-  // else skill fallback, else null = graceful degradation).
-  const [hk, lw] = await parallel([
-    () => reviewer('hickey', 'You are the HICKEY reviewer. Apply your skill to the diff below.\n' + reviewerBrief, 'hickey'),
-    () => reviewer('lowy', 'You are the LOWY reviewer. Apply your skill to the diff below.\n' + reviewerBrief, 'lowy'),
-  ])
+const reviewerBrief = [
+  contextBlock(state),
+  researchBrief,
+  'SCOPE: review the actual diff `git diff origin/HEAD...HEAD`.',
+  'If `git diff --diff-filter=A --name-only origin/HEAD...HEAD` is non-empty (the diff adds new files), FIRST run the duplication audit your skill describes: find the canonical in-repo pattern for the same KIND of operation and make it the headline finding if the diff reinvents rather than extends it. If there are no new files, skip the audit and review unprimed.',
+  'Dispositions are "fix" (Fix in this PR) or "noop" (No-op: the diff already deletes the offending code, or the finding is subsumed verbatim by another). There is NO defer — anything resembling defer/out-of-scope/follow-up is a "fix".',
+  'Return your findings array and the full rationale prose. If you cannot complete the review (tooling/skill error), return status:"failed" so the workflow does not mistake an aborted review for "no issues found".',
+  TIMING_INSTR,
+].join('\n')
 
-  // Gate on status: a reviewer that returned a findings-shaped object but set
-  // status:'failed' (aborted) must NOT be read as "no issues found".
-  const hkOk = hk && hk.status !== 'failed'
-  const lwOk = lw && lw.status !== 'failed'
-  const hkFindings = (hkOk && hk.findings) || []
-  const lwFindings = (lwOk && lw.findings) || []
-  hickeyProse = hk ? (hk.status === 'failed' ? '(hickey review did not complete)' : hk.rationale || '') : '(hickey reviewer unavailable)'
-  lowyProse = lw ? (lw.status === 'failed' ? '(lowy review did not complete)' : lw.rationale || '') : '(lowy reviewer unavailable)'
-  reviewFindings = [...hkFindings, ...lwFindings]
-
-  // Cross-validation: skip only if BOTH returned zero findings. Each lens
-  // audits the diff AND the other lens's recommendations for problems it would
-  // flag if applied.
-  if (hkFindings.length + lwFindings.length > 0) {
-    const crossTasks = []
-    if (hkFindings.length) {
-      crossTasks.push(() =>
-        reviewer(
-          'hickey',
+// ---- Detection fan-out (read-only; nothing here commits) ------------------
+const [reviewDetect, policeDetect, testDetect] = await parallel([
+  () => (runReview ? detectReview(reviewerBrief) : null),
+  () =>
+    runPolice
+      ? agent(
           [
-            'You are the HICKEY reviewer doing CROSS-VALIDATION.',
-            reviewerBrief,
-            "OTHER REVIEWER'S (lowy) FINDINGS TO AUDIT:",
-            JSON.stringify(lwFindings, null, 2),
-            'Apply your lens to the diff AND to the other reviewer\'s recommendations. Does any recommendation, if applied, create a problem your lens would flag? If yes, surface it as a NEW finding (disposition fix/noop, no defer). Return only new findings.',
+            'You are the POLICE DETECTION pass of a /do workflow (report-only — make NO edits and NO commits here).',
+            AUTONOMY,
+            contextBlock(state),
+            'If `git diff origin/HEAD...HEAD --name-only` shows only documentation files (.md/.txt/README/docs/), return status "skipped" with reason "docs-only diff".',
+            'Otherwise invoke the `code-police` skill (Skill tool) scoped to "changes in the current branch/PR only" and run its three passes (rules, fact-check, elegance), REPORTING every violation. If the skill is unavailable, perform the three passes manually. Do not fix or commit — the serial fix phase runs next.',
+            'Return status "passed" if all three passes are clean, else "failed", with one `violations` entry per issue (pass = rules|fact-check|elegance).',
+            TIMING_INSTR,
           ].join('\n'),
-          'hickey:cross',
-        ),
-      )
-    }
-    if (lwFindings.length) {
-      crossTasks.push(() =>
-        reviewer(
-          'lowy',
+          { schema: POLICE_DETECT, phase: 'Police', label: 'police:detect' },
+        )
+      : null,
+  () =>
+    runTest
+      ? agent(
           [
-            'You are the LOWY reviewer doing CROSS-VALIDATION.',
-            reviewerBrief,
-            "OTHER REVIEWER'S (hickey) FINDINGS TO AUDIT:",
-            JSON.stringify(hkFindings, null, 2),
-            'Apply your lens to the diff AND to the other reviewer\'s recommendations. Does any recommendation, if applied, create a problem your lens would flag? If yes, surface it as a NEW finding (disposition fix/noop, no defer). Return only new findings.',
+            'You are the TEST RUN pass of a /do workflow (report-only — make NO edits and NO commits here).',
+            AUTONOMY,
+            contextBlock(state),
+            'Read `.agency/do.md` for a `## Test command`. Run ONLY the tests relevant to the code paths changed on this branch (use `git diff origin/HEAD...HEAD --name-only`). If no test command is configured, return status "skipped" with reason "no test command configured".',
+            'COVERAGE-GAP CHECK: a green run that never exercised the new behavior is a gap, not a pass.',
+            'Return status "passed" if tests pass AND the new behavior is covered (or the diff is exempt / no relevant tests); else "failed", with one `failures` entry per failing test or coverage gap.',
+            TIMING_INSTR,
           ].join('\n'),
-          'lowy:cross',
-        ),
-      )
-    }
-    const cross = await parallel(crossTasks)
-    for (const c of cross) if (c && c.findings) reviewFindings.push(...c.findings)
-  }
+          { schema: TEST_DETECT, phase: 'Test', label: 'test:run' },
+        )
+      : null,
+])
 
-  // Apply every "fix" finding — one narrow commit per finding (one agent makes
-  // all the commits in sequence so they serialize on the shared branch).
+// ---- Serial fix application (git-mutating → strictly sequential) ----------
+let anyFix = false
+
+// REVIEW: apply "fix" findings, one narrow commit each.
+if (runReview) {
+  reviewFindings = (reviewDetect && reviewDetect.findings) || []
+  hickeyProse = reviewDetect ? reviewDetect.hickeyProse : '(review did not run)'
+  lowyProse = reviewDetect ? reviewDetect.lowyProse : '(review did not run)'
   const fixes = reviewFindings.filter((f) => f.disposition === 'fix')
   let apply = null
   if (fixes.length) {
+    anyFix = true
     apply = await loopStep('apply-findings', 'Review', 2, () =>
       [
         'You are applying hickey/lowy review findings to a /do workflow branch.',
@@ -636,70 +748,120 @@ if (!shouldRun('review')) {
       ].join('\n'),
     )
   }
-  // The review step spans several agents (parallel reviewers → cross-validation
-  // → serial apply). Its duration is the earliest start to the latest end across
-  // them, not a fragile pick of one agent's timestamps.
-  const reviewAgents = [hk, lw, apply].filter(Boolean)
-  const starts = reviewAgents.map((a) => a.startedEpoch).filter((n) => typeof n === 'number')
-  const ends = reviewAgents.map((a) => a.endedEpoch).filter((n) => typeof n === 'number')
-  const startedEpoch = starts.length ? Math.min(...starts) : 0
-  const endedEpoch = ends.length ? Math.max(...ends) : 0
+  // Span the review step: earliest detection start to latest apply end.
+  const rAgents = [...((reviewDetect && reviewDetect.agents) || []), apply].filter(Boolean)
+  const rStarts = rAgents.map((a) => a.startedEpoch).filter((n) => typeof n === 'number')
+  const rEnds = rAgents.map((a) => a.endedEpoch).filter((n) => typeof n === 'number')
   pushResult('review', {
     status: apply ? apply.status : 'passed',
     verification: `hickey+lowy: ${reviewFindings.length} findings, ${fixes.length} fixed${noGit ? ' (working tree, --no-git)' : ''}`,
-    startedEpoch,
-    endedEpoch,
+    startedEpoch: rStarts.length ? Math.min(...rStarts) : 0,
+    endedEpoch: rEnds.length ? Math.max(...rEnds) : 0,
   })
   log(`review: ${reviewFindings.length} findings (${fixes.length} fixed).`)
+} else if (!shouldRun('review')) {
+  skipResult('review', 'entry point is past it')
+} else {
+  skipResult('review', '--minimal')
 }
 
-// ===========================================================================
-// POLICE — code-police three passes. Skipped under --minimal / docs-only diff.
-// Budget 3.
-// ===========================================================================
-if (!shouldRun('police')) {
+// POLICE: apply violation fixes, one commit each.
+if (runPolice) {
+  if (!policeDetect) {
+    pushResult('police', { status: 'failed', verification: 'police detection produced no result' })
+  } else if (policeDetect.status === 'skipped') {
+    skipResult('police', policeDetect.reason || 'docs-only diff')
+  } else {
+    const violations = (policeDetect.violations || []).filter(Boolean)
+    let papply = null
+    if (violations.length) {
+      anyFix = true
+      papply = await loopStep('police-fix', 'Police', 3, (a, b) =>
+        [
+          `You are applying code-police violation fixes to a /do workflow branch — attempt ${a} of ${b}.`,
+          AUTONOMY,
+          contextBlock(state),
+          noGit
+            ? 'Fix each violation below in the working tree; do NOT commit (--no-git).'
+            : 'Fix each violation below and commit it individually with a conventional prefix — rules: `fix(police): <rule-id> — <desc>`; fact-check: `fix(police): fact-check — <desc>`; elegance: `refactor(police): elegance — <desc>` — `git push` after each.',
+          'VIOLATIONS TO FIX:',
+          JSON.stringify(violations, null, 2),
+          'Re-run the relevant code-police pass to confirm. Return "passed" only when all are resolved; else "failed".',
+          TIMING_INSTR,
+        ].join('\n'),
+      )
+    }
+    const pAgents = [policeDetect, papply].filter(Boolean)
+    const pStarts = pAgents.map((a) => a.startedEpoch).filter((n) => typeof n === 'number')
+    const pEnds = pAgents.map((a) => a.endedEpoch).filter((n) => typeof n === 'number')
+    pushResult('police', {
+      status: papply ? papply.status : 'passed',
+      verification: violations.length
+        ? `code-police: ${violations.length} violation(s), ${papply && papply.status === 'passed' ? 'fixed' : 'fix attempted'}${noGit ? ' (working tree, --no-git)' : ''}`
+        : 'code-police: all clear (rules, fact-check, elegance)',
+      startedEpoch: pStarts.length ? Math.min(...pStarts) : 0,
+      endedEpoch: pEnds.length ? Math.max(...pEnds) : 0,
+    })
+    log(`police: ${violations.length} violation(s).`)
+  }
+} else if (!shouldRun('police')) {
   skipResult('police', 'entry point is past it')
-} else if (minimal) {
-  skipResult('police', '--minimal')
 } else {
-  const police = await loopStep('police', 'Police', 3, (a, b) =>
-    [
-      `You are the POLICE step of a /do workflow — attempt ${a} of ${b}.`,
-      AUTONOMY,
-      contextBlock(state),
-      'If `git diff origin/HEAD...HEAD --name-only` shows only documentation files (.md/.txt/README/docs/), return "skipped" with reason "docs-only diff".',
-      'Otherwise invoke the `code-police` skill (Skill tool) scoped to "changes in the current branch/PR only". If that skill is unavailable, perform its three passes manually: (1) rules checklist, (2) fact-check, (3) elegance (delegate to `/simplify` if available).',
-      noGit
-        ? 'Apply each fix to the working tree; do NOT commit (--no-git).'
-        : 'Commit each violation fix individually with a conventional prefix — rules: `fix(police): <rule-id> — <desc>`; fact-check: `fix(police): fact-check — <desc>`; elegance: `refactor(police): elegance — <desc>` — and `git push` after each.',
-      'Return "passed" only when all three passes are clean ("All clear"); otherwise "failed".',
-      TIMING_INSTR,
-    ].join('\n'),
-  )
-  pushResult('police', police)
+  skipResult('police', '--minimal')
 }
 
-// ===========================================================================
-// TEST — run relevant tests; on real failure fix → fmt → commit → retry.
-// Budget 4.
-// ===========================================================================
-if (!shouldRun('test')) {
-  skipResult('test', 'entry point is past it')
+// TEST: if detection found failures, fix until green (or the budget exhausts).
+if (runTest) {
+  if (!testDetect) {
+    pushResult('test', { status: 'failed', verification: 'test run produced no result' })
+  } else if (testDetect.status === 'skipped') {
+    skipResult('test', testDetect.reason || 'no test command configured')
+  } else if (testDetect.status === 'passed') {
+    pushResult('test', testDetect)
+  } else {
+    anyFix = true
+    const tfix = await loopStep('test-fix', 'Test', 4, (a, b) =>
+      [
+        `You are fixing failing tests on a /do workflow branch — attempt ${a} of ${b}.`,
+        AUTONOMY,
+        contextBlock(state),
+        'A test is flaky only if it passes on retry; consistent failure = real bug. Fix the failures/coverage gaps below, run the format command, ' +
+          (noGit ? 'and re-run the tests (no commit under --no-git).' : 'commit the fix, push, and re-run the tests.'),
+        'FAILURES / GAPS:',
+        JSON.stringify(testDetect.failures || [], null, 2),
+        'Return "passed" only when the relevant tests pass AND the new behavior is covered; else "failed".',
+        TIMING_INSTR,
+      ].join('\n'),
+    )
+    const tAgents = [testDetect, tfix].filter(Boolean)
+    const tStarts = tAgents.map((a) => a.startedEpoch).filter((n) => typeof n === 'number')
+    const tEnds = tAgents.map((a) => a.endedEpoch).filter((n) => typeof n === 'number')
+    pushResult('test', {
+      status: tfix ? tfix.status : 'failed',
+      verification: `tests: ${(testDetect.failures || []).length} failure(s), ${tfix && tfix.status === 'passed' ? 'fixed' : 'fix attempted'}`,
+      startedEpoch: tStarts.length ? Math.min(...tStarts) : 0,
+      endedEpoch: tEnds.length ? Math.max(...tEnds) : 0,
+    })
+  }
 } else {
-  const test = await loopStep('test', 'Test', 4, (a, b) =>
+  skipResult('test', 'entry point is past it')
+}
+
+// ---- Revalidate: parallel detection saw the pre-fix base diff, so if any gate
+// applied fixes, re-run the cheap gates once on the final HEAD. --------------
+if (anyFix) {
+  const revalidate = await loopStep('revalidate', 'Revalidate', 2, (a, b) =>
     [
-      `You are the TEST step of a /do workflow — attempt ${a} of ${b}.`,
+      `You are the REVALIDATE step of a /do workflow — attempt ${a} of ${b}. Gate fixes were applied after the parallel detection pass; confirm the final state is still green.`,
       AUTONOMY,
       contextBlock(state),
-      'Read `.agency/do.md` for a `## Test command`. Run ONLY the tests relevant to the code paths changed on this branch (use `git diff origin/HEAD...HEAD --name-only`). If no test command is configured, return "skipped" with reason "no test command configured".',
-      'COVERAGE-GAP CHECK: after a green run, confirm at least one test actually exercised the new behavior (per the implement classification). A green run that never touched the changed paths is a gap, not a pass — write the missing test.',
-      'A test is flaky only if it passes on retry; consistent failure = real bug. On a real failure: fix it, run the format command, ' +
-        (noGit ? 'and retry (no commit under --no-git).' : 'commit the fix, push, and retry.'),
-      'Return "passed" only when tests pass AND the new behavior is covered (or the diff is exempt / no relevant tests); else "failed".',
+      'Re-run the `## Check command` and `## Test command` from .agency/do.md (whichever are configured) against the current HEAD. If neither is configured, return status "skipped" with reason "no check/test command configured".',
+      'If a command fails, fix it, ' + (noGit ? 'and retry.' : 'commit the fix, push, and retry.'),
+      'Return "passed" only when all configured gates are green on HEAD; else "failed".',
       TIMING_INSTR,
     ].join('\n'),
   )
-  pushResult('test', test)
+  pushResult('revalidate', revalidate)
 }
 
 // ===========================================================================
