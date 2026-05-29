@@ -199,6 +199,7 @@ const FINDINGS = {
       },
     },
     rationale: { type: 'string', description: 'the full prose review for the PR comment' },
+    status: { type: 'string', enum: ['passed', 'failed'], description: 'failed if the reviewer could not complete — distinguishes "no issues" from "review aborted"' },
     ...TIMING_PROPS,
   },
   required: ['findings', 'startedEpoch', 'endedEpoch'],
@@ -554,7 +555,7 @@ if (!shouldRun('review')) {
     'SCOPE: review the actual diff `git diff origin/HEAD...HEAD`.',
     'If `git diff --diff-filter=A --name-only origin/HEAD...HEAD` is non-empty (the diff adds new files), FIRST run the duplication audit your skill describes: find the canonical in-repo pattern for the same KIND of operation and make it the headline finding if the diff reinvents rather than extends it. If there are no new files, skip the audit and review unprimed.',
     'Dispositions are "fix" (Fix in this PR) or "noop" (No-op: the diff already deletes the offending code, or the finding is subsumed verbatim by another). There is NO defer — anything resembling defer/out-of-scope/follow-up is a "fix".',
-    'Return your findings array and the full rationale prose.',
+    'Return your findings array and the full rationale prose. If you cannot complete the review (tooling/skill error), return status:"failed" so the workflow does not mistake an aborted review for "no issues found".',
     TIMING_INSTR,
   ].join('\n')
 
@@ -565,10 +566,14 @@ if (!shouldRun('review')) {
     () => reviewer('lowy', 'You are the LOWY reviewer. Apply your skill to the diff below.\n' + reviewerBrief, 'lowy'),
   ])
 
-  const hkFindings = (hk && hk.findings) || []
-  const lwFindings = (lw && lw.findings) || []
-  hickeyProse = (hk && hk.rationale) || (hk ? '' : '(hickey reviewer unavailable)')
-  lowyProse = (lw && lw.rationale) || (lw ? '' : '(lowy reviewer unavailable)')
+  // Gate on status: a reviewer that returned a findings-shaped object but set
+  // status:'failed' (aborted) must NOT be read as "no issues found".
+  const hkOk = hk && hk.status !== 'failed'
+  const lwOk = lw && lw.status !== 'failed'
+  const hkFindings = (hkOk && hk.findings) || []
+  const lwFindings = (lwOk && lw.findings) || []
+  hickeyProse = hk ? (hk.status === 'failed' ? '(hickey review did not complete)' : hk.rationale || '') : '(hickey reviewer unavailable)'
+  lowyProse = lw ? (lw.status === 'failed' ? '(lowy review did not complete)' : lw.rationale || '') : '(lowy reviewer unavailable)'
   reviewFindings = [...hkFindings, ...lwFindings]
 
   // Cross-validation: skip only if BOTH returned zero findings. Each lens
@@ -631,18 +636,14 @@ if (!shouldRun('review')) {
       ].join('\n'),
     )
   }
-  const startedEpoch =
-    hk && typeof hk.startedEpoch === 'number'
-      ? hk.startedEpoch
-      : apply && typeof apply.startedEpoch === 'number'
-        ? apply.startedEpoch
-        : 0
-  const endedEpoch =
-    apply && typeof apply.endedEpoch === 'number'
-      ? apply.endedEpoch
-      : lw && typeof lw.endedEpoch === 'number'
-        ? lw.endedEpoch
-        : 0
+  // The review step spans several agents (parallel reviewers → cross-validation
+  // → serial apply). Its duration is the earliest start to the latest end across
+  // them, not a fragile pick of one agent's timestamps.
+  const reviewAgents = [hk, lw, apply].filter(Boolean)
+  const starts = reviewAgents.map((a) => a.startedEpoch).filter((n) => typeof n === 'number')
+  const ends = reviewAgents.map((a) => a.endedEpoch).filter((n) => typeof n === 'number')
+  const startedEpoch = starts.length ? Math.min(...starts) : 0
+  const endedEpoch = ends.length ? Math.max(...ends) : 0
   pushResult('review', {
     status: apply ? apply.status : 'passed',
     verification: `hickey+lowy: ${reviewFindings.length} findings, ${fixes.length} fixed${noGit ? ' (working tree, --no-git)' : ''}`,
