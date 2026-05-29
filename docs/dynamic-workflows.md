@@ -76,7 +76,7 @@ The review, PR, and police steps lean on agency skills/agents that must be insta
 - `forge-pr` for the PR title/body,
 - `code-police` for the quality gate.
 
-Without them, those steps **degrade gracefully** — if the `hickey`/`lowy` agent types aren't installed the review yields no findings rather than crashing; if `code-police` is missing the police step falls back to running its three passes manually; the PR step still opens a draft without the `forge-pr` polish.
+Without them, those steps **degrade gracefully**. The review step tries the dedicated `hickey`/`lowy` subagent first, then falls back to a default agent that loads the same-named *skill* (so it still runs in repos that ship the skills but haven't registered the agents — e.g. a fresh checkout where the agent registry was fixed before `apm install` ran), and only if neither is present does it yield no findings rather than crashing. Likewise, if `code-police` is missing the police step falls back to running its three passes manually, and the PR step still opens a draft without the `forge-pr` polish.
 
 ### Run
 

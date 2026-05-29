@@ -278,6 +278,28 @@ async function loopStep(name, phaseTitle, budget, buildPrompt, schema) {
   return r
 }
 
+// Run a structural reviewer. Prefer the dedicated subagent (it carries the
+// reviewer's own sonnet model + methodology); if that agent type isn't
+// registered in this project (e.g. the repo hasn't run `apm install`), fall
+// back to a default agent that loads the same-named skill — matching SKILL.md's
+// fallback doctrine, so the review still runs in repos that ship the hickey/lowy
+// skills but not their agent registrations. Returns null only if both paths fail
+// (no skill either), which the caller treats as graceful degradation.
+async function reviewer(lens, prompt, label) {
+  const viaAgent = await agent(prompt, {
+    agentType: lens,
+    schema: FINDINGS,
+    phase: 'Review',
+    label,
+  }).catch(() => null)
+  if (viaAgent) return viaAgent
+  return await agent(
+    prompt +
+      `\n\nNOTE: the dedicated \`${lens}\` agent type is not installed here — invoke the \`${lens}\` skill via the Skill tool and apply its full methodology.`,
+    { schema: FINDINGS, phase: 'Review', label: `${label}:skill` },
+  ).catch(() => null)
+}
+
 // ===========================================================================
 // SYNC — always runs.
 // ===========================================================================
@@ -525,24 +547,11 @@ if (!shouldRun('review')) {
     TIMING_INSTR,
   ].join('\n')
 
-  // First pass: two reviewers in parallel (real hickey/lowy subagents, which
-  // carry their own sonnet model + methodology). If those agent types are not
-  // installed, the runtime errors and parallel() yields null — handled below.
+  // First pass: two reviewers in parallel via reviewer() (dedicated subagent,
+  // else skill fallback, else null = graceful degradation).
   const [hk, lw] = await parallel([
-    () =>
-      agent('You are the HICKEY reviewer. Apply your skill to the diff below.\n' + reviewerBrief, {
-        agentType: 'hickey',
-        schema: FINDINGS,
-        phase: 'Review',
-        label: 'hickey',
-      }),
-    () =>
-      agent('You are the LOWY reviewer. Apply your skill to the diff below.\n' + reviewerBrief, {
-        agentType: 'lowy',
-        schema: FINDINGS,
-        phase: 'Review',
-        label: 'lowy',
-      }),
+    () => reviewer('hickey', 'You are the HICKEY reviewer. Apply your skill to the diff below.\n' + reviewerBrief, 'hickey'),
+    () => reviewer('lowy', 'You are the LOWY reviewer. Apply your skill to the diff below.\n' + reviewerBrief, 'lowy'),
   ])
 
   const hkFindings = (hk && hk.findings) || []
@@ -558,7 +567,8 @@ if (!shouldRun('review')) {
     const crossTasks = []
     if (hkFindings.length) {
       crossTasks.push(() =>
-        agent(
+        reviewer(
+          'hickey',
           [
             'You are the HICKEY reviewer doing CROSS-VALIDATION.',
             reviewerBrief,
@@ -566,13 +576,14 @@ if (!shouldRun('review')) {
             JSON.stringify(lwFindings, null, 2),
             'Apply your lens to the diff AND to the other reviewer\'s recommendations. Does any recommendation, if applied, create a problem your lens would flag? If yes, surface it as a NEW finding (disposition fix/noop, no defer). Return only new findings.',
           ].join('\n'),
-          { agentType: 'hickey', schema: FINDINGS, phase: 'Review', label: 'hickey:cross' },
+          'hickey:cross',
         ),
       )
     }
     if (lwFindings.length) {
       crossTasks.push(() =>
-        agent(
+        reviewer(
+          'lowy',
           [
             'You are the LOWY reviewer doing CROSS-VALIDATION.',
             reviewerBrief,
@@ -580,7 +591,7 @@ if (!shouldRun('review')) {
             JSON.stringify(hkFindings, null, 2),
             'Apply your lens to the diff AND to the other reviewer\'s recommendations. Does any recommendation, if applied, create a problem your lens would flag? If yes, surface it as a NEW finding (disposition fix/noop, no defer). Return only new findings.',
           ].join('\n'),
-          { agentType: 'lowy', schema: FINDINGS, phase: 'Review', label: 'lowy:cross' },
+          'lowy:cross',
         ),
       )
     }
