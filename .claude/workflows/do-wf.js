@@ -55,6 +55,12 @@ export const meta = {
 // awareness, --no-git, --minimal, --from, completion criteria, and the final
 // timing table — is preserved. The script holds control flow; agents do all
 // filesystem/git/shell work (the script itself cannot touch disk).
+//
+// SYNC CONTRACT: each step's agent prompt below mirrors the correspondingly-
+// named section of .apm/skills/do/SKILL.md (its only canonical home — there are
+// no per-step skills for research/implement/check/etc. to defer to). When that
+// skill's step methodology changes, update the matching prompt here in lockstep,
+// the same way README.md and the landing page are kept in sync (see CLAUDE.md).
 // ---------------------------------------------------------------------------
 
 // ---- Argument parsing -----------------------------------------------------
@@ -223,6 +229,11 @@ function fmtDur(sec) {
   return sec < 60 ? `${sec}s` : `${Math.floor(sec / 60)}m ${sec % 60}s`
 }
 
+// A step taking >= this share (percent) of total wall-clock is bolded as a
+// dominant step. Mirrors scripts/steps/done (the bash timing summary the /do
+// skill uses) — see done:90,96 and its icon set at done:77-79. Keep in sync.
+const DOMINANT_THRESHOLD = 30
+
 function buildTimingTable() {
   const total = results.reduce((a, r) => a + r.durationSec, 0)
   const lines = [
@@ -232,7 +243,7 @@ function buildTimingTable() {
   for (const r of results) {
     const icon = r.status === 'passed' ? '✓' : r.status === 'failed' ? '✗' : '—'
     let d = fmtDur(r.durationSec)
-    if (r.status !== 'skipped' && total > 0 && (r.durationSec * 100) / total >= 30) d = `**${d}**`
+    if (r.status !== 'skipped' && total > 0 && (r.durationSec * 100) / total >= DOMINANT_THRESHOLD) d = `**${d}**`
     const v = (r.verification || '').replace(/\n/g, ' ').replace(/\|/g, '\\|')
     lines.push(`| ${r.name} | ${icon} | ${d} | ${v} |`)
   }
@@ -806,6 +817,12 @@ const done = await agent(
     '- If non-github forge: do NOT post; print the table + suggestions and report the branch name (and `git remote get-url origin`).',
     'TIMING TABLE:',
     table,
+    'RAW STEP DATA (exact per-step durations in seconds — use these for precise optimization suggestions, not the bolded table):',
+    JSON.stringify(
+      results.map((r) => ({ name: r.name, status: r.status, durationSec: r.durationSec })),
+      null,
+      2,
+    ),
     'Return status "passed" once the report is delivered.',
     TIMING_INSTR,
   ].join('\n'),
