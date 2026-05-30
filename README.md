@@ -18,7 +18,7 @@ Agency[^agency] is a near-autonomous workflow for coding agents, packaged as an 
 
 The autonomous loop is only as good as the feedback signal it gets. If the agent can't tell whether its change actually worked, no amount of model capability papers over that gap. End-to-end tests are a prerequisite, not a nice-to-have — unit tests and type-checks alone aren't enough. What "e2e" means depends on the surface:
 
-- **Frontend** → screenshot evidence in PRs ([example](https://github.com/juspay/kolu/pull/791#issuecomment-4352641175)). First-class evidence as a workflow step is tracked in [#106](https://github.com/srid/agency/issues/106).
+- **Frontend** → screenshot evidence in PRs ([example](https://github.com/juspay/kolu/pull/791#issuecomment-4352641175)) for visual changes — and a survives-restart capture for behavioral fixes that have no visual diff (persistence / restore / round-trip paths). First-class evidence as a workflow step is tracked in [#106](https://github.com/srid/agency/issues/106).
 - **Nix-based infra** → NixOS VM tests. Honest tradeoff: a VM isn't a live environment, mocking is often required, and reaching real fidelity for non-trivial infra takes effort — but it's still the closest thing to an executable spec the agent can drive.
 - **Backend / library** → fast, deterministic e2e suites the agent can run in a tight loop. Slow or flaky suites destroy the loop; a 30-second deterministic run beats a 10-minute thorough one.
 
@@ -118,10 +118,14 @@ just ci
 Keep README.md in sync with user-facing changes.
 
 ## PR evidence
-For every PR that touches the UI:
+Capture proof when the change has a behavior worth proving — **visual** (a UI diff) or
+**behavioral** (state survives an interaction or a restart, e.g. a persistence / restore /
+debounce / reconnect fix with no visual diff):
 
-1. Use the `chrome-devtools` MCP to launch `npm run dev` and navigate to the affected route.
-2. Capture a screenshot of the new state and upload it via `gh api` to the repo's release-asset endpoint.
+1. Use the `chrome-devtools` MCP to launch `npm run dev` and exercise the affected route — for
+   a behavioral fix, drive the before→after round-trip (e.g. change state → restart → restore).
+2. Capture a screenshot (or a video, for motion or a round-trip) and upload it via `gh api` to
+   the repo's release-asset endpoint.
 3. Embed the resulting URL inline in the PR comment under `## Evidence`.
 ```
 
