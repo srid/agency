@@ -40,3 +40,37 @@ CI commands are typically local (e.g. `nix flake check`, `just ci`, `make ci`) a
 **If flaky** (max 3 retries): Retry just the failing step.
 **If real bug** (max 5 fixes): Fix → **fmt** → **commit** → retry CI. Under `--no-git`, drop **commit** from the loop.
 **If retries exhausted**: Record `status: failed`, halt. The draft PR stays open as the record of the failed attempt.
+
+## Delegation
+
+```prose
+let attempts_real = 0
+let attempts_flaky = 0
+
+loop:
+  read .agency/do.md for "## CI command"
+  if no command configured:
+    return { verdict: "no-command-configured" }
+
+  run CI (run_in_background: true if slow)
+  set active = waiting before waiting, active = working when done
+  if exit 0:
+    if rerun_on_new_commit:
+      if CI_sha != HEAD:
+        continue  # re-run against current HEAD
+    return { verdict: "pass" }
+
+  diagnose failure: flaky or real?
+  if flaky (passes on retry without fix):
+    attempts_flaky += 1
+    if attempts_flaky > 3:
+      return { verdict: "failed-after-budget" }
+    continue  # re-run without fixing
+
+  attempts_real += 1
+  if attempts_real > 5:
+    return { verdict: "failed-after-budget" }
+
+  fix → fmt → commit (drop commit if --no-git)
+  continue  # re-run CI
+```

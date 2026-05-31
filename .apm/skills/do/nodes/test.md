@@ -34,3 +34,32 @@ If changes are purely internal with no user-facing impact, unit tests may suffic
 
 **Verify**: Tests pass (exit code 0) **and** the new behavior is covered, or the diff is exempt from the coverage check, or no relevant tests to run.
 **If failed** (max 4 attempts): Analyze the failure. If flaky, re-run. If real: fix → go to **fmt**, then retry.
+
+## Delegation
+
+```prose
+let attempts_real = 0
+
+loop:
+  read .agency/do.md for "## Test command"
+  if no command configured:
+    return { verdict: "no-command-configured" }
+
+  run tests relevant to changes (via git diff origin/HEAD...HEAD --name-only)
+  if exit 0:
+    if coverage_check:
+      confirm new behavior is exercised via test logs
+      if coverage gap:
+        treat as real failure → write missing test → fmt → commit → continue
+    return { verdict: "pass" }
+
+  attempts_real += 1
+  if attempts_real > 4:
+    return { verdict: "failed-after-budget" }
+
+  if flaky (passes on retry without fix):
+    continue  # re-run without fixing
+
+  fix the failure → fmt → commit
+  continue  # re-run tests
+```

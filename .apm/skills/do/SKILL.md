@@ -10,32 +10,36 @@ Take a task and do it top-to-bottom: research, branch, implement, pass CI, open 
 
 > All paths in this skill are relative to the skill's base directory.
 
-**This is a workflow graph.** The graph lives in [`execution.md`](execution.md); each step is a node file under [`nodes/`](nodes/); reusable shapes live under [`patterns/`](patterns/). The agent is the runtime — there is no separate engine.
+**This is a workflow graph.** Step order, skip predicates, and pattern configs live in [`workflow.ncl`](workflow.ncl); each step's activity is a node file under [`nodes/`](nodes/). The agent is the runtime — there is no separate engine.
 
 **Mostly autonomous.** Do NOT use `AskUserQuestion` at any point (except during the `--review` planning pause). Make sensible default choices and keep moving.
 
 ## How to walk the graph
 
-1. Parse arguments (see [Arguments](#arguments)).
+1. Parse arguments: `[--review] [--no-git] [--minimal] [--from <step-id>] <task>`
 2. Call `scripts/do-driver init <flags> <task>` to initialize state.
-3. Read [`execution.md`](execution.md) for the pinned order, conditional branches, entry points, and pattern instances.
-4. Seed the task checklist (see [Progress tracking](#progress-tracking)).
-5. For each step in order:
-   - Call `scripts/do-driver start <step>`.
-   - Read `nodes/<step>.md` and do the work.
-   - Call `scripts/do-driver end <status> "<verification>" [reason]`.
-6. Call `scripts/do-driver summary` to emit the timing table.
+3. Seed the task checklist using Nickel:
+   ```bash
+   nickel eval workflow.ncl --field cli_seed --arg "<from>" --arg "$(cat .do-results.json)"
+   ```
+   This returns `[{ name, initial_status }]` — mark `completed` steps and seed the todo UI.
+4. For each step, ask Nickel what to do next:
+   ```bash
+   next=$(nickel eval workflow.ncl --field cli --arg "$(cat .do-results.json)")
+   ```
+   This returns `{ step, skip, pattern, instructions, requires, pattern_config }`.
+   - If `skip` is true, call `scripts/do-driver skip <step> <reason>` and continue.
+   - Otherwise: call `scripts/do-driver start <step>`, read `nodes/<step>.md`, do the work, then call `scripts/do-driver end <status> "<verification>" [reason]`.
+5. When Nickel returns `{ done = true }`, call `scripts/do-driver summary`.
 
 ## Arguments
-
-Parse the arguments string: `[--review] [--no-git] [--minimal] [--from <step-id>] <task description or issue-url>`
 
 The workflow is **forge-aware**: it auto-detects whether the repo lives on GitHub or elsewhere during the **sync** step. Only GitHub has an active code path today — Bitbucket/other forges gracefully skip PR-related steps. Tracking: [srid/agency#10](https://github.com/srid/agency/issues/10).
 
 - `--review`: Pause after **research** for user plan approval via `EnterPlanMode`/`ExitPlanMode`, then continue autonomously.
 - `--no-git`: Extend the working tree **in place** — do not create a branch, commit, push, or touch any PR. Git-mutating nodes skip with `reason="--no-git"`.
-- `--minimal`: Skip the steps whose value is disproportionate on trivially-scoped diffs: **docs**, **hickey-lowy**, **police**, and **evidence**.
-- `--from <step-id>`: Start from a specific node. See [`execution.md`](execution.md) for entry points.
+- `--minimal`: Skip **docs**, **hickey-lowy**, **police**, and **evidence** (omitted from todo list entirely).
+- `--from <step-id>`: Start from a specific node. Entry points: `default`→sync, `followup`→implement, `post-implement`→fmt, `polish`→hickey-lowy, `ci-only`→ci.
 
 ## Results Tracking
 
@@ -57,7 +61,7 @@ The `scripts/do-results` script tracks:
 
 ## Progress tracking
 
-Drive the harness's native todo UI so the user sees a live checklist. At workflow start, seed all steps in order (omitting `--minimal` skips). Mark `--from` pre-steps as `completed` immediately.
+Drive the harness's native todo UI so the user sees a live checklist. Use `cli_seed` from Nickel to get the initial step list with correct statuses.
 
 Rules:
 
@@ -67,19 +71,9 @@ Rules:
 - **`--minimal` skips are omitted from the list entirely.**
 - **Failure**: leave the failing step `in_progress`, mark `done` `completed` after the summary, and run `do-driver set status failed`.
 
-## Entry Points
-
-| ID | Starts at | Use case |
-| -- | --------- | -------- |
-| `default` | sync | Full workflow from scratch |
-| `followup` | implement | Additional changes on existing PR |
-| `post-implement` | fmt | Skip research/impl, start at formatting |
-| `polish` | hickey-lowy | Structural review + quality gate |
-| `ci-only` | ci | Just run CI |
-
 ## Rules
 
-- **Never skip steps** (unless skipped by `--no-git`, forge detection, or — for **evidence** — the project hasn't filled in a `## PR evidence` section in `.agency/do.md`). Run them in order from entry point to **done**.
+- **Never skip steps** (unless Nickel reports `skip = true`, or — for **evidence** — the project hasn't filled in a `## PR evidence` section in `.agency/do.md`). Run them in order from entry point to **done**.
 - **Every commit is NEW.** Never amend, rebase, or force-push.
 - **Feature branches only.** Never commit to master/main.
 - **Background for CI.** Run CI with `run_in_background: true`.

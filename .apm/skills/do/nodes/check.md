@@ -28,3 +28,25 @@ This is the cheapest gate in the pipeline, so it runs first — fail fast on bro
 
 **Verify**: Check ran without errors, or no command configured.
 **If failed** (max 3 attempts): Fix the errors and re-run check. Do not fall back to **implement** — the agent is already in fix mode and the failure is local to just-written code.
+
+## Delegation
+
+```prose
+let attempts_real = 0
+
+loop:
+  read .agency/do.md for "## Check command"
+  if no command configured:
+    return { verdict: "no-command-configured" }
+
+  run the check command
+  if exit 0:
+    return { verdict: "pass" }
+
+  attempts_real += 1
+  if attempts_real > 3:
+    return { verdict: "failed-after-budget" }
+
+  fix the errors
+  continue  # re-run check
+```

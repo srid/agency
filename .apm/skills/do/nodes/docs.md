@@ -29,3 +29,25 @@ If no documentation files are documented, skip this step with a note.
 
 **Verify**: Docs match current code.
 **If outdated** (max 3 attempts): Fix the outdated sections and re-verify.
+
+## Delegation
+
+```prose
+let attempts_real = 0
+
+loop:
+  read .agency/do.md for "## Documentation"
+  if no docs listed:
+    return { verdict: "no-command-configured" }
+
+  compare listed docs against changes in this PR
+  if docs match:
+    return { verdict: "pass" }
+
+  attempts_real += 1
+  if attempts_real > 3:
+    return { verdict: "failed-after-budget" }
+
+  update outdated sections
+  continue  # re-verify
+```
