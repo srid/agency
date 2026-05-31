@@ -48,3 +48,30 @@ For each violation reported by `/code-police` (across all three passes), in turn
 
 **Verify**: All 3 passes clean ("All clear").
 **If violations found** (max 3 attempts): Fix the violations and re-invoke `/code-police`.
+
+## Delegation
+
+```prose
+let attempts_real = 0
+
+loop:
+  if diff is docs-only:
+    return { verdict: "no-command-configured" }
+
+  invoke /code-police skill (3 passes: rule checklist, fact-check, elegance)
+  if "All clear":
+    return { verdict: "pass" }
+
+  attempts_real += 1
+  if attempts_real > 3:
+    return { verdict: "failed-after-budget" }
+
+  for each violation reported:
+    apply fix for that one violation
+    run fmt on changed files
+    git add changed files
+    commit with conventional prefix (fix/refactor(police): ...)
+    git push
+
+  continue  # re-invoke /code-police
+```

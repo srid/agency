@@ -64,3 +64,31 @@ Run the two cross-validation calls in parallel. If either surfaces a new finding
 **Under `--no-git`**: Skip commit/push. Apply fixes to working tree.
 
 **Verify**: Both hickey and lowy produced review output. Cross-validation ran (or skipped because zero findings). Every finding has action recorded: **Fix in this PR** or **No-op**. Every "Fix" has a corresponding commit, except under `--no-git`.
+
+## Delegation
+
+```prose
+# Phase 1: parallel first-pass
+spawn hickey(diff, task, context) and lowy(diff, task, context) in parallel
+await both
+merge all findings
+
+# Phase 2: cross-validation (if at least two reviewers found something)
+if cross_validate and both reviewers produced findings:
+  for each reviewer that produced findings:
+    spawn that reviewer again with diff + other reviewer's findings
+    ask: "Does any recommendation create a problem your lens would flag?"
+  await both cross-validation calls
+  merge new findings
+
+# Phase 3: apply fixes
+for each finding with disposition "Fix in this PR":
+  apply the fix narrowly
+  run fmt on changed files
+  git add changed files
+  commit -m "refactor(hickey|lowy): <short label>"
+  git push
+  (under --no-git: skip commit/push, apply to working tree only)
+
+return { commits, findings_ledger }
+```
