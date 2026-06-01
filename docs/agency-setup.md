@@ -33,6 +33,16 @@ Multiple matches are fine — declare all of them. If nothing matches and the ho
 
 **Single vs. multiple targets:** `apm` has a bug where the plural `targets:` list breaks when only one entry is present. Use the singular `target: <name>` scalar for exactly one target, and the `targets:` list only when you have two or more.
 
+### Detect the VCS type
+
+The `/do` workflow adapts its git operations to the active VCS. Detect from the repo root:
+
+- `.jj/` exists → `jj` (Jujutsu). Prefer jj over git — even when both `.jj/` and `.git/` are present (jj repos are always git-backed).
+- `.jj/` does not exist, but `.git/` does → `git`.
+- Neither exists → not a versioned repo. Bail out: tell the user to run `jj git init` or `git init` first, then restart the setup.
+
+The VCS type determines which tool runs fetch, push, branch creation, commit, and diff operations throughout the workflow. No configuration file declares it — detection is purely filesystem-based.
+
 ## 3. Create or extend `apm.yml`
 
 Before editing, note whether `srid/agency` is already listed under `dependencies.apm:` — steps 6 and 8 both need that fact (step 6 skips on first-time setup; step 8 decides whether to refresh the dep).

@@ -1,0 +1,302 @@
+#!/usr/bin/env bash
+# Semantic VCS operation dispatcher. Translates named operations into
+# the appropriate tool-specific commands for git or jj. Consumers call
+# this instead of raw `git` or `jj` commands.
+#
+# Detection: reads $vcs from .do-results.json (written by sync). If that
+# file is absent, falls back to filesystem detection (`.jj/` → jj, else
+# `.git/` → git, else unknown).
+#
+# Usage:
+#   vcs-op <operation> [args...]
+#
+# Operations:
+#   detect            → prints "git", "jj", or "unknown"
+#   fetch             → fetch from remote
+#   remote-url        → prints origin URL
+#   head-revision     → prints current change/branch identifier
+#   head-commit-sha   → prints current commit SHA (for CI verification)
+#   default-branch    → prints default/base branch name
+#   dirty             → exit 0 if working copy has uncommitted changes, 1 if clean
+#   diff-range        → diff between base and current (for review tools)
+#   diff-names        → diff-range, name-only
+#   diff-stat         → diff-range, summary/stat only
+#   new-files         → names of files newly added in current range
+#   log-range         → one-line log between base and current
+#   log-head          → one-line log of current revision
+#   branch <name>     → create a feature branch/bookmark from default branch
+#   commit <msg>      → commit/describe staged changes
+#   push              → push to remote (first push)
+#   fix-commit <msg>  → create a follow-up fix commit and push
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Resolve VCS type
+detect_vcs() {
+  if [ -n "${VCS_OVERRIDE:-}" ]; then
+    echo "$VCS_OVERRIDE"
+    return
+  fi
+  if [ -f "$SCRIPT_DIR/../../.do-results.json" ] 2>/dev/null; then
+    local v
+    if command -v jq &>/dev/null; then
+      v=$(jq -r '.vcs // ""' "$SCRIPT_DIR/../../.do-results.json" 2>/dev/null)
+    elif command -v nix &>/dev/null; then
+      v=$(nix run nixpkgs#jq -- -r '.vcs // ""' "$SCRIPT_DIR/../../.do-results.json" 2>/dev/null)
+    fi
+    if [ -n "$v" ]; then
+      echo "$v"
+      return
+    fi
+  fi
+  # Filesystem fallback
+  if [ -d .jj ]; then echo jj; return; fi
+  if [ -d .git ]; then echo git; return; fi
+  echo unknown
+}
+
+get_default_branch() {
+  case "$vcs" in
+    git)
+      git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|^origin/||' || echo master
+      ;;
+    jj)
+      local remote_bookmarks
+      remote_bookmarks=$(jj bookmark list --remote origin 2>/dev/null || true)
+      local default
+      default=$(echo "$remote_bookmarks" | grep -m1 -E '^main|^master' | head -1 | awk '{print $1}')
+      if [ -n "$default" ]; then
+        echo "$default"
+      else
+        echo master
+      fi
+      ;;
+    *) echo master ;;
+  esac
+}
+
+vcs="$(detect_vcs)"
+op="${1:-}"
+shift || true
+
+case "$op" in
+  detect)
+    echo "$vcs"
+    ;;
+  fetch)
+    case "$vcs" in
+      git) git fetch origin ;;
+      jj)  jj git fetch ;;
+      *)   echo "vcs-op: no VCS detected" >&2; exit 1 ;;
+    esac
+    ;;
+  remote-url)
+    case "$vcs" in
+      git) git remote get-url origin ;;
+      jj)  jj git remote list | head -1 | awk '{print $2}' ;;
+      *)   echo "vcs-op: no VCS detected" >&2; exit 1 ;;
+    esac
+    ;;
+  head-revision)
+    case "$vcs" in
+      git) git rev-parse --abbrev-ref HEAD ;;
+      jj)
+        # shellcheck disable=SC2168
+        local bookmark
+        bookmark=$(jj bookmark list -r @ --no-graph -T 'name' 2>/dev/null | head -1)
+        if [ -z "$bookmark" ]; then
+          jj log -r @ --no-graph -T 'change_id' 2>/dev/null
+        else
+          echo "$bookmark"
+        fi
+        ;;
+      *)   echo "vcs-op: no VCS detected" >&2; exit 1 ;;
+    esac
+    ;;
+  head-commit-sha)
+    case "$vcs" in
+      git) git rev-parse HEAD ;;
+      jj)  jj log -r @ --no-graph -T 'commit_id' 2>/dev/null ;;
+      *)   echo "vcs-op: no VCS detected" >&2; exit 1 ;;
+    esac
+    ;;
+  default-branch)
+    get_default_branch
+    ;;
+  dirty)
+    case "$vcs" in
+      git) [ -n "$(git status --porcelain)" ] ;;
+      jj)  [ -n "$(jj diff -r @ --summary 2>/dev/null)" ] ;;
+      *)   false ;;
+    esac
+    ;;
+  diff-range)
+    # shellcheck disable=SC2168
+    # shellcheck disable=SC2168
+    local base="${1:-$(get_default_branch)}"
+    case "$vcs" in
+      git)
+        # Three-dot diff: changes since branching from origin/<base>
+        git diff "origin/${base}...HEAD" -- "${@:2}"
+        ;;
+      jj)
+        # shellcheck disable=SC2168
+        local merge_base
+        merge_base=$(jj log -r 'heads(ancestors(@) & ancestors('"$base"'))' --no-graph -T 'change_id' 2>/dev/null | head -1)
+        if [ -n "$merge_base" ]; then
+          jj diff --from "$merge_base" --to @ -- "${@:2}"
+        else
+          jj diff --from "$base" --to @ -- "${@:2}"
+        fi
+        ;;
+      *) echo "vcs-op: no VCS detected" >&2; exit 1 ;;
+    esac
+    ;;
+  diff-names)
+    # shellcheck disable=SC2168
+    local base="${1:-$(get_default_branch)}"
+    case "$vcs" in
+      git) git diff "origin/${base}...HEAD" --name-only -- "${@:2}" ;;
+      jj)
+        # shellcheck disable=SC2168
+        local merge_base
+        merge_base=$(jj log -r 'heads(ancestors(@) & ancestors('"$base"'))' --no-graph -T 'change_id' 2>/dev/null | head -1)
+        if [ -n "$merge_base" ]; then
+          jj diff --from "$merge_base" --to @ --name-only -- "${@:2}"
+        else
+          jj diff --from "$base" --to @ --name-only -- "${@:2}"
+        fi
+        ;;
+      *)   echo "vcs-op: no VCS detected" >&2; exit 1 ;;
+    esac
+    ;;
+  diff-stat)
+    # shellcheck disable=SC2168
+    local base="${1:-$(get_default_branch)}"
+    case "$vcs" in
+      git) git diff "origin/${base}...HEAD" --shortstat -- "${@:2}" ;;
+      jj)
+        # shellcheck disable=SC2168
+        local merge_base
+        merge_base=$(jj log -r 'heads(ancestors(@) & ancestors('"$base"'))' --no-graph -T 'change_id' 2>/dev/null | head -1)
+        if [ -n "$merge_base" ]; then
+          jj diff --from "$merge_base" --to @ --summary -- "${@:2}"
+        else
+          jj diff --from "$base" --to @ --summary -- "${@:2}"
+        fi
+        ;;
+      *)   echo "vcs-op: no VCS detected" >&2; exit 1 ;;
+    esac
+    ;;
+  new-files)
+    # shellcheck disable=SC2168
+    local base="${1:-$(get_default_branch)}"
+    case "$vcs" in
+      git) git diff --diff-filter=A --name-only "origin/${base}...HEAD" -- "${@:2}" ;;
+      jj)
+        # shellcheck disable=SC2168
+        local merge_base
+        merge_base=$(jj log -r 'heads(ancestors(@) & ancestors('"$base"'))' --no-graph -T 'change_id' 2>/dev/null | head -1)
+        if [ -n "$merge_base" ]; then
+          comm -13 <(jj file list -r "$merge_base" | sort) <(jj file list -r @ | sort)
+        else
+          comm -13 <(jj file list -r "$base" | sort) <(jj file list -r @ | sort)
+        fi
+        ;;
+      *)   echo "vcs-op: no VCS detected" >&2; exit 1 ;;
+    esac
+    ;;
+  log-range)
+    # shellcheck disable=SC2168
+    local base="${1:-$(get_default_branch)}"
+    case "$vcs" in
+      git) git log "origin/${base}..HEAD" --oneline -- "${@:2}" ;;
+      jj)  jj log -r "${base}..@" --no-graph -T 'separate(" ", commit_id.shortest(8), change_id.shortest(8), description.first_line()) ++ "\n"' 2>/dev/null ;;
+      *)   echo "vcs-op: no VCS detected" >&2; exit 1 ;;
+    esac
+    ;;
+  log-head)
+    case "$vcs" in
+      git) git log -1 --oneline ;;
+      jj)  jj log -r @ --no-graph -n 1 -T 'separate(" ", commit_id.shortest(8), change_id.shortest(8), description.first_line()) ++ "\n"' 2>/dev/null ;;
+      *)   echo "vcs-op: no VCS detected" >&2; exit 1 ;;
+    esac
+    ;;
+  branch)
+    # shellcheck disable=SC2168
+    local name="${1:?branch name required}"
+    # shellcheck disable=SC2168
+    local base="${2:-$(get_default_branch)}"
+    case "$vcs" in
+      git) git branch "$name" "origin/$base" ;;
+      jj)
+        jj new "$base" && jj bookmark create "$name" -r @
+        ;;
+      *) echo "vcs-op: no VCS detected" >&2; exit 1 ;;
+    esac
+    ;;
+  commit)
+    # shellcheck disable=SC2168
+    local msg="${1:?commit message required}"
+    case "$vcs" in
+      git)
+        git add -A
+        git commit -m "$msg"
+        ;;
+      jj)
+        jj describe -m "$msg"
+        ;;
+      *) echo "vcs-op: no VCS detected" >&2; exit 1 ;;
+    esac
+    ;;
+  push)
+    # shellcheck disable=SC2168
+    local ref="${1:-}"
+    case "$vcs" in
+      git)
+        if [ -n "$ref" ]; then
+          git push -u origin "$ref"
+        else
+          git push
+        fi
+        ;;
+      jj)
+        if [ -n "$ref" ]; then
+          jj git push --bookmark "$ref"
+        else
+          jj git push
+        fi
+        ;;
+      *) echo "vcs-op: no VCS detected" >&2; exit 1 ;;
+    esac
+    ;;
+  fix-commit)
+    # shellcheck disable=SC2168
+    local msg="${1:?commit message required}"
+    case "$vcs" in
+      git)
+        git add -A
+        git commit -m "$msg"
+        git push
+        ;;
+      jj)
+        jj new -m "$msg"
+        # shellcheck disable=SC2168
+        local bookmark
+        bookmark=$(jj bookmark list -r '@-' --no-graph -T 'name' 2>/dev/null | head -1)
+        if [ -n "$bookmark" ]; then
+          jj bookmark move "$bookmark" --to @ 2>/dev/null || true
+        fi
+        jj git push
+        ;;
+      *) echo "vcs-op: no VCS detected" >&2; exit 1 ;;
+    esac
+    ;;
+  *)
+    echo "vcs-op: unknown operation '$op'" >&2
+    echo "Available: detect, fetch, remote-url, head-revision, head-commit-sha, default-branch, dirty, diff-range, diff-names, diff-stat, new-files, log-range, log-head, branch, commit, push, fix-commit" >&2
+    exit 1
+    ;;
+esac

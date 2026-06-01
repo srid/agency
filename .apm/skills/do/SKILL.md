@@ -35,6 +35,7 @@ Every step is bookended by two `scripts/do-results` calls: `step-start <name>` b
 
 **Workflow fields /do also stashes via `set`** (the script doesn't interpret these — it just remembers them):
 
+- `vcs` — `git`, `jj`, or `unknown`. Populated by `scripts/steps/sync` after VCS detection. Determines which tool runs fetch, push, branch, commit, and diff operations.
 - `forge` — `github`, `bitbucket`, or `unknown`. Populated by `scripts/steps/sync` after forge detection.
 - `noGit` — `true` or `false`. Reflects the `--no-git` flag. Git-mutating steps (**branch**, **commit**, **create-pr**) skip with `reason="--no-git"` when set.
 
@@ -87,19 +88,20 @@ Run the `scripts/steps/sync` script in this skill's directory, passing `true` or
 
 The script:
 
-- Fetches `origin` and pins `origin/HEAD`
-- If `--no-git` is **not** set and the branch is behind origin (ahead-count 0), fast-forwards with `git pull --ff-only`. Under `--no-git`, fetching happens but the working tree is not touched — uncommitted work is preserved.
+- Detects the VCS type (`.jj/` → `jj`, `.git/` → `git`). All subsequent VCS operations delegate to `scripts/vcs-op` which maps semantic operation names to the active tool.
+- Fetches from the remote (git: `git fetch origin`; jj: `jj git fetch`). For git repos, also pins `origin/HEAD`.
+- If `--no-git` is **not** set and the branch is behind origin (ahead-count 0), fast-forwards with `git pull --ff-only`. jj repos skip this step — `jj git fetch` already updates remote bookmarks, and moving to the latest remote state is an explicit `jj new <remote-bookmark>` operation.
 - Prints the dirty-tree hint to stderr (no pause) when the tree is dirty and `--no-git` is not set:
 
   > _Dirty tree detected. Continuing will create a fresh branch on top of these changes. If you wanted the agent to extend your WIP in place without touching git, re-run with `--no-git`._
 
-- Classifies the forge from `git remote get-url origin` — `github.com` → `github`, `bitbucket.` (covers `bitbucket.org` and self-hosted servers like `bitbucket.juspay.net`) → `bitbucket`, otherwise `unknown`.
-- Calls `scripts/do-results init <forge> <noGit>` then `scripts/do-results step sync passed ...`.
-- Prints `forge=<value>`, `branch=<value>`, `defaultBranch=<value>` on stdout for downstream steps.
+- Classifies the forge from the remote URL (git: `git remote get-url origin`; jj: `jj git remote list`) — `github.com` → `github`, `bitbucket.` (covers `bitbucket.org` and self-hosted servers like `bitbucket.juspay.net`) → `bitbucket`, otherwise `unknown`.
+- Calls `scripts/do-results init` then `scripts/do-results step sync passed ...`.
+- Prints `vcs=<value>`, `forge=<value>`, `branch=<value>`, `defaultBranch=<value>` on stdout for downstream steps.
 
 **Only `github` has an active code path today.** Both `bitbucket` and `unknown` cause forge-dependent steps (PR creation, PR comments, PR edits, CI status) to skip gracefully. Bitbucket support is planned — see [srid/agency#10](https://github.com/srid/agency/issues/10).
 
-**Verify**: Script exited 0 and printed `forge=`, `branch=`, `defaultBranch=` lines on stdout. (Sync silences `do-results`' own confirmation echoes so the protocol stays clean.)
+**Verify**: Script exited 0 and printed `vcs=`, `forge=`, `branch=`, `defaultBranch=` lines on stdout. (Sync silences `do-results`' own confirmation echoes so the protocol stays clean.)
 
 ---
 
@@ -134,13 +136,17 @@ Use `ExitPlanMode` to present the plan. Once approved, continue autonomously to 
 
 **If `--no-git`**: Skip this step entirely with status `skipped` and reason `"--no-git"`. Stay on the current branch — do not create, commit, or push anything. Move to **implement**.
 
-Detect the default branch: `git symbolic-ref refs/remotes/origin/HEAD`
+Read `vcs` and `defaultBranch` from `.do-results.json`. Then:
 
-1. Create a descriptive feature branch from `origin/<default>`
+```
+.../skills/do/scripts/vcs-op branch <descriptive-name> <defaultBranch>
+```
 
-That's it — just the local branch. No commit, no push, no PR. The branch is pushed later in **commit**, and the PR is created in **create-pr** after all changes are done.
+The script handles the VCS-specific details: git creates `git branch <name> origin/<default>`; jj creates `jj new <default>` followed by `jj bookmark create <name> -r @`.
 
-**Verify**: On a feature branch (not master/main).
+That's it — just the local branch/bookmark. No commit, no push, no PR. The branch is pushed later in **commit**, and the PR is created in **create-pr** after all changes are done.
+
+**Verify**: `scripts/vcs-op head-revision` returns the new branch/bookmark name (not master/main).
 
 ---
 
@@ -200,11 +206,19 @@ If no format command is documented, skip this step with a note.
 
 **If `--no-git`**: Skip with status `skipped` and reason `"--no-git"`. Move to **hickey+lowy**. The working-tree changes stay uncommitted — that is the point.
 
-Create a NEW commit (never amend) with a conventional commit message for the primary implementation. Push to the feature branch with `git push -u origin <branch>` (sets upstream on first push).
+Create a NEW commit (never amend) with a conventional commit message for the primary implementation. Use the VCS-agnostic dispatcher:
+
+```
+.../skills/do/scripts/vcs-op commit "<message>"
+.../skills/do/scripts/vcs-op push <branch>
+```
+
+Git: stages all changes with `git add -A`, commits with `git commit -m "..."`, pushes with `git push -u origin <branch>`.
+Jj: auto-snapshots the working copy, describes with `jj describe -m "..."`, pushes the bookmark with `jj git push --bookmark <name>`.
 
 This is the **primary feature commit**. Downstream **hickey+lowy** and **police** steps produce their own follow-up commits — one per finding or violation addressed — which keeps the PR history a readable progression of "what was built, then what was refined" rather than a single opaque squash.
 
-**Verify**: `git log -1` shows a new commit on the feature branch, and it's pushed to remote.
+**Verify**: `scripts/vcs-op log-head` shows a new commit/change on the feature branch/bookmark, and it's pushed to remote.
 
 ---
 
@@ -225,8 +239,8 @@ For maximum efficiency, invoke the `hickey` and `lowy` Agent tools **in parallel
 Each `Agent` prompt must be self-contained (sub-agents do not inherit this conversation's context). Brief each one with:
 
 - The full task prompt plus anything relevant that **research** uncovered (file paths, intended approach, key constraints)
-- The scope to analyze: the actual diff, `git diff origin/HEAD...HEAD` — this is the same scope regardless of entry point (default or followup), since the branch at this point holds the primary feature commit (plus any cumulative followup commits) and no further work is pending
-- **Duplication-audit hint**, when the diff adds new files — check with `git diff --diff-filter=A --name-only origin/HEAD...HEAD` and only include the hint if the output is non-empty. The hint tells the reviewer to start with the codebase survey their skill describes (`hickey` Layer 3, `lowy` §1 "Check for prior encapsulation"): find the canonical in-repo pattern for the same *kind* of operation (picker, dialog, popover, list view, list-edit primitive, scheduler, error type, config loader, fetcher, …) and flag it as the headline finding if the diff reinvents rather than extends it. Skip the hint entirely when the diff has no new files — pure refactors and bug fixes inside existing abstractions don't benefit from the survey and the audit budget isn't worth it there.
+- The scope to analyze: the actual diff, obtained via `.../skills/do/scripts/vcs-op diff-range <defaultBranch>` — this is the same scope regardless of entry point (default or followup), since the branch at this point holds the primary feature commit (plus any cumulative followup commits) and no further work is pending
+- **Duplication-audit hint**, when the diff adds new files — check with `.../skills/do/scripts/vcs-op new-files <defaultBranch>` and only include the hint if the output is non-empty. The hint tells the reviewer to start with the codebase survey their skill describes (`hickey` Layer 3, `lowy` §1 "Check for prior encapsulation"): find the canonical in-repo pattern for the same *kind* of operation (picker, dialog, popover, list view, list-edit primitive, scheduler, error type, config loader, fetcher, …) and flag it as the headline finding if the diff reinvents rather than extends it. Skip the hint entirely when the diff has no new files — pure refactors and bug fixes inside existing abstractions don't benefit from the survey and the audit budget isn't worth it there.
 
 The sub-agent already knows to read its skill file and follow that methodology; don't re-state it in the prompt.
 
@@ -248,7 +262,7 @@ Findings that genuinely require coordination outside this repo (upstream library
 
 Skip this phase if **both** reviewers returned zero findings — there is nothing for the other lens to second-guess. Otherwise, for each reviewer that produced findings, spawn a second invocation of *that same skill* (`subagent_type: "hickey"` or `subagent_type: "lowy"`) with a self-contained prompt containing:
 
-- The actual diff (`git diff origin/HEAD...HEAD`).
+- The actual diff (`.../skills/do/scripts/vcs-op diff-range <defaultBranch>`).
 - The other reviewer's full findings output (paste it verbatim — the cross-validator must see the recommendations being audited, not a summary).
 - The question, phrased neutrally: _"Apply your lens to the diff **and** to the other reviewer's recommendations. Does any recommendation, if applied, create a problem your lens would flag? If yes, surface it as a new finding with the same Actions disposition rules (Fix in this PR / No-op, no Defer)."_
 
@@ -260,13 +274,11 @@ After the audit (and cross-validation, when run), every finding lands as a commi
 
 1. Apply the fix narrowly — only the lines that address this specific finding.
 2. Run the project's format command (from **fmt** instructions) on the changed files, if one is configured.
-3. `git add <changed files>` — stage only the files this fix touched.
-4. `git commit -m "refactor(hickey): <short finding label>"` (or `refactor(lowy): …` depending on the lens). The body of the message should restate the finding in one line so the commit is self-explanatory in `git log`.
-5. `git push` — push after each commit so the draft PR (once created) accumulates commits in real time. (The `-u` flag is only needed on the first push, which already happened in **commit**.)
+3. `.../skills/do/scripts/vcs-op fix-commit "refactor(hickey): <short finding label>"` (or `refactor(lowy): …` depending on the lens). The body of the message should restate the finding in one line so the commit is self-explanatory in the log.
 
 **Under `--no-git`**: Skip the commit/push steps entirely. Apply fixes to the working tree and move on — the user will review the combined working-tree delta themselves. Record the step as passed with verification noting "--no-git: fixes applied to working tree, not committed."
 
-**Verify**: Both hickey and lowy produced review output using their respective skills, either through sub-agents or the main-model fallback. Cross-validation ran (or was correctly skipped because both reviewers returned zero findings). Every finding — first-pass or cross-validation — has an action recorded, either **Fix in this PR** or **No-op** (no defers; if the sub-agent emitted one, the audit step above flipped it to Fix in this PR). Every "Fix in this PR" finding has a corresponding commit on the feature branch (check via `git log origin/HEAD..HEAD --oneline`), except under `--no-git`. No unactioned findings; no deferred findings.
+**Verify**: Both hickey and lowy produced review output using their respective skills, either through sub-agents or the main-model fallback. Cross-validation ran (or was correctly skipped because both reviewers returned zero findings). Every finding — first-pass or cross-validation — has an action recorded, either **Fix in this PR** or **No-op** (no defers; if the sub-agent emitted one, the audit step above flipped it to Fix in this PR). Every "Fix in this PR" finding has a corresponding commit on the feature branch (check via `scripts/vcs-op log-range <defaultBranch>`), except under `--no-git`. No unactioned findings; no deferred findings.
 
 ---
 
@@ -274,7 +286,7 @@ After the audit (and cross-validation, when run), every finding lands as a commi
 
 **If `--minimal`**: Skip with status `skipped` and reason `"--minimal"`. Move to **test**. Do not invoke `/code-police`.
 
-Use `git diff origin/HEAD...HEAD --name-only` to check if the PR contains code changes. If all changed files are documentation-only (e.g., `.md`, `.txt`, `README`, docs/) — skip this step with a note.
+Use `.../skills/do/scripts/vcs-op diff-names <defaultBranch>` to check if the PR contains code changes. If all changed files are documentation-only (e.g., `.md`, `.txt`, `README`, docs/) — skip this step with a note.
 
 Otherwise, invoke the `/code-police` skill via the Skill tool. It runs three passes: rule checklist, fact-check, and elegance (which delegates to `/simplify` when available).
 
@@ -286,18 +298,16 @@ For each violation reported by `/code-police` (across all three passes), in turn
 
 1. Apply the fix for that one violation — scope the edit tightly.
 2. Run the project's format command on changed files, if configured.
-3. `git add <changed files>` — stage only this fix.
-4. Commit with a conventional prefix identifying the pass and rule:
+3. `.../skills/do/scripts/vcs-op fix-commit "<prefix>: <short description>"` with the conventional prefix identifying the pass and rule:
    - Rules pass: `fix(police): <rule-id> — <short description>` (e.g. `fix(police): no-dead-code — remove commented-out fallback`)
    - Fact-check pass: `fix(police): fact-check — <short description>` (e.g. `fix(police): fact-check — propagate error from loader`)
    - Elegance pass (`/simplify`-applied or inline-loop-applied): `refactor(police): elegance — <short description>`
-5. `git push`.
 
 For the elegance pass specifically: `/simplify` applies fixes in batches across three lenses (reuse, quality, efficiency). Commit each distinct refactor as a separate commit — do not roll them into one "elegance" commit. If a lens produces multiple independent changes (two reuse-via-helper refactors in different files, say), those are separate commits too.
 
 **Under `--no-git`**: Skip the commit/push steps. Apply fixes to the working tree and continue. The user reviews the combined delta.
 
-**Verify**: All 3 passes clean ("All clear"). Under `--no-git`, the tree reflects the fixes; otherwise `git log origin/HEAD..HEAD --oneline` shows one commit per violation addressed.
+**Verify**: All 3 passes clean ("All clear"). Under `--no-git`, the tree reflects the fixes; otherwise `scripts/vcs-op log-range <defaultBranch>` shows one commit per violation addressed.
 **If violations found** (max 3 attempts): Fix the violations (one commit per fix, as above) and re-invoke `/code-police`.
 
 ---
@@ -306,7 +316,7 @@ For the elegance pass specifically: `/simplify` applies fixes in batches across 
 
 Read `.agency/do.md` and look for a `## Test command` section. Run only the tests relevant to the code paths changed in this PR.
 
-Use `git diff origin/HEAD...HEAD --name-only` to identify changed files and determine which tests are relevant.
+Use `.../skills/do/scripts/vcs-op diff-names <defaultBranch>` to identify changed files and determine which tests are relevant.
 
 If changes are purely internal with no user-facing impact, unit tests may suffice — skip e2e if no relevant scenarios exist. If no test command is documented, skip with a note.
 
@@ -375,7 +385,7 @@ Read `.agency/do.md` and look for a `## CI command` section, plus any verificati
 
 CI commands are typically local (e.g. `nix flake check`, `just ci`, `make ci`) and are forge-independent — **run them regardless of forge**. Only the *verification method* may be forge-specific: if `.agency/do.md` describes verification via `gh` commit-status checks and `forge != github`, fall back to exit code + command output for verification on non-GitHub forges, and note this in the step record. (Bitbucket `bkt pr checks` wiring is tracked in #10.)
 
-**Verify**: Use the verification method described in `.agency/do.md` (e.g., checking commit statuses on GitHub, reading CI output elsewhere). If no CI command is documented, skip with a note. **The CI result must cover `HEAD`.** Before recording the step as passed, compare the commit SHA that CI ran against with `git rev-parse HEAD`. If they differ (e.g., a commit was pushed after CI started — whether from a fix retry, user-requested changes, or any other source), re-run CI against the current HEAD. CI passing on a stale commit does not satisfy verification.
+**Verify**: Use the verification method described in `.agency/do.md` (e.g., checking commit statuses on GitHub, reading CI output elsewhere). If no CI command is documented, skip with a note. **The CI result must cover `HEAD`.** Before recording the step as passed, compare the commit SHA that CI ran against with `.../skills/do/scripts/vcs-op head-commit-sha`. If they differ (e.g., a commit was pushed after CI started — whether from a fix retry, user-requested changes, or any other source), re-run CI against the current HEAD. CI passing on a stale commit does not satisfy verification.
 
 **On failure** — read logs or output to diagnose.
 
@@ -414,7 +424,7 @@ The section is project-specific and free-form: it can be inline prose describing
 The sub-agent prompt should include:
 
 - The literal section content from `.agency/do.md`.
-- Standard PR context: PR URL, branch name, base branch, current commit SHA, and `git diff origin/HEAD...HEAD --name-only` so the sub-agent knows which routes/files to exercise.
+- Standard PR context: PR URL, branch name, base branch, current commit SHA, and `.../skills/do/scripts/vcs-op diff-names <defaultBranch>` so the sub-agent knows which routes/files to exercise.
 - An explicit instruction that the sub-agent's job is to return a single block of markdown (image links embedded, table data inline, etc.) suitable for posting under a `## Evidence` heading. The sub-agent should not post the comment itself — only return the markdown.
 
 After the sub-agent returns, post its output as one PR comment using `gh pr comment` under a `## Evidence` heading. Use the **single-quoted heredoc** pattern (see `forge-pr` → "Passing the body to `gh` safely") so backticks and `$` survive unescaped:
@@ -472,9 +482,9 @@ Be specific to this run's data, not generic advice.
 
 #### PR comment & wrap-up
 
-**If `--no-git`**: There is no branch or PR to report against. Print the timing table and optimization suggestions to the terminal only. List the files modified in the working tree (`git status --porcelain`) so the user can see what the agent touched. Remind the user that changes are uncommitted — the commit/push/PR steps are theirs to run.
+**If `--no-git`**: There is no branch or PR to report against. Print the timing table and optimization suggestions to the terminal only. List the files modified in the working tree via `.../skills/do/scripts/vcs-op dirty` and the VCS-appropriate status output so the user can see what the agent touched. Remind the user that changes are uncommitted — the commit/push/PR steps are theirs to run.
 
-**If `forge != github`**: Report the branch name (and remote URL, if available via `git remote get-url origin`) instead of a PR URL. Print the timing table and optimization suggestions to the terminal only — do **not** attempt to post a PR comment. (Bitbucket `bkt pr comment` wiring is tracked in #10.)
+**If `forge != github`**: Report the branch name (and remote URL, if available via `.../skills/do/scripts/vcs-op remote-url`) instead of a PR URL. Print the timing table and optimization suggestions to the terminal only — do **not** attempt to post a PR comment. (Bitbucket `bkt pr comment` wiring is tracked in #10.)
 
 **If `forge == github`**: Report the PR URL. Then post the final step status table as a **PR comment** using `gh pr comment`. Use the markdown table and slowest-step line emitted by `scripts/steps/done` verbatim (strip the trailing `<<<FACTS ... FACTS` block — that's internal). Format:
 

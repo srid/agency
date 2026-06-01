@@ -65,6 +65,7 @@ ENDJSON
       echo "do-results: pendingStep '$existing' already active — call step-end before starting '$name'" >&2
       exit 1
     fi
+    # shellcheck disable=SC2016  # jq filter with $arg
     $JQ --arg n "$name" --arg sa "$startedAt" \
        '.pendingStep = {"name":$n,"startedAt":$sa}' \
        "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
@@ -85,11 +86,13 @@ ENDJSON
     fi
 
     if [ -n "$reason" ]; then
+      # shellcheck disable=SC2016  # jq filter with $arg
       $JQ --arg n "$name" --arg s "$status" --arg v "$verif" \
          --arg sa "$startedAt" --arg ca "$completedAt" --arg r "$reason" \
          '.steps += [{"name":$n,"status":$s,"verification":$v,"startedAt":$sa,"completedAt":$ca,"reason":$r}] | del(.pendingStep)' \
          "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
     else
+      # shellcheck disable=SC2016  # jq filter with $arg
       $JQ --arg n "$name" --arg s "$status" --arg v "$verif" \
          --arg sa "$startedAt" --arg ca "$completedAt" \
          '.steps += [{"name":$n,"status":$s,"verification":$v,"startedAt":$sa,"completedAt":$ca}] | del(.pendingStep)' \
@@ -113,11 +116,13 @@ ENDJSON
     [[ "$completedAt" == "now" ]] && completedAt="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
     if [ -n "$reason" ]; then
+      # shellcheck disable=SC2016  # jq filter with $arg
       $JQ --arg n "$name" --arg s "$status" --arg v "$verif" \
          --arg sa "$startedAt" --arg ca "$completedAt" --arg r "$reason" \
          '.steps += [{"name":$n,"status":$s,"verification":$v,"startedAt":$sa,"completedAt":$ca,"reason":$r}]' \
          "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
     else
+      # shellcheck disable=SC2016  # jq filter with $arg
       $JQ --arg n "$name" --arg s "$status" --arg v "$verif" \
          --arg sa "$startedAt" --arg ca "$completedAt" \
          '.steps += [{"name":$n,"status":$s,"verification":$v,"startedAt":$sa,"completedAt":$ca}]' \
@@ -132,8 +137,10 @@ ENDJSON
     value="${2:?value required}"
     # Handle booleans and strings
     if [ "$value" = "true" ] || [ "$value" = "false" ]; then
+      # shellcheck disable=SC2016  # jq filter with $arg
       $JQ --arg f "$field" --argjson v "$value" '.[$f] = $v' "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
     else
+      # shellcheck disable=SC2016  # jq filter with $arg
       $JQ --arg f "$field" --arg v "$value" '.[$f] = $v' "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
     fi
     echo "set: $field=$value"
