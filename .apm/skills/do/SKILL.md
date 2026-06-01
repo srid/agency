@@ -20,12 +20,12 @@ Take a task and do it top-to-bottom: research, branch, implement, pass CI, open 
 2. Call `scripts/do-driver init <flags> <task>` to initialize state.
 3. Seed the task checklist using Nickel:
    ```bash
-   nickel eval workflow.ncl --field cli_seed --arg "<from>" --arg "$(cat .do-results.json)"
+   scripts/nickel-cli cli_seed "<from>"
    ```
    This returns `[{ name, initial_status }]` — mark `completed` steps and seed the todo UI.
 4. For each step, ask Nickel what to do next:
    ```bash
-   next=$(nickel eval workflow.ncl --field cli --arg "$(cat .do-results.json)")
+   next=$(scripts/nickel-cli cli)
    ```
    This returns `{ step, skip, pattern, instructions, requires, pattern_config }`.
    - If `skip` is true, call `scripts/do-driver skip <step> <reason>` and continue.

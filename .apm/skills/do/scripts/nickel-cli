@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Wrapper for Nickel workflow CLI invocation.
+# Usage:
+#   nickel-cli cli          # Get next step
+#   nickel-cli cli_seed ""  # Get step list (default entry)
+#   nickel-cli cli_seed "followup"  # Get step list from entry point
+
+set -euo pipefail
+
+if [ $# -lt 1 ]; then
+  echo "Usage: nickel-cli <field> [args...]"
+  echo "  nickel-cli cli"
+  echo "  nickel-cli cli_seed <from>"
+  exit 1
+fi
+
+FIELD="$1"
+shift
+
+case "$FIELD" in
+  cli)
+    cat <<'NICKEL' | nickel eval --stdin-format nickel --import-path .
+let workflow = import ".apm/skills/do/workflow.ncl" in
+let state = workflow.normalize_state (import ".do-results.json") in
+workflow.cli state
+NICKEL
+    ;;
+  cli_seed)
+    FROM="${1:-}"
+    cat <<NICKEL | nickel eval --stdin-format nickel --import-path .
+let workflow = import ".apm/skills/do/workflow.ncl" in
+let state = workflow.normalize_state (import ".do-results.json") in
+workflow.cli_seed "$FROM" state
+NICKEL
+    ;;
+  *)
+    echo "Unknown field: $FIELD"
+    exit 1
+    ;;
+esac
