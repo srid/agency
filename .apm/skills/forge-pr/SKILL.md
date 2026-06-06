@@ -18,7 +18,7 @@ Write PR descriptions that fellow devs actually want to read. The writing guidan
 
 ## What to write instead
 
-**Title**: Short, specific, interesting. Convey _what changed from a user/dev perspective_, not which files were touched. Use imperative mood. Under 70 chars.
+**Title**: Lead with a [Conventional Commits](https://www.conventionalcommits.org/) type — `feat:` / `fix:` / `perf:` / `refactor:` / `docs:` / `test:` / `chore:` / `ci:`, with `!` (or a `BREAKING CHANGE:` footer) for breaking changes. Pick the type by _user-facing impact_, not which files moved: a repo that squash-merges turns this title into the release changelog line, where `feat` / `fix` surface to users and `chore` / `docs` / `test` / `ci` are dropped — so a user-facing change mislabeled `chore:` silently vanishes from the changelog. After the prefix: short, specific, interesting — convey _what changed from a user/dev perspective_, not which files were touched, in imperative mood. Keep the whole title under 70 chars.
 
 **Body**: Open with a paragraph. Structure:
 
@@ -123,7 +123,7 @@ Title: Update NixOS configuration and add new service
 ### Good (small change — narrative is enough)
 
 ```
-Title: Add kolu service with health monitoring
+Title: feat: add kolu service with health monitoring
 
 **Kolu now runs as a standalone NixOS service** with its own systemd
 unit and a dedicated health-check endpoint. Previously it was bolted
@@ -139,7 +139,7 @@ service on three consecutive failures.*
 When the change has a flow, several discrete features, and a couple of before/after refinements, _show_ those instead of writing them out as prose:
 
 ````
-Title: Export agent session as a self-contained HTML file
+Title: feat: export agent session as a self-contained HTML file
 
 **Kolu can now export the active agent session as a portable,
 self-contained HTML file** — Claude Code, OpenCode, or Codex, no
